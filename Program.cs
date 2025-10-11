@@ -100,9 +100,7 @@ class Programm
                                         await bot.SendMessage(msg.Chat, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", replyMarkup: new ForceReplyMarkup());
                                         break;
                                     }
-                                    usersState[foundUser.UserID].Comment = null; // Очистка прошлого коммента
 
-                                    if (msg.Text[0] != '-')
                                         usersState[foundUser.UserID].Comment = msg.Text;
 
                                     usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;

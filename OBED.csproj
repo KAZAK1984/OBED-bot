@@ -8,7 +8,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Include\Locale\**" />
+    <EmbeddedResource Remove="Include\Locale\**" />
+    <None Remove="Include\Locale\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Telegram.Bot" Version="22.7.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Include\Local\" />
   </ItemGroup>
 
 </Project>

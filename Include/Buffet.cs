@@ -1,6 +1,6 @@
 ﻿namespace OBED.Include
 {
-    class Buffet : BasePlace 
+    class Buffet : BasePlace, ILocatedUni
     {
         public int BuildingNumber { get; private set; }
         public int Floor { get; private set; }

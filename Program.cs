@@ -1,5 +1,4 @@
 ﻿using OBED.Include;
-using System.Xml.Linq;
 using Telegram.Bot;
 using Telegram.Bot.Extensions;
 using Telegram.Bot.Polling;
@@ -21,7 +20,20 @@ class Programm
 
 		List<Canteen> canteens = [new("Canteen1", 1, 1, null, null, null, null),
 			new("Canteen2", 2, 2, null, null, null, null),
-			new("Canteen3", 3, 3, null, null, null, null)];
+			new("Canteen3", 2, 2, null, null, null, null),
+			new("Canteen4", 2, 2, null, null, null, null),
+			new("Canteen5", 2, 2, null, null, null, null),
+			new("Canteen6", 2, 2, null, null, null, null),
+			new("Canteen7", 2, 2, null, null, null, null),
+			new("Canteen8", 2, 2, null, null, null, null),
+			new("Canteen9", 2, 2, null, null, null, null),
+			new("Canteen10", 2, 2, null, null, null, null),
+			new("Canteen11", 2, 2, null, null, null, null),
+			new("Canteen12", 2, 2, null, null, null, null),
+			new("Canteen13", 2, 2, null, null, null, null),
+			new("Canteen14", 2, 2, null, null, null, null),
+			new("Canteen15", 2, 2, null, null, null, null),
+			new("Canteen16", 3, 3, null, null, null, null)];
 		List<Buffet> buffets = [new("Buffet1", 1, 1, null, null, null, null),
 			new("Buffet2", 2, 2, null, null, null, null),
 			new("Buffet3", 3, 3, null, null, null, null)];
@@ -100,7 +112,7 @@ class Programm
 										break;
 									}
 
-										usersState[foundUser.UserID].Comment = msg.Text;
+									usersState[foundUser.UserID].Comment = msg.Text.Trim();
 
 									usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
 									await bot.SendHtml(msg.Chat.Id, $"""
@@ -178,8 +190,8 @@ class Programm
 						await bot.SendMessage(msg.Chat, "placeholderPlaces", replyMarkup: new InlineKeyboardButton[][]
 											 {
 												[("Столовые", "/placeSelector C")],
-												[("Буфеты/автоматы", "/buffets")],
-												[("Внешние магазины", "/shops")]
+												[("Буфеты/автоматы", "/placeSelector B")],
+												[("Внешние магазины", "/placeSelector G")]
 											 });
 						break;
 					}
@@ -195,7 +207,7 @@ class Programm
 						}
 
 						int page = 0;
-						if (!char.IsLetter(args[0]))
+						if (!char.IsLetter(args[0]) || (args.Length > 1 && !int.TryParse(args[1..], out page)))
 						{
 							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /placeSelector.", replyMarkup: new InlineKeyboardButton[]
 							{
@@ -203,99 +215,48 @@ class Programm
 							});
 							throw new Exception($"Invalid command agrs: {msg.Text}");
 						}
-						if (args.Length > 1 && !int.TryParse(args[0..], out page))
-						{
-                            await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /placeSelector.", replyMarkup: new InlineKeyboardButton[]
-                            {
-                                ("Назад", "/places")
-                            });
-                            throw new Exception($"Invalid command agrs: {msg.Text}");
-                        }
-						int elemCounter = 0;
-						List<BasePlace> places = [];
+						if (page < 0)
+							page = 0;
+						int nowCounter = page * 5;
+
+						List<BasePlace> places;
 						switch (args[0])
 						{
 							case ('C'):
 								{
-									places = (List<BasePlace>)canteens.Select(x => new
-									{
-										x.Name,
-										x.Description,
-										x.Reviews,
-										x.Menu,
-										x.Tegs
-									});
-
-                                    elemCounter = canteens.Count;
-                                    break;
+									places = [.. canteens.Cast<BasePlace>()];
+									break;
 								}
 							case ('B'):
 								{
+									places = [.. buffets.Cast<BasePlace>()];
 									break;
 								}
 							case ('G'):
 								{
+									places = [.. groceries.Cast<BasePlace>()];
 									break;
 								}
 							default:
 								{
 									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /placeSelector.", replyMarkup: new InlineKeyboardButton[]
-										{
-											("Назад", "/places")
-										});
+									   {
+										   ("Назад", "/places")
+									   });
 									throw new Exception($"Invalid command agrs: {msg.Text}");
 								}
 						}
-                        if (page < 0 || page >= elemCounter)
-                            page = 0;
-                        int nowCounter = page * 5;
 
-                        await bot.SendMessage(msg.Chat, "placeholder", replyMarkup: new InlineKeyboardButton[][]
-                                             {
-                                                [($"{places[0 + nowCounter].Name}", $"/info cants{0 + nowCounter}")],
-                                                [($"{((elemCounter > (1 + nowCounter)) ? places[1 + nowCounter].Name : "")}", $"/info cants{1 + nowCounter}")],
-                                                [($"{((elemCounter > (2 + nowCounter)) ? places[2 + nowCounter].Name : "")}", $"/info cants{2 + nowCounter}")],
-                                                [($"{((elemCounter > (3 + nowCounter)) ? places[3 + nowCounter].Name : "")}", $"/info cants{3 + nowCounter}")],
-                                                [($"{((elemCounter > (4 + nowCounter)) ? places[4 + nowCounter].Name : "")}", $"/info cants{4 + nowCounter}")],
-                                                [($"{((page != 0) ? "◀️" : "")}", $"/placeSelector C{page - 1}"), ("Назад","/places"), ($"{((elemCounter > (5 + nowCounter)) ? "▶️" : "")}", $"/placeSelector C{page + 1}")]
-                                             });
-                        break;
-					}
-				case ("/canteens"):
-					{
-						int page = 0;
-						if (args != null && !int.TryParse(args, out page))
-						{
-							Console.WriteLine($"{msg.Chat.Id} | Invalid command args - {msg.Text}");
-							break;
-						}
-
-						int elemCounter = canteens.Count;
-						if (page < 0 || page >= elemCounter)
-							page = 0;
-
-						int nowCounter = page * 5;
-						await bot.SendMessage(msg.Chat, "placeholderCanteen", replyMarkup: new InlineKeyboardButton[][]
+						int placesCounter = places.Count;
+						await bot.SendMessage(msg.Chat, "placeholder", replyMarkup: new InlineKeyboardButton[][]
 											 {
-												[($"{canteens[0 + nowCounter].Name}", $"/info cants{0 + nowCounter}")],
-												[($"{((elemCounter > (1 + nowCounter)) ? canteens[1 + nowCounter].Name : "")}", $"/info cants{1 + nowCounter}")],
-												[($"{((elemCounter > (2 + nowCounter)) ? canteens[2 + nowCounter].Name : "")}", $"/info cants{2 + nowCounter}")],
-												[($"{((elemCounter > (3 + nowCounter)) ? canteens[3 + nowCounter].Name : "")}", $"/info cants{3 + nowCounter}")],
-												[($"{((elemCounter > (4 + nowCounter)) ? canteens[4 + nowCounter].Name : "")}", $"/info cants{4 + nowCounter}")],
-												[($"{((page != 0) ? "◀️" : "")}", $"/canteens {page - 1}"), ("Назад","/places"), ($"{((elemCounter > (5 + nowCounter)) ? "▶️" : "")}", $"/canteens {page + 1}")]
+												[($"{((placesCounter != 0) ? places[nowCounter].Name : "")}", $"/info cants{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info cants{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info cants{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info cants{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info cants{nowCounter}")],
+												[($"{((page != 0) ? "◀️" : "")}", $"/placeSelector {args[0]}{page - 1}"), ("Назад","/places"), ($"{(placesCounter > nowCounter ? "▶️" : "")}", $"/placeSelector {args[0]}{page + 1}")]
 											 });
-						break;
-					}
-				case ("/buffets"):
-					{
-						// TODO: Перенести функционал canteens
-						await bot.SendMessage(msg.Chat, "TODO");
-						break;
-					}
-				case ("/shops"):
-					{
-						// TODO: Перенести функционал canteens
-						await bot.SendMessage(msg.Chat, "TODO");
 						break;
 					}
 				case ("/info"):
@@ -308,7 +269,7 @@ class Programm
 							});
 							throw new Exception($"No command args: {msg.Text}");
 						}
-
+						await bot.SendMessage(msg.Chat.Id, msg.Text!);
 			 //           switch (args![..5])
 			 //           {
 			 //               case ("cants"):

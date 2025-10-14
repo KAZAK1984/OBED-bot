@@ -40,7 +40,7 @@
             }
             return false;
         }
-        public virtual bool AddReview(long userID, byte rating, string? comment)
+        public virtual bool AddReview(long userID, int rating, string? comment)
         {
             if (!Reviews.Where(x => x.UserID == userID).Any())
             {

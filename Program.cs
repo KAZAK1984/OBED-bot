@@ -86,10 +86,6 @@ class Program
 		{
 			switch (msg)
 			{
-				//case { ReplyToMessage: { } reply }:
-				//	{
-				//		break;
-				//	}
 				case { Type: { } mType }:
 					{
 						if (mType == MessageType.Text)
@@ -125,7 +121,7 @@ class Program
 										break;
 									}
 
-									await bot.SendMessage(msg.Chat, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры или они входят в промежуток от 1 до 10", replyMarkup: new ForceReplyMarkup());
+									await bot.SendMessage(msg.Chat, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", replyMarkup: new ForceReplyMarkup());
 									break;
 								}
 							case (UserAction.CommentRequest):
@@ -136,7 +132,10 @@ class Program
 										break;
 									}
 
-									usersState[foundUser.UserID].Comment = msg.Text.Trim();
+									if (msg.Text.Trim() == "-")
+										usersState[foundUser.UserID].Comment = null;
+									else
+										usersState[foundUser.UserID].Comment = msg.Text.Trim();
 
 									usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
 									await bot.SendHtml(msg.Chat.Id, $"""
@@ -288,7 +287,7 @@ class Program
 					{
 						if (args == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /placeSelector не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /info не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -298,7 +297,7 @@ class Program
 						int index = 0;
 						if (!char.IsLetter(args[0]) || (args.Length > 1 && !int.TryParse(args[1..], out index)))
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /placeSelector.", replyMarkup: new InlineKeyboardButton[]
+							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -325,7 +324,7 @@ class Program
 								}
 							default:
 								{
-									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /placeSelector.", replyMarkup: new InlineKeyboardButton[]
+									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
 									   {
 										   ("Назад", "/places")
 									   });
@@ -348,7 +347,6 @@ class Program
 							</row>
 							</keyboard>
 							""");
-
 						break;
 					}
 				case ("/menu"):
@@ -614,10 +612,10 @@ class Program
 						if (args == null)
 						{
 							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /sendreview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
-								{
+							{
 								("Назад", "/places")
-								});
-							throw new Exception($"No command agrs: {msg.Text}");
+							});
+							throw new Exception($"No command args: {msg.Text}");
 						}
 
 						var foundUser = persons
@@ -631,108 +629,105 @@ class Program
 							break;
 						}
 
-						switch (args[..5])
+						int index = 0;
+						if (!char.IsLetter(args[0]) || (args.Length > 1 && !int.TryParse(args[1..], out index)))
 						{
-							case ("cants"):
+							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /sendreview.", replyMarkup: new InlineKeyboardButton[]
+							{
+								("Назад", "/places")
+							});
+							throw new Exception($"Invalid command agrs: {msg.Text}");
+						}
+
+						BasePlace place;
+						switch (args[0])
+						{
+							case ('C'):
 								{
-									if (!int.TryParse(args[5..args.Length], out int index) || index > canteens.Count)
-									{
-										await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /sendreview.", replyMarkup: new InlineKeyboardButton[]
-											{
-											("Назад", "/places")
-											});
-										throw new Exception($"Invalid command agrs: {msg.Text}");
-									}
-
-									if (canteens[index].Reviews.Where(x => x.UserID == foundUser.UserID).Any())
-										await bot.SendHtml(msg.Chat.Id, $"""
-														Вы уже оставили отзыв на {canteens[index].Name}
-
-														• Оценка: {usersState[foundUser.UserID].Rating}
-														• Комментарий: {usersState[foundUser.UserID].Comment ?? "Отсутствует"}
-
-														<keyboard>
-														</row>
-														<row><button text="Изменить" callback="/deletereview {args[..5] + index.ToString()}_"
-														<row><button text="Удалить" callback="/deletereview {args[..5] + index.ToString()}"
-														</row>
-														<row><button text="Назад" callback="/info {args[..5] + index.ToString()}"
-														</row>
-														</keyboard>
-														"""); // _ у изменить в конце обозначает "модификатор" запроса, но т.к. он может быть один, то нет дальнейшего пояснения
-									else
-										switch (usersState[foundUser.UserID].Action)
-										{
-											case (null):
-												{
-													usersState[foundUser.UserID].Action = UserAction.RatingRequest;
-													usersState[foundUser.UserID].RefTo = args[..5] + index.ToString();
-
-													await bot.SendMessage(msg.Chat, $"Введите оценку от 1⭐️ до 10⭐️", replyMarkup: new ForceReplyMarkup());
-													break;
-												}
-											case (UserAction.RatingRequest):
-												{
-													if (usersState[foundUser.UserID].RefTo != args[..5] + index.ToString())
-													{
-														await bot.SendMessage(msg.Chat, $"Зафиксирована попытка оставить отзыв на другую точку. Сброс ранее введённой информации...");
-														usersState[foundUser.UserID].Action = null;
-														await OnCommand("/sendreview", args[..5] + index.ToString(), msg);
-													}
-													break;
-												}
-											case (UserAction.CommentRequest):
-												{
-													if (usersState[foundUser.UserID].RefTo != args[..5] + index.ToString())
-													{
-														await bot.SendMessage(msg.Chat, $"Зафиксирована попытка оставить отзыв на другую точку. Сброс ранее введённой информации...");
-														usersState[foundUser.UserID].Action = null;
-														await OnCommand("/sendreview", args[..5] + index.ToString(), msg);
-													}
-													break;
-												}
-											default:
-												{
-													Review review = new(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment);
-													usersState[foundUser.UserID].Action = null;
-
-													if (canteens[index].AddReview(review))
-													{
-														await bot.SendMessage(msg.Chat.Id, $"Отзыв успешно оставлен!");
-														await OnCommand("/info", usersState[foundUser.UserID].RefTo, msg);
-													}
-													else
-													{
-														await bot.SendMessage(msg.Chat.Id, $"Ошибка при попытке оставить отзыв: {review.Rating}⭐️| {review.Comment ?? "Комментарий отсутствует"}", replyMarkup: new InlineKeyboardButton[]
-															{
-																("Назад", $"/info {usersState[foundUser.UserID].RefTo}")
-															});
-														throw new Exception($"Error while user {foundUser.UserID} trying to leave a review on {usersState[foundUser.UserID].RefTo}. {review.Rating} | {review.Comment ?? "No comment"}");
-													}
-													break;
-												}
-										}
+									place = canteens[index];
 									break;
 								}
-							case ("bufts"):
+							case ('B'):
 								{
-									await bot.SendMessage(msg.Chat.Id, "TODO");
+									place = buffets[index];
 									break;
 								}
-							case ("shops"):
+							case ('G'):
 								{
-									await bot.SendMessage(msg.Chat.Id, "TODO");
+									place = groceries[index];
 									break;
 								}
 							default:
 								{
 									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /sendreview.", replyMarkup: new InlineKeyboardButton[]
-											{
-											("Назад", "/places")
-											});
+									   {
+										   ("Назад", "/places")
+									   });
 									throw new Exception($"Invalid command agrs: {msg.Text}");
 								}
 						}
+
+						if (place.Reviews.Where(x => x.UserID == foundUser.UserID).Any())
+						{
+							await bot.SendHtml(msg.Chat.Id, $"""
+								Вы уже оставили отзыв на {place.Name}
+								
+								• Оценка: {place.Reviews.Where(x => x.UserID == foundUser.UserID).First().Rating}
+								• Комментарий: {place.Reviews.Where(x => x.UserID == foundUser.UserID).First().Comment ?? "Отсутствует"}
+								
+								<keyboard>
+								</row>
+								<row><button text="Изменить" callback="/deletereview {args}" 
+								<row><button text="Удалить" callback="/deletereview {args}"
+								</row>
+								<row><button text="Назад" callback="/info {args}"
+								</row>
+								</keyboard>
+								""");
+							break;
+						}
+
+						switch (usersState[foundUser.UserID].Action)
+						{
+							case (null):
+								{
+									usersState[foundUser.UserID].Action = UserAction.RatingRequest;
+									usersState[foundUser.UserID].RefTo = args;
+
+									await bot.SendMessage(msg.Chat, $"Введите оценку от 1⭐️ до 10⭐️", replyMarkup: new ForceReplyMarkup());
+									break;
+								}
+							case (UserAction.NoActiveRequest):
+								{
+									usersState[foundUser.UserID].Action = null;
+
+									if (canteens[index].AddReview(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment))
+									{
+										await bot.SendMessage(msg.Chat.Id, $"Отзыв успешно оставлен!");
+										await OnCommand("/info", usersState[foundUser.UserID].RefTo, msg);
+									}
+									else
+									{
+										await bot.SendMessage(msg.Chat.Id, $"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].Rating}⭐️| {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}", replyMarkup: new InlineKeyboardButton[]
+											{
+												("Назад", $"/info {usersState[foundUser.UserID].RefTo}")
+											});
+										throw new Exception($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].RefTo} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
+									}
+									break;
+								}
+							default:
+								{
+									if (usersState[foundUser.UserID].RefTo != args)
+									{
+										await bot.SendMessage(msg.Chat, $"Зафиксирована попытка оставить отзыв на другую точку. Сброс ранее введённой информации...");
+										usersState[foundUser.UserID].Action = null;
+										await OnCommand("/sendreview", args, msg);
+									}
+									break;
+								}
+						}
+
 						break;
 					}
 				case ("/deletereview"):
@@ -878,11 +873,6 @@ class Program
 				var foundUser = persons
 							.Where(x => x.UserID == callbackQuery.Message!.Chat.Id)
 							.FirstOrDefault();
-
-				if (foundUser == null)
-				{
-					await OnCommand("/start", null, callbackQuery.Message!);
-				}
 
 				usersState[foundUser!.UserID].Action = null;
 				await OnCommand("/info", usersState[foundUser!.UserID].RefTo, callbackQuery.Message!);

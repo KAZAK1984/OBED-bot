@@ -191,8 +191,9 @@ class Programm
 											 {
 												[("Столовые", "/placeSelector C")],
 												[("Буфеты/автоматы", "/placeSelector B")],
-												[("Внешние магазины", "/placeSelector G")]
-											 });
+												[("Внешние магазины", "/placeSelector G")],
+                                                [("Назад", "/start")]
+                                             });
 						break;
 					}
 				case ("/placeSelector"):
@@ -250,11 +251,11 @@ class Programm
 						int placesCounter = places.Count;
 						await bot.SendMessage(msg.Chat, "placeholder", replyMarkup: new InlineKeyboardButton[][]
 											 {
-												[($"{((placesCounter != 0) ? places[nowCounter].Name : "")}", $"/info cants{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info cants{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info cants{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info cants{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info cants{nowCounter}")],
+												[($"{((placesCounter != 0) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
 												[($"{((page != 0) ? "◀️" : "")}", $"/placeSelector {args[0]}{page - 1}"), ("Назад","/places"), ($"{(placesCounter > nowCounter ? "▶️" : "")}", $"/placeSelector {args[0]}{page + 1}")]
 											 });
 						break;
@@ -263,62 +264,67 @@ class Programm
 					{
 						if (args == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /info не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /placeSelector не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
 							throw new Exception($"No command args: {msg.Text}");
 						}
-						await bot.SendMessage(msg.Chat.Id, msg.Text!);
-			 //           switch (args![..5])
-			 //           {
-			 //               case ("cants"):
-			 //                   {
-			 //                       string subArgs = args[5..];
-			 //                       if (!int.TryParse(subArgs, out int index) || index > canteens.Count)
-			 //                       {
-			 //                           await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
-			 //                           {
-			 //                               ("Назад", "/places")
-			 //                           });
-			 //                           throw new Exception($"Invalid command agrs: {msg.Text}");
-			 //                       }
 
-			 //                       var reviewsWithComment = canteens[index].Placereviews.Where(x => x.Comment != null);
-			 //                       await bot.SendHtml(msg.Chat.Id, $"""
-											  //placeholderCanteenName: {canteens[index].Name}
-											  //placeholderOverageRating: TODO
-											  //placeholderCaunteenCountreview: {$"{canteens[index].Placereviews.Count}"}
-											  //placeholderLastreview: {((canteens[index].Placereviews.Count != 0 && reviewsWithComment.Any()) ? ($"{reviewsWithComment.ToList()[^1].Rating} ⭐️| {reviewsWithComment.ToList()[^1].Comment}") : "Отзывы с комментариями не найдены")}
-											  //<keyboard>
-											  //<button text="Меню" callback="/menu {args}"
-											  //</row>
-											  //<row> <button text="Оставить отзыв" callback="/sendreview {args}"
-											  //<row> <button text="Отзывы" callback="/reviews {args}"
-											  //</row>
-											  //<row> <button text="Назад" callback="/canteens"
-											  //</row>
-											  //</keyboard>
-											  //""");
-			 //                       break;
-			 //                   }
-			 //               case ("bufts"):
-			 //                   {
-			 //                       break;
-			 //                   }
-			 //               case ("shops"):
-			 //                   {
-			 //                       break;
-			 //                   }
-			 //               default:
-			 //                   {
-			 //                       await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
-			 //                           {
-			 //                               ("Назад", "/places")
-			 //                           });
-			 //                       throw new Exception($"Invalid command agrs: {msg.Text}");
-			 //                   }
-			 //           }
+						int index = 0;
+						if (!char.IsLetter(args[0]) || (args.Length > 1 && !int.TryParse(args[1..], out index)))
+						{
+							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /placeSelector.", replyMarkup: new InlineKeyboardButton[]
+							{
+								("Назад", "/places")
+							});
+							throw new Exception($"Invalid command agrs: {msg.Text}");
+						}
+
+						BasePlace place;
+						switch (args[0])
+						{
+							case ('C'):
+								{
+									place = canteens[index];
+									break;
+								}
+							case ('B'):
+								{
+									place = buffets[index];
+									break;
+								}
+							case ('G'):
+								{
+									place = groceries[index];
+									break;
+								}
+							default:
+								{
+									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /placeSelector.", replyMarkup: new InlineKeyboardButton[]
+									   {
+										   ("Назад", "/places")
+									   });
+									throw new Exception($"Invalid command agrs: {msg.Text}");
+								}
+						}
+
+						await bot.SendHtml(msg.Chat.Id, $"""
+							placeholderCanteenName: {place.Name}
+							placeholderOverageRating: TODO
+							placeholderCaunteenCountreview: {place.Reviews.Count}
+							placeholderLastreview: {((place.Reviews.Count != 0 && place.Reviews.Where(x => x.Comment != null).Any()) ? ($"{place.Reviews.Where(x => x.Comment != null).Last().Rating} ⭐️| {place.Reviews.Where(x => x.Comment != null).Last().Comment}") : "Отзывы с комментариями не найдены")}
+							<keyboard>
+							<button text="Меню" callback="/menu {args}"
+							</row>
+							<row> <button text="Оставить отзыв" callback="/sendreview {args}"
+							<row> <button text="Отзывы" callback="/reviews {args}"
+							</row>
+							<row> <button text="Назад" callback="/placeSelector {args[0]}"
+							</row>
+							</keyboard>
+							""");
+
 						break;
 					}
 				case ("/menu"):

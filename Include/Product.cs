@@ -7,6 +7,7 @@
         Drink,
         Appetizer
     }
+
     class Product(string name, ProductType type, (float value, bool perGram) price)
     {
         public string Name { get; init; } = name;

@@ -1,5 +1,13 @@
 ﻿namespace OBED.Include
 {
+    public enum ReviewSort
+    {
+        Upper,
+        Lower,
+        OldDate,
+        NewDate
+    }
+
     class Review(long userID, int rating, string? comment = null)
     {
         public long UserID { get; init; } = userID;

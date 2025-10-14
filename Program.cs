@@ -6,7 +6,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
-class Programm
+class Program
 {
 	static async Task Main()
 	{
@@ -34,9 +34,16 @@ class Programm
 			new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)),
 			new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false))];
 
-		List<Canteen> canteens = [new("Canteen1", 1, 1, null, null, products1, null),
-			new("Canteen2", 2, 2, null, null, products2, null),
-			new("Canteen3", 2, 2, null, null, products3, null),
+		List<Review> reviews1 = [new(123456789, 10), new(123456789, 9), new(123456789, 8), new(123456789, 7), new(123456789, 6), new(123456789, 5), new(123456789, 4)];
+	
+		List<Review> reviews2 = [new(123456789, 10), new(123456789, 9), new(123456789, 8, "8"), new(123456789, 7, "7"), new(123456789, 6), new(123456789, 5, "5"), new(123456789, 4)];
+
+		List<Review> reviews3 = [new(123456789, 7, "Old"), new(123456789, 9, "Old"), new(123456789, 5, "Old"), new(123456789, 10, "Old"), new(123456789, 6, "Old"), new(123456789, 8, "Old"), new(123456789, 4, "Old")];
+		reviews3.Add(new(987654321, 3, "New"));
+
+		List<Canteen> canteens = [new("Canteen1", 1, 1, null, reviews3, products1, null),
+			new("Canteen2", 2, 2, null, reviews2, products2, null),
+			new("Canteen3", 2, 2, null, reviews1, products3, null),
 			new("Canteen4", 2, 2, null, null, null, null),
 			new("Canteen5", 2, 2, null, null, null, null),
 			new("Canteen6", 2, 2, null, null, null, null),
@@ -48,17 +55,18 @@ class Programm
 			new("Canteen12", 2, 2, null, null, null, null),
 			new("Canteen13", 2, 2, null, null, null, null),
 			new("Canteen14", 2, 2, null, null, null, null),
-			new("Canteen15", 2, 2, null, null, products5, null),
-			new("Canteen16", 3, 3, null, null, products4, null)];
-		List<Buffet> buffets = [new("Buffet1", 1, 1, null, null, products1, null),
-			new("Buffet2", 2, 2, null, null, products2, null),
-			new("Buffet3", 3, 3, null, null, products4, null)];
-		List<Grocery> groceries = [new("Grocery1", null, null, products1, null),
-			new("Grocery2", null, null, products2, null),
-			new("Grocery3", null, null, products4, null)];
+			new("Canteen15", 2, 2, null, reviews1, products5, null),
+			new("Canteen16", 3, 3, null, reviews1, products4, null)];
+		List<Buffet> buffets = [new("Buffet1", 1, 1, null, reviews1, products1, null),
+			new("Buffet2", 2, 2, null, reviews2, products2, null),
+			new("Buffet3", 3, 3, null, reviews3, products4, null)];
+		List<Grocery> groceries = [new("Grocery1", null, reviews1, products1, null),
+			new("Grocery2", null, reviews2, products2, null),
+			new("Grocery3", null, reviews3, products4, null)];
 
 		// TODO: переход на noSQL
 		Dictionary<long, UserState> usersState = [];
+		reviews3.Add(new(611614145, 3, "SuperNew")); // TODO: Удалить после ввода БД, это теставая хрень для проверки сортировки на время создания
 
 		bot.OnError += OnError;
 		bot.OnMessage += OnMessage;
@@ -378,7 +386,7 @@ class Programm
 
 						if (page < 0)
 							page = 0;
-						int nowCounter = page * 5;
+						int nowCounter = page * 10;
 
 						string placeName;
 						List<Product> menu;
@@ -477,161 +485,128 @@ class Programm
 						if (args == null)
 						{
 							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /reviews не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
-										{
-											("Назад", "/places")
-										});
+							{
+								("Назад", "/places")
+							});
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						char? modeSelector = null;
-						bool checkUnderscore = false;
-						int posUnderscore = 0, sortCorrector = 0; // sortCorrector увеличивает "рамки" поиска на 2, дабы избежать сдвигов из-за буквы сортировки
-						for (int i = 0; i < args.Length; ++i)     // На 2, т.к. включаем ключевую букву F как возможность для расширения, мб в будущем будет больше сортировок
+						int index = 0, page = 0;
+						if (args.Contains('_'))
 						{
-							if (args[i] == '_')
+							if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..args.IndexOf('_')], out index)) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
 							{
-								posUnderscore = i;
-								checkUnderscore = true;
-								break;
-							}
-							if (char.IsUpper(args[i]))
-							{
-								switch (args[i])
-								{
-									case ('H'): // Высокий рейтинг
-										{
-											modeSelector = 'H';
-											sortCorrector = 2;
-											break;
-										}
-									case ('L'): // Низкий рейтинг
-										{
-											modeSelector = 'L';
-											sortCorrector = 2;
-											break;
-										}
-									case ('F'): // Заглушка, дабы не вызвать ошибку
-										{
-											break;
-										}
-									default:
-										{
-											await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
-											throw new Exception($"Invalid command agrs: {msg.Text}");
-										}
-								}
+								await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
+									{
+									("Назад", "/places")
+									});
+								throw new Exception($"Invalid command agrs: {msg.Text}");
 							}
 						}
-
-						switch (args[..5])
+						else if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..], out index)))
 						{
-							case ("cants"):
+							Console.WriteLine(args[2..]);
+							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
+							{
+								("Назад", "/places")
+							});
+							throw new Exception($"Invalid command agrs: {msg.Text}");
+						}
+
+						if (page < 0)
+							page = 0;
+						int nowCounter = page * 5;
+
+						string placeName;
+						List<Review> reviews;
+						switch (args[1])
+						{
+							case ('C'):
 								{
-									int page = 0, index = 0;
-									if (checkUnderscore)
-									{
-										if (!int.TryParse(args[5..(posUnderscore - sortCorrector)], out index) || index > canteens.Count)
-										{
-											await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
-											throw new Exception($"Invalid command agrs: {msg.Text}");
-										}
-										if (!int.TryParse(args[(posUnderscore + 1)..], out page))
-										{
-											await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
-											throw new Exception($"Invalid command agrs: {msg.Text}");
-										}
-										if (page < 0 || page >= canteens[index].Menu.Count)
-											page = 0;
-									}
-									else
-									{
-										if (!int.TryParse(args[5..(args.Length - sortCorrector)], out index) || index > canteens.Count)
-										{
-											await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
-											throw new Exception($"Invalid command agrs: {msg.Text}");
-										}
-									}
-									int nowCounter = page * 5;
-
-									var sortedreviews = canteens[index].Reviews
-													.Select(x => new
-													{
-														x.Rating,
-														x.Comment
-													})
-													.Reverse()
-													.ToList();
-									switch (modeSelector)
-									{
-										case ('H'):
-											{
-												sortedreviews = [.. sortedreviews.OrderBy(x => x.Rating).Reverse()];
-												break;
-											}
-										case ('L'):
-											{
-												sortedreviews = [.. sortedreviews.OrderBy(x => x.Rating)];
-												break;
-											}
-									}
-
-									await bot.SendHtml(msg.Chat.Id, $"""
-													placeholderCanteenreview: {canteens[index].Name}
-													placeholderOverageRating: TODO
-													placeholderCaunteenCountreview: {$"{canteens[index].Reviews.Count}"}
-													placeholderCaunteenCountreviewWithComment: {$"{canteens[index].Reviews.Where(x => x.Comment != null).Count()}"}
-
-													{((sortedreviews.Count > (0 + nowCounter) && sortedreviews[0 + nowCounter].Comment != null) ? $"{sortedreviews[0 + nowCounter].Rating}⭐️| {sortedreviews[0 + nowCounter].Comment}" : "Отзывы с комментариями не найдены.")}
-													{((sortedreviews.Count > (1 + nowCounter) && sortedreviews[1 + nowCounter].Comment != null) ? $"{sortedreviews[1 + nowCounter].Rating}⭐️| {sortedreviews[1 + nowCounter].Comment}" : "")}
-													{((sortedreviews.Count > (2 + nowCounter) && sortedreviews[2 + nowCounter].Comment != null) ? $"{sortedreviews[2 + nowCounter].Rating}⭐️| {sortedreviews[2 + nowCounter].Comment}" : "")}
-													{((sortedreviews.Count > (3 + nowCounter) && sortedreviews[3 + nowCounter].Comment != null) ? $"{sortedreviews[3 + nowCounter].Rating}⭐️| {sortedreviews[3 + nowCounter].Comment}" : "")}
-													{((sortedreviews.Count > (4 + nowCounter) && sortedreviews[4 + nowCounter].Comment != null) ? $"{sortedreviews[4 + nowCounter].Rating}⭐️| {sortedreviews[4 + nowCounter].Comment}" : "")}
-													<keyboard>
-													</row>
-													<row><button text="{((sortedreviews.Count > 1 && modeSelector != null) ? "Без сортировки" : "")}" callback="/reviews {args[..5] + index.ToString()}"
-													<row><button text="{((sortedreviews.Count > 1 && modeSelector != 'H') ? "Оценка ↑" : "")}" callback="/reviews {args[..5] + index.ToString()}FH"
-													<row><button text="{((sortedreviews.Count > 1 && modeSelector != 'L') ? "Оценка ↓" : "")}" callback="/reviews {args[..5] + index.ToString()}FL"
-													</row>
-													<row><button text="{((nowCounter != 0) ? "◀️" : "")}" callback="/reviews {(posUnderscore == 0 ? $"{args}_{page - 1}" : $"{args[..posUnderscore]}_{page - 1}")}"
-													<row><button text="Назад" callback="/info {args[..5] + index.ToString()}"
-													<row><button text="{(sortedreviews.Count > (5 + nowCounter) ? "▶️" : "")}" callback="/reviews {(posUnderscore == 0 ? $"{args}_{page + 1}" : $"{args[..posUnderscore]}_{page + 1}")}"
-													</row>
-													</keyboard>
-													""");
+									placeName = canteens[index].Name;
+									reviews = canteens[index].Reviews;
 									break;
 								}
-							case ("bufts"):
+							case ('B'):
 								{
-									await bot.SendMessage(msg.Chat.Id, "TODO");
+									placeName = buffets[index].Name;
+									reviews = buffets[index].Reviews;
 									break;
 								}
-							case ("shops"):
+							case ('G'):
 								{
-									await bot.SendMessage(msg.Chat.Id, "TODO");
+									placeName = groceries[index].Name;
+									reviews = groceries[index].Reviews;
 									break;
 								}
 							default:
 								{
 									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
+									   {
+										   ("Назад", "/places")
+									   });
 									throw new Exception($"Invalid command agrs: {msg.Text}");
 								}
 						}
 
+						int reviewCounter = reviews.Count;
+						reviews = [..reviews.Where(x => x.Comment != null)];
+
+						ReviewSort? sortType = null;
+						switch (args[0])
+						{
+							case ('U'):
+								{
+									sortType = ReviewSort.Upper;
+									reviews = [.. reviews.OrderByDescending(x => x.Rating)];
+									break;
+								}
+							case ('L'):
+								{
+									sortType = ReviewSort.Lower;
+									reviews = [.. reviews.OrderBy(x => x.Rating)];
+									break;
+								}
+							case ('N'):
+								{
+									sortType = ReviewSort.NewDate;
+									reviews = [.. reviews.OrderByDescending(x => x.Date)];
+									break;
+								}
+							case ('O'):
+								{
+									sortType = ReviewSort.OldDate;
+									reviews = [.. reviews.OrderBy(x => x.Date)];
+									break;
+								}
+						}
+
+						await bot.SendHtml(msg.Chat.Id, $"""
+										Название: {placeName}
+										Всего отзывов: {$"{reviewCounter}"}
+										Всего отзывов с комментариями: {$"{reviews.Count}"}
+										{(sortType != null ? $"Режим сортировки: {sortType}\n" : "")}
+										{(reviews.Count > nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : $"{(sortType == null ? $"Развёрнутые отзывы на {placeName} не обнаружено" : $"Развёрнутых отзывов по тегу {sortType} не обнаружено")}")}
+										{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
+										{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
+										{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
+										{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
+										<keyboard>
+										</row>
+										<row><button text="{(sortType == null ? "" : "Без сортировки")}" callback="/reviews -{args[1]}{index}"
+										</row>
+										<row><button text="{(sortType == ReviewSort.Upper ? "" : "Оценка ↑")}" callback="/reviews U{args[1]}{index}"
+										<row><button text="{(sortType == ReviewSort.Lower ? "" : "Оценка ↓")}" callback="/reviews L{args[1]}{index}"
+										</row>
+										<row><button text="{(sortType == ReviewSort.NewDate ? "" : "Новые")}" callback="/reviews N{args[1]}{index}"
+										<row><button text="{(sortType == ReviewSort.OldDate ? "" : "Старые")}" callback="/reviews O{args[1]}{index}"
+										</row>
+										<row><button text="{((page != 0) ? "◀️" : "")}" callback="/reviews {args[..2]}{index}_{page - 1}"
+										<row><button text="Назад" callback="/info {args[1]}{index}"
+										<row><button text="{(reviews.Count > ++nowCounter ? "▶️" : "")}" callback="/reviews {args[..2]}{index}_{page + 1}"
+										</row>
+										</keyboard>
+										""");
 						break;
 					}
 				case ("/sendreview"):
@@ -827,7 +802,7 @@ class Programm
 												{
 													("Назад", $"/info cants{index}")
 												});
-									throw new Exception($"Error while user {foundUser.UserID} trying to delite/change review on {canteens[index].Name}");
+									throw new Exception($"Error while user {foundUser.UserID} trying to delete/change review on {canteens[index].Name}");
 								}
 							case ("bufts"):
 								{

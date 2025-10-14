@@ -18,9 +18,25 @@ class Programm
 		// TODO: переход на SQL
 		List<Person> persons = [];
 
-		List<Canteen> canteens = [new("Canteen1", 1, 1, null, null, null, null),
-			new("Canteen2", 2, 2, null, null, null, null),
-			new("Canteen3", 2, 2, null, null, null, null),
+		List<Product> products1 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
+			new("Main2", ProductType.MainDish, (250, true)), new("Side2", ProductType.SideDish, (300, true)), new("Drink2", ProductType.Drink, (350, true)), new("Appetizer2", ProductType.Appetizer, (400, true)),
+			new("Main3", ProductType.MainDish, (450, false)), new("Side3", ProductType.SideDish, (500, false)), new("Drink3", ProductType.Drink, (550, false)), new("Appetizer3", ProductType.Appetizer, (600, false))];
+
+		List<Product> products2 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false))];
+
+		List<Product> products3 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
+			new("Main2", ProductType.MainDish, (250, true))];
+
+		List<Product> products4 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
+			new("Main2", ProductType.MainDish, (250, true)), new("Side2", ProductType.SideDish, (300, true))];
+
+		List<Product> products5 = [new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)),
+			new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)),
+			new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false))];
+
+		List<Canteen> canteens = [new("Canteen1", 1, 1, null, null, products1, null),
+			new("Canteen2", 2, 2, null, null, products2, null),
+			new("Canteen3", 2, 2, null, null, products3, null),
 			new("Canteen4", 2, 2, null, null, null, null),
 			new("Canteen5", 2, 2, null, null, null, null),
 			new("Canteen6", 2, 2, null, null, null, null),
@@ -32,17 +48,17 @@ class Programm
 			new("Canteen12", 2, 2, null, null, null, null),
 			new("Canteen13", 2, 2, null, null, null, null),
 			new("Canteen14", 2, 2, null, null, null, null),
-			new("Canteen15", 2, 2, null, null, null, null),
-			new("Canteen16", 3, 3, null, null, null, null)];
-		List<Buffet> buffets = [new("Buffet1", 1, 1, null, null, null, null),
-			new("Buffet2", 2, 2, null, null, null, null),
-			new("Buffet3", 3, 3, null, null, null, null)];
-		List<Grocery> groceries = [new("Grocery1", null, null, null, null),
-			new("Grocery2", null, null, null, null),
-			new("Grocery3", null, null, null, null)];
+			new("Canteen15", 2, 2, null, null, products5, null),
+			new("Canteen16", 3, 3, null, null, products4, null)];
+		List<Buffet> buffets = [new("Buffet1", 1, 1, null, null, products1, null),
+			new("Buffet2", 2, 2, null, null, products2, null),
+			new("Buffet3", 3, 3, null, null, products4, null)];
+		List<Grocery> groceries = [new("Grocery1", null, null, products1, null),
+			new("Grocery2", null, null, products2, null),
+			new("Grocery3", null, null, products4, null)];
 
 		// TODO: переход на noSQL
-		Dictionary<long, UserState> usersState = []; 
+		Dictionary<long, UserState> usersState = [];
 
 		bot.OnError += OnError;
 		bot.OnMessage += OnMessage;
@@ -145,7 +161,7 @@ class Programm
 			{
 				case ("/start"):
 					{
-						await bot.SendMessage(msg.Chat, "placeholderStart", replyMarkup: new InlineKeyboardButton[][]
+						await bot.SendMessage(msg.Chat, "Старт", replyMarkup: new InlineKeyboardButton[][]
 											 {
 												[("Места", "/places")],
 												[("Профиль", "/person")],
@@ -187,13 +203,13 @@ class Programm
 					}
 				case ("/places"):
 					{
-						await bot.SendMessage(msg.Chat, "placeholderPlaces", replyMarkup: new InlineKeyboardButton[][]
+						await bot.SendMessage(msg.Chat, "Выбор типа точек", replyMarkup: new InlineKeyboardButton[][]
 											 {
 												[("Столовые", "/placeSelector C")],
-												[("Буфеты/автоматы", "/placeSelector B")],
+												[("Буфеты", "/placeSelector B")],
 												[("Внешние магазины", "/placeSelector G")],
-                                                [("Назад", "/start")]
-                                             });
+												[("Назад", "/start")]
+											 });
 						break;
 					}
 				case ("/placeSelector"):
@@ -249,7 +265,7 @@ class Programm
 						}
 
 						int placesCounter = places.Count;
-						await bot.SendMessage(msg.Chat, "placeholder", replyMarkup: new InlineKeyboardButton[][]
+						await bot.SendMessage(msg.Chat, "Выбор точки", replyMarkup: new InlineKeyboardButton[][]
 											 {
 												[($"{((placesCounter != 0) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
 												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
@@ -310,17 +326,17 @@ class Programm
 						}
 
 						await bot.SendHtml(msg.Chat.Id, $"""
-							placeholderCanteenName: {place.Name}
-							placeholderOverageRating: TODO
-							placeholderCaunteenCountreview: {place.Reviews.Count}
-							placeholderLastreview: {((place.Reviews.Count != 0 && place.Reviews.Where(x => x.Comment != null).Any()) ? ($"{place.Reviews.Where(x => x.Comment != null).Last().Rating} ⭐️| {place.Reviews.Where(x => x.Comment != null).Last().Comment}") : "Отзывы с комментариями не найдены")}
+							Название: {place.Name}
+							Средний рейтинг: TODO
+							Всего отзывов: {place.Reviews.Count}
+							Последний текстовый отзыв: {((place.Reviews.Count != 0 && place.Reviews.Where(x => x.Comment != null).Any()) ? ($"{place.Reviews.Where(x => x.Comment != null).Last().Rating} ⭐️| {place.Reviews.Where(x => x.Comment != null).Last().Comment}") : "Отзывы с комментариями не найдены")}
 							<keyboard>
-							<button text="Меню" callback="/menu {args}"
+							<button text="Меню" callback="/menu -{args}"
 							</row>
 							<row> <button text="Оставить отзыв" callback="/sendreview {args}"
-							<row> <button text="Отзывы" callback="/reviews {args}"
+							<row> <button text="Отзывы" callback="/reviews -{args}"
 							</row>
-							<row> <button text="Назад" callback="/placeSelector {args[0]}"
+							<row> <button text="Назад" callback="/placeSelector {args[0]}{index / 5}"
 							</row>
 							</keyboard>
 							""");
@@ -332,168 +348,128 @@ class Programm
 						if (args == null)
 						{
 							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /menu не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
-										{
-											("Назад", "/places")
-										});
+							{
+								("Назад", "/places")
+							});
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						ProductType? productType = null;
-						bool checkUnderscore = false;
-						int posUnderscore = 0, sortCorrector = 0; // sortCorrector увеличивает "рамки" поиска на 2, дабы избежать сдвигов из-за буквы сортировки
-						for (int i = 0; i < args.Length; ++i)     // На 2, т.к. включаем ключевую букву F как возможность для расширения, мб в будущем будет больше сортировок
+						int index = 0, page = 0;
+						if (args.Contains('_'))
 						{
-							if (args[i] == '_')
+							if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..args.IndexOf('_')], out index)) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
 							{
-								posUnderscore = i;
-								checkUnderscore = true;
-								break;
-							}
-							if (char.IsUpper(args[i]))
-							{
-								switch (args[i])
-								{
-									case ('M'):
-										{
-											sortCorrector = 2;
-											productType = ProductType.MainDish;
-											break;
-										}
-									case ('S'):
-										{
-											sortCorrector = 2;
-											productType = ProductType.SideDish;
-											break;
-										}
-									case ('D'):
-										{
-											sortCorrector = 2;
-											productType = ProductType.Drink;
-											break;
-										}
-									case ('A'):
-										{
-											sortCorrector = 2;
-											productType = ProductType.Appetizer;
-											break;
-										}
-									case ('F'): // Заглушка, дабы не вызвать ошибку
-										{
-											break;
-										}
-									default:
-										{
-											await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
-											throw new Exception($"Invalid command agrs: {msg.Text}");
-										}
-								}
+								await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
+									{
+									("Назад", "/places")
+									});
+								throw new Exception($"Invalid command agrs: {msg.Text}");
 							}
 						}
-
-						switch (args[..5])
+						else if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..], out index)))
 						{
-							case ("cants"):
+							Console.WriteLine(args[2..]);
+							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
+							{
+								("Назад", "/places")
+							});
+							throw new Exception($"Invalid command agrs: {msg.Text}");
+						}
+
+						if (page < 0)
+							page = 0;
+						int nowCounter = page * 5;
+
+						string placeName;
+						List<Product> menu;
+						switch (args[1])
+						{
+							case ('C'):
 								{
-									int page = 0, index = 0;
-									if (checkUnderscore)
-									{
-										if (!int.TryParse(args[5..(posUnderscore - sortCorrector)], out index) || index > canteens.Count)
-										{
-											await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
-											throw new Exception($"Invalid command agrs: {msg.Text}");
-										}
-										if (!int.TryParse(args[(posUnderscore + 1)..], out page))
-										{
-											await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
-											throw new Exception($"Invalid command agrs: {msg.Text}");
-										}
-										if (page < 0 || page >= canteens[index].Menu.Count)
-											page = 0;
-									}
-									else
-									{
-										if (!int.TryParse(args[5..(args.Length - sortCorrector)], out index) || index > canteens.Count)
-										{
-											await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
-											throw new Exception($"Invalid command agrs: {msg.Text}");
-										}
-									}
-									int nowCounter = page * 20;
-
-									var sortedCanteens = canteens[index].Menu;
-									if (sortCorrector != 0)
-									{
-										sortedCanteens = [.. canteens[index].Menu.Where(x => x.Type == productType)];
-									}
-
-									await bot.SendHtml(msg.Chat.Id, $"""
-										placeholderCanteenMenu: {canteens[index].Name}
-										placeholderCaunteenCountMenu: {$"{canteens[index].Menu.Count}"}
-										{(productType != null ? $"placeholderCaunteenSortMod: {productType}" : "")}
-										{(sortedCanteens.Count > (0 + nowCounter) ? $"{sortedCanteens[0 + nowCounter].Name} | {sortedCanteens[0 + nowCounter].Price.value} за {(sortedCanteens[0 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : $"Позиций по тегу {productType} не обнаружены.")}
-										{(sortedCanteens.Count > (1 + nowCounter) ? $"{sortedCanteens[1 + nowCounter].Name} | {sortedCanteens[1 + nowCounter].Price.value} за {(sortedCanteens[1 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (2 + nowCounter) ? $"{sortedCanteens[2 + nowCounter].Name} | {sortedCanteens[2 + nowCounter].Price.value} за {(sortedCanteens[2 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (3 + nowCounter) ? $"{sortedCanteens[3 + nowCounter].Name} | {sortedCanteens[3 + nowCounter].Price.value} за {(sortedCanteens[3 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (4 + nowCounter) ? $"{sortedCanteens[4 + nowCounter].Name} | {sortedCanteens[4 + nowCounter].Price.value} за {(sortedCanteens[4 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (5 + nowCounter) ? $"{sortedCanteens[5 + nowCounter].Name} | {sortedCanteens[5 + nowCounter].Price.value} за {(sortedCanteens[5 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (6 + nowCounter) ? $"{sortedCanteens[6 + nowCounter].Name} | {sortedCanteens[6 + nowCounter].Price.value} за {(sortedCanteens[6 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (7 + nowCounter) ? $"{sortedCanteens[7 + nowCounter].Name} | {sortedCanteens[7 + nowCounter].Price.value} за {(sortedCanteens[7 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (8 + nowCounter) ? $"{sortedCanteens[8 + nowCounter].Name} | {sortedCanteens[8 + nowCounter].Price.value} за {(sortedCanteens[8 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (9 + nowCounter) ? $"{sortedCanteens[9 + nowCounter].Name} | {sortedCanteens[9 + nowCounter].Price.value} за {(sortedCanteens[9 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (10 + nowCounter) ? $"{sortedCanteens[10 + nowCounter].Name} | {sortedCanteens[10 + nowCounter].Price.value} за {(sortedCanteens[10 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (11 + nowCounter) ? $"{sortedCanteens[11 + nowCounter].Name} | {sortedCanteens[11 + nowCounter].Price.value} за {(sortedCanteens[11 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (12 + nowCounter) ? $"{sortedCanteens[12 + nowCounter].Name} | {sortedCanteens[12 + nowCounter].Price.value} за {(sortedCanteens[12 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (13 + nowCounter) ? $"{sortedCanteens[13 + nowCounter].Name} | {sortedCanteens[13 + nowCounter].Price.value} за {(sortedCanteens[13 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (14 + nowCounter) ? $"{sortedCanteens[14 + nowCounter].Name} | {sortedCanteens[14 + nowCounter].Price.value} за {(sortedCanteens[14 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (15 + nowCounter) ? $"{sortedCanteens[15 + nowCounter].Name} | {sortedCanteens[15 + nowCounter].Price.value} за {(sortedCanteens[15 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (16 + nowCounter) ? $"{sortedCanteens[16 + nowCounter].Name} | {sortedCanteens[16 + nowCounter].Price.value} за {(sortedCanteens[16 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (17 + nowCounter) ? $"{sortedCanteens[17 + nowCounter].Name} | {sortedCanteens[17 + nowCounter].Price.value} за {(sortedCanteens[17 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (18 + nowCounter) ? $"{sortedCanteens[18 + nowCounter].Name} | {sortedCanteens[18 + nowCounter].Price.value} за {(sortedCanteens[18 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(sortedCanteens.Count > (19 + nowCounter) ? $"{sortedCanteens[19 + nowCounter].Name} | {sortedCanteens[19 + nowCounter].Price.value} за {(sortedCanteens[19 + nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										<keyboard>
-										</row>
-										<row><button text="{(canteens[index].Menu.Where(x => x.Type == ProductType.MainDish).Any() ? "Блюда" : "")}" callback="/menu {args[..5] + index.ToString()}FM"
-										<row><button text="{(canteens[index].Menu.Where(x => x.Type == ProductType.SideDish).Any() ? "Гарниры" : "")}" callback="/menu {args[..5] + index.ToString()}FS"
-										<row><button text="{(canteens[index].Menu.Where(x => x.Type == ProductType.Drink).Any() ? "Напитки" : "")}" callback="/menu {args[..5] + index.ToString()}FD"
-										<row><button text="{(canteens[index].Menu.Where(x => x.Type == ProductType.Appetizer).Any() ? "Десерты" : "")}" callback="/menu {args[..5] + index.ToString()}FA"
-										</row>
-										<row><button text="{((nowCounter != 0) ? "◀️" : "")}" callback="/menu {(posUnderscore == 0 ? $"{args}_{page - 1}" : $"{args[..posUnderscore]}_{page - 1}")}"
-										<row><button text="Назад" callback="/info {args[..5] + index.ToString()}"
-										<row><button text="{(sortedCanteens.Count > (20 + nowCounter) ? "▶️" : "")}" callback="/menu {(posUnderscore == 0 ? $"{args}_{page + 1}" : $"{args[..posUnderscore]}_{page + 1}")}"
-										</row>
-										</keyboard>
-										""");
+									placeName = canteens[index].Name;
+									menu = canteens[index].Menu;
 									break;
 								}
-							case ("bufts"):
+							case ('B'):
 								{
+									placeName = buffets[index].Name;
+									menu = buffets[index].Menu;
 									break;
 								}
-							case ("shops"):
+							case ('G'):
 								{
+									placeName = groceries[index].Name;
+									menu = groceries[index].Menu;
 									break;
 								}
 							default:
 								{
 									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
+									   {
+										   ("Назад", "/places")
+									   });
 									throw new Exception($"Invalid command agrs: {msg.Text}");
 								}
 						}
+
+						ProductType? productType = null;
+						switch (args[0])
+						{
+							case ('M'):
+								{
+									productType = ProductType.MainDish;
+									menu = [.. menu.Where(x => x.Type == ProductType.MainDish)];
+									break;
+								}
+							case ('S'):
+								{
+									productType = ProductType.SideDish;
+									menu = [.. menu.Where(x => x.Type == ProductType.SideDish)];
+									break;
+								}
+							case ('D'):
+								{
+									productType = ProductType.Drink;
+									menu = [..menu.Where(x => x.Type == ProductType.Drink)];
+									break;
+								}
+							case ('A'):
+								{
+									productType = ProductType.Appetizer;
+									menu = [..menu.Where(x => x.Type == ProductType.Appetizer)];
+									break;
+								}
+						}
+
+						await bot.SendHtml(msg.Chat.Id, $"""
+										Название: {placeName}
+										Всего позиций: {$"{menu.Count}"}
+										{(productType != null ? $"Режим сортировки: {productType}\n" : "")}
+										{(menu.Count > nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : $"{(productType == null ? $"Меню у {placeName} не обнаружено" : $"Позиций по тегу {productType} не обнаружено")}")}
+										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+										<keyboard>
+										</row>
+										<row><button text="{(productType == null ? "" : "Без сортировки")}" callback="/menu -{args[1]}{index}"
+										</row>
+										<row><button text="{(productType == ProductType.MainDish ? "" : "Блюда")}" callback="/menu M{args[1]}{index}"
+										<row><button text="{(productType == ProductType.SideDish ? "" : "Гарниры")}" callback="/menu S{args[1]}{index}"
+										<row><button text="{(productType == ProductType.Drink ? "" : "Напитки")}" callback="/menu D{args[1]}{index}"
+										<row><button text="{(productType == ProductType.Appetizer ? "" : "Закуски")}" callback="/menu A{args[1]}{index}"
+										</row>
+										<row><button text="{((page != 0) ? "◀️" : "")}" callback="/menu {args[..2]}{index}_{page - 1}"
+										<row><button text="Назад" callback="/info {args[1]}{index}"
+										<row><button text="{(menu.Count > ++nowCounter ? "▶️" : "")}" callback="/menu {args[..2]}{index}_{page + 1}"
+										</row>
+										</keyboard>
+										""");
 						break;
 					}
 				case ("/reviews"):

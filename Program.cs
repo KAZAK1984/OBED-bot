@@ -205,7 +205,7 @@ class Program
 											 {
 												[("Места", "/places")],
 												[("Профиль", "/person")],
-												[("Помощь", "/help"), ("Поддержка", "/report")]
+												[("Обратная связь", "/report")]
 											 });
 
 						if (!persons.Select(x => x.UserID).Contains(msg.Chat.Id))
@@ -227,12 +227,6 @@ class Program
 												 {
 													[("Назад","/start")]
 												 });
-						break;
-					}
-				case ("/help"):
-					{
-						// TODO: обращение "по кусочкам" для вывода справки
-						await bot.SendMessage(msg.Chat, "TODO");
 						break;
 					}
 				case ("/report"):
@@ -893,7 +887,7 @@ class Program
 									break;
 								}
 							case ('B'):
-								{
+								{		
 									place = buffets[index];
 									break;
 								}

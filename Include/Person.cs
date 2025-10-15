@@ -18,8 +18,11 @@
 	enum UserAction
 	{
 		RatingRequest,
+		RatingChange,
 		CommentRequest,
-		NoActiveRequest
+		CommentChange,
+		NoActiveRequest,
+		NoActiveChange
 	}
 	class UserState()
 	{

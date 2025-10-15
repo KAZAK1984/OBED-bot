@@ -146,7 +146,7 @@ class Program
 
 										Всё верно?
 										<keyboard>
-										<button text="Да" callback="/sendreview {usersState[foundUser.UserID].RefTo}"
+										<button text="Да" callback="/sendReview {usersState[foundUser.UserID].RefTo}"
 										<button text="Нет" callback="callback_resetAction"
 										</keyboard>
 										""");
@@ -340,7 +340,7 @@ class Program
 							<keyboard>
 							<button text="Меню" callback="/menu -{args}"
 							</row>
-							<row> <button text="Оставить отзыв" callback="/sendreview {args}"
+							<row> <button text="Оставить отзыв" callback="/sendReview {args}"
 							<row> <button text="Отзывы" callback="/reviews -{args}"
 							</row>
 							<row> <button text="Назад" callback="/placeSelector {args[0]}{index / 5}"
@@ -607,11 +607,11 @@ class Program
 										""");
 						break;
 					}
-				case ("/sendreview"):
+				case ("/sendReview"):
 					{
 						if (args == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /sendreview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /sendReview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -632,7 +632,7 @@ class Program
 						int index = 0;
 						if (!char.IsLetter(args[0]) || (args.Length > 1 && !int.TryParse(args[1..], out index)))
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /sendreview.", replyMarkup: new InlineKeyboardButton[]
+							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -659,7 +659,7 @@ class Program
 								}
 							default:
 								{
-									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /sendreview.", replyMarkup: new InlineKeyboardButton[]
+									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
 									   {
 										   ("Назад", "/places")
 									   });
@@ -677,8 +677,8 @@ class Program
 								
 								<keyboard>
 								</row>
-								<row><button text="Изменить" callback="/deletereview {args}" 
-								<row><button text="Удалить" callback="/deletereview {args}"
+								<row><button text="Изменить" callback="/deleteReview {args}" 
+								<row><button text="Удалить" callback="/deleteReview {args}"
 								</row>
 								<row><button text="Назад" callback="/info {args}"
 								</row>
@@ -722,23 +722,22 @@ class Program
 									{
 										await bot.SendMessage(msg.Chat, $"Зафиксирована попытка оставить отзыв на другую точку. Сброс ранее введённой информации...");
 										usersState[foundUser.UserID].Action = null;
-										await OnCommand("/sendreview", args, msg);
+										await OnCommand("/sendReview", args, msg);
 									}
 									break;
 								}
 						}
-
 						break;
 					}
-				case ("/deletereview"):
+				case ("/deleteReview"):
 					{
 						if (args == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /deletereview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
-								{
+							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /sendReview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							{
 								("Назад", "/places")
-								});
-							throw new Exception($"No command agrs: {msg.Text}");
+							});
+							throw new Exception($"No command args: {msg.Text}");
 						}
 
 						var foundUser = persons
@@ -752,73 +751,72 @@ class Program
 							break;
 						}
 
-						switch (args[..5])
+						int index = 0;
+						if (!char.IsLetter(args[0]) || (args.Length > 1 && !int.TryParse(args[1..], out index)))
 						{
-							case ("cants"):
-								{
-									int index;
-									if (args[^1] == '_')
-									{
-										if (!int.TryParse(args[5..^1], out index) || index > canteens.Count)
-										{
-											await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /deletereview.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
-											throw new Exception($"Invalid command agrs: {msg.Text}");
-										}
+							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
+							{
+								("Назад", "/places")
+							});
+							throw new Exception($"Invalid command agrs: {msg.Text}");
+						}
 
-										if (canteens[index].DeleteReview(foundUser.UserID))
-										{
-											usersState[foundUser.UserID].Action = null;
-											await OnCommand("/sendreview", $"cants{index}", msg);
-											break;
-										}
-									}
-									else
-									{
-										if (!int.TryParse(args[5..], out index) || index > canteens.Count)
-										{
-											await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /deletereview.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
-											throw new Exception($"Invalid command agrs: {msg.Text}");
-										}
-
-										if (canteens[index].DeleteReview(foundUser.UserID))
-										{
-											await bot.SendMessage(msg.Chat.Id, $"Отзыв на {canteens[index].Name} успешно удалён!");
-											await OnCommand("/info", $"cants{index}", msg);
-											break;
-										}
-									}
-									await bot.SendMessage(msg.Chat.Id, $"Ошибка при попытке удалить отзыв на {canteens[index].Name}", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", $"/info cants{index}")
-												});
-									throw new Exception($"Error while user {foundUser.UserID} trying to delete/change review on {canteens[index].Name}");
-								}
-							case ("bufts"):
+						BasePlace place;
+						switch (args[0])
+						{
+							case ('C'):
 								{
-									await bot.SendMessage(msg.Chat.Id, "TODO");
+									place = canteens[index];
 									break;
 								}
-							case ("shops"):
+							case ('B'):
 								{
-									await bot.SendMessage(msg.Chat.Id, "TODO");
+									place = buffets[index];
+									break;
+								}
+							case ('G'):
+								{
+									place = groceries[index];
 									break;
 								}
 							default:
 								{
-									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /deletereview.", replyMarkup: new InlineKeyboardButton[]
-												{
-													("Назад", "/places")
-												});
+									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
+									   {
+										   ("Назад", "/places")
+									   });
 									throw new Exception($"Invalid command agrs: {msg.Text}");
 								}
 						}
 
+						if (!place.Reviews.Where(x => x.UserID == foundUser.UserID).Any())
+						{
+							await bot.SendHtml(msg.Chat.Id, $"""
+								Вы не можете удалить отзыв на {place.Name}
+								
+								Причина: Ваш не существует в системе
+								<keyboard>
+								</row>
+								<row><button text="Назад" callback="/info {args}"
+								</row>
+								</keyboard>
+								""");
+							break;
+						}
+
+						if (place.DeleteReview(foundUser.UserID))
+						{
+							await bot.SendMessage(msg.Chat.Id, $"Отзыв на {place.Name} успешно удалён!");
+							await OnCommand("/info", args, msg);
+						}
+						else
+						{
+							await bot.SendMessage(msg.Chat.Id, $"Ошибка при попытке удалить отзыв на {place.Name}", replyMarkup: new InlineKeyboardButton[]
+										{
+														("Назад", $"/info {args}")
+										});
+							throw new Exception($"Error while user {foundUser.UserID} trying to delete/change review on {canteens[index].Name}");
+						}
 						break;
 					}
 				case ("/admin"):

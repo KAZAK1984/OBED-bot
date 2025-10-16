@@ -16,7 +16,6 @@ class Program
 		var meBot = await bot.GetMe();
 
 		// TODO: переход на SQL
-		List<Person> persons = [];
 
 		List<Product> products1 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
 			new("Main2", ProductType.MainDish, (250, true)), new("Side2", ProductType.SideDish, (300, true)), new("Drink2", ProductType.Drink, (350, true)), new("Appetizer2", ProductType.Appetizer, (400, true)),
@@ -41,7 +40,7 @@ class Program
 		List<Review> reviews3 = [new(123456789, 7, "Old"), new(123456789, 9, "Old"), new(123456789, 5, "Old"), new(123456789, 10, "Old"), new(123456789, 6, "Old"), new(123456789, 8, "Old"), new(123456789, 4, "Old")];
 		reviews3.Add(new(987654321, 3, "New"));
 
-		List<Canteen> canteens = [new("Canteen1", 1, 1, null, reviews3, products1, null),
+		ObjectLists.Canteens = [new("Canteen1", 1, 1, null, reviews3, products1, null),
 			new("Canteen2", 2, 2, null, reviews2, products2, null),
 			new("Canteen3", 2, 2, null, reviews1, products3, null),
 			new("Canteen4", 2, 2, null, null, null, null),
@@ -57,10 +56,10 @@ class Program
 			new("Canteen14", 2, 2, null, null, null, null),
 			new("Canteen15", 2, 2, null, reviews1, products5, null),
 			new("Canteen16", 3, 3, null, reviews1, products4, null)];
-		List<Buffet> buffets = [new("Buffet1", 1, 1, null, reviews1, products1, null),
+		ObjectLists.Buffets = [new("Buffet1", 1, 1, null, reviews1, products1, null),
 			new("Buffet2", 2, 2, null, reviews2, products2, null),
 			new("Buffet3", 3, 3, null, reviews3, products4, null)];
-		List<Grocery> groceries = [new("Grocery1", null, reviews1, products1, null),
+		ObjectLists.Groceries = [new("Grocery1", null, reviews1, products1, null),
 			new("Grocery2", null, reviews2, products2, null),
 			new("Grocery3", null, reviews3, products4, null)];
 
@@ -99,7 +98,7 @@ class Program
 									await OnCommand(splitStr[0].ToLower(), null, msg);
 							}
 
-						var foundUser = persons
+						var foundUser = ObjectLists.Persons
 							.Where(x => x.UserID == msg.Chat.Id)
 							.FirstOrDefault();
 
@@ -208,18 +207,18 @@ class Program
 												[("Помощь", "/help"), ("Поддержка", "/report")]
 											 });
 
-						if (!persons.Select(x => x.UserID).Contains(msg.Chat.Id))
+						if (!ObjectLists.Persons.Select(x => x.UserID).Contains(msg.Chat.Id))
 						{
 							Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
-							persons.Add(new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.Common_User));
+                            ObjectLists.Persons.Add(new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.Common_User));
 							usersState.Add(msg.Chat.Id, new());
 						}
 						break;
 					}
 				case ("/person"):
 					{
-						var foundUser = persons
-							.Where(x => x.UserID == msg.Chat.Id)
+						var foundUser = ObjectLists.Persons
+                            .Where(x => x.UserID == msg.Chat.Id)
 							.FirstOrDefault();
 
 						if (foundUser != null)
@@ -281,17 +280,17 @@ class Program
 						{
 							case ('C'):
 								{
-									places = [.. canteens.Cast<BasePlace>()];
+									places = [.. ObjectLists.Canteens.Cast<BasePlace>()];
 									break;
 								}
 							case ('B'):
 								{
-									places = [.. buffets.Cast<BasePlace>()];
+									places = [.. ObjectLists.Buffets.Cast<BasePlace>()];
 									break;
 								}
 							case ('G'):
 								{
-									places = [.. groceries.Cast<BasePlace>()];
+									places = [.. ObjectLists.Groceries.Cast<BasePlace>()];
 									break;
 								}
 							default:
@@ -342,17 +341,17 @@ class Program
 						{
 							case ('C'):
 								{
-									place = canteens[index];
+									place = ObjectLists.Canteens[index];
 									break;
 								}
 							case ('B'):
 								{
-									place = buffets[index];
+									place = ObjectLists.Buffets[index];
 									break;
 								}
 							case ('G'):
 								{
-									place = groceries[index];
+									place = ObjectLists.Groceries[index];
 									break;
 								}
 							default:
@@ -425,20 +424,20 @@ class Program
 						{
 							case ('C'):
 								{
-									placeName = canteens[index].Name;
-									menu = canteens[index].Menu;
+									placeName = ObjectLists.Canteens[index].Name;
+									menu = ObjectLists.Canteens[index].Menu;
 									break;
 								}
 							case ('B'):
 								{
-									placeName = buffets[index].Name;
-									menu = buffets[index].Menu;
+									placeName = ObjectLists.Buffets[index].Name;
+									menu = ObjectLists.Buffets[index].Menu;
 									break;
 								}
 							case ('G'):
 								{
-									placeName = groceries[index].Name;
-									menu = groceries[index].Menu;
+									placeName = ObjectLists.Groceries[index].Name;
+									menu = ObjectLists.Groceries[index].Menu;
 									break;
 								}
 							default:
@@ -554,20 +553,20 @@ class Program
 						{
 							case ('C'):
 								{
-									placeName = canteens[index].Name;
-									reviews = canteens[index].Reviews;
+									placeName = ObjectLists.Canteens[index].Name;
+									reviews = ObjectLists.Canteens[index].Reviews;
 									break;
 								}
 							case ('B'):
 								{
-									placeName = buffets[index].Name;
-									reviews = buffets[index].Reviews;
+									placeName = ObjectLists.Buffets[index].Name;
+									reviews = ObjectLists.Buffets[index].Reviews;
 									break;
 								}
 							case ('G'):
 								{
-									placeName = groceries[index].Name;
-									reviews = groceries[index].Reviews;
+									placeName = ObjectLists.Groceries[index].Name;
+									reviews = ObjectLists.Groceries[index].Reviews;
 									break;
 								}
 							default:
@@ -651,8 +650,8 @@ class Program
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						var foundUser = persons
-							.Where(x => x.UserID == msg.Chat.Id)
+						var foundUser = ObjectLists.Persons
+                            .Where(x => x.UserID == msg.Chat.Id)
 							.FirstOrDefault();
 
 						if (foundUser == null)
@@ -677,17 +676,17 @@ class Program
 						{
 							case ('C'):
 								{
-									place = canteens[index];
+									place = ObjectLists.Canteens[index];
 									break;
 								}
 							case ('B'):
 								{
-									place = buffets[index];
+									place = ObjectLists.Buffets[index];
 									break;
 								}
 							case ('G'):
 								{
-									place = groceries[index];
+									place = ObjectLists.Groceries[index];
 									break;
 								}
 							default:
@@ -734,7 +733,7 @@ class Program
 								{
 									usersState[foundUser.UserID].Action = null;
 
-									if (canteens[index].AddReview(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment))
+									if (ObjectLists.Canteens[index].AddReview(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment))
 									{
 										await bot.SendMessage(msg.Chat.Id, $"Отзыв успешно оставлен!");
 										await OnCommand("/info", usersState[foundUser.UserID].RefTo, msg);
@@ -773,8 +772,8 @@ class Program
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						var foundUser = persons
-							.Where(x => x.UserID == msg.Chat.Id)
+						var foundUser = ObjectLists.Persons
+                            .Where(x => x.UserID == msg.Chat.Id)
 							.FirstOrDefault();
 
 						if (foundUser == null)
@@ -799,17 +798,17 @@ class Program
 						{
 							case ('C'):
 								{
-									place = canteens[index];
+									place = ObjectLists.Canteens[index];
 									break;
 								}
 							case ('B'):
 								{
-									place = buffets[index];
+									place = ObjectLists.Buffets[index];
 									break;
 								}
 							case ('G'):
 								{
-									place = groceries[index];
+									place = ObjectLists.Groceries[index];
 									break;
 								}
 							default:
@@ -848,7 +847,7 @@ class Program
 										{
 														("Назад", $"/info {args}")
 										});
-							throw new Exception($"Error while user {foundUser.UserID} trying to delete review on {canteens[index].Name}");
+							throw new Exception($"Error while user {foundUser.UserID} trying to delete review on {ObjectLists.Canteens[index].Name}");
 						}
 						break;
 					}
@@ -863,8 +862,8 @@ class Program
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						var foundUser = persons
-							.Where(x => x.UserID == msg.Chat.Id)
+						var foundUser = ObjectLists.Persons
+                            .Where(x => x.UserID == msg.Chat.Id)
 							.FirstOrDefault();
 
 						if (foundUser == null)
@@ -889,17 +888,17 @@ class Program
 						{
 							case ('C'):
 								{
-									place = canteens[index];
+									place = ObjectLists.Canteens[index];
 									break;
 								}
 							case ('B'):
 								{
-									place = buffets[index];
+									place = ObjectLists.Buffets[index];
 									break;
 								}
 							case ('G'):
 								{
-									place = groceries[index];
+									place = ObjectLists.Groceries[index];
 									break;
 								}
 							default:
@@ -1044,8 +1043,8 @@ class Program
 			{
 				await bot.AnswerCallbackQuery(callbackQuery.Id);
 
-				var foundUser = persons
-							.Where(x => x.UserID == callbackQuery.Message!.Chat.Id)
+				var foundUser = ObjectLists.Persons
+                            .Where(x => x.UserID == callbackQuery.Message!.Chat.Id)
 							.FirstOrDefault();
 
 				usersState[foundUser!.UserID].Action = null;

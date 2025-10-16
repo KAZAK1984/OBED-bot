@@ -367,14 +367,14 @@ class Program
 
 						await bot.SendHtml(msg.Chat.Id, $"""
 							Название: {place.Name}
-							Средний рейтинг: TODO
+							Средний рейтинг: {(place.Reviews.Count != 0 ? $"{Math.Round((double)place.Reviews.Sum(x => x.Rating) / place.Reviews.Count, 2)}⭐" : "Отзывы не найдены")}
 							Всего отзывов: {place.Reviews.Count}
 							Последний текстовый отзыв: {((place.Reviews.Count != 0 && place.Reviews.Where(x => x.Comment != null).Any()) ? ($"{place.Reviews.Where(x => x.Comment != null).Last().Rating} ⭐️| {place.Reviews.Where(x => x.Comment != null).Last().Comment}") : "Отзывы с комментариями не найдены")}
 							<keyboard>
 							<button text="Меню" callback="/menu -{args}"
 							</row>
 							<row> <button text="Оставить отзыв" callback="/sendReview {args}"
-							<row> <button text="Отзывы" callback="/reviews -{args}"
+							<row> <button text="Отзывы" callback="/reviews N{args}"
 							</row>
 							<row> <button text="Назад" callback="/placeSelector {args[0]}{index / 5}"
 							</row>
@@ -623,8 +623,6 @@ class Program
 										{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
 										{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
 										<keyboard>
-										</row>
-										<row><button text="{(sortType == null ? "" : "Без сортировки")}" callback="/reviews -{args[1]}{index}"
 										</row>
 										<row><button text="{(sortType == ReviewSort.Upper ? "" : "Оценка ↑")}" callback="/reviews U{args[1]}{index}"
 										<row><button text="{(sortType == ReviewSort.Lower ? "" : "Оценка ↓")}" callback="/reviews L{args[1]}{index}"

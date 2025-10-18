@@ -10,13 +10,14 @@ namespace OBED.Include
 		public static ConcurrentDictionary<long, Person> Persons { get; private set; } = [];
 
 		/// <summary>
-		/// Добавляет к общей базе новые точки или учётки.
+		/// Добавляет к общей базе новый лист точек или учёток.
 		/// Для Person: дубликаты UserID игнорируются без ошибки.
 		/// </summary>
 		/// <param name="values">Лист с новыми точками/учётками.</param>
 		/// <exception cref="ArgumentException">Ошибки.</exception>
 		public static void AddRangeList<T>(List<T> values)
         {
+			values.Reverse();
 			switch (values)
 			{
 				case (List<Buffet> buffets):

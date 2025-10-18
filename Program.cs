@@ -16,7 +16,6 @@ class Program
 		var meBot = await bot.GetMe();
 
 		// TODO: переход на SQL
-
 		List<Product> products1 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
 			new("Main2", ProductType.MainDish, (250, true)), new("Side2", ProductType.SideDish, (300, true)), new("Drink2", ProductType.Drink, (350, true)), new("Appetizer2", ProductType.Appetizer, (400, true)),
 			new("Main3", ProductType.MainDish, (450, false)), new("Side3", ProductType.SideDish, (500, false)), new("Drink3", ProductType.Drink, (550, false)), new("Appetizer3", ProductType.Appetizer, (600, false))];
@@ -34,7 +33,7 @@ class Program
 			new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false))];
 
 		List<Review> reviews1 = [new(123456789, 10), new(123456789, 9), new(123456789, 8), new(123456789, 7), new(123456789, 6), new(123456789, 5), new(123456789, 4)];
-	
+
 		List<Review> reviews2 = [new(123456789, 10), new(123456789, 9), new(123456789, 8, "8"), new(123456789, 7, "7"), new(123456789, 6), new(123456789, 5, "5"), new(123456789, 4)];
 
 		List<Review> reviews3 = [new(123456789, 7, "Old"), new(123456789, 9, "Old"), new(123456789, 5, "Old"), new(123456789, 10, "Old"), new(123456789, 6, "Old"), new(123456789, 8, "Old"), new(123456789, 4, "Old")];
@@ -172,7 +171,7 @@ class Program
 										await bot.SendMessage(msg.Chat, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", replyMarkup: new ForceReplyMarkup());
 										break;
 									}
-									
+
 									if (msg.Text.Trim() == "-")
 										usersState[foundUser.UserID].Comment = null;
 									else
@@ -199,17 +198,20 @@ class Program
 			{
 				case ("/start"):
 					{
+						if (msg.From!.IsBot)
+							await bot.DeleteMessage(msg.Chat, msg.Id);
+
 						await bot.SendMessage(msg.Chat, "Старт", replyMarkup: new InlineKeyboardButton[][]
-											 {
-												[("Места", "/places")],
-												[("Профиль", "/person")],
-												[("Помощь", "/help"), ("Поддержка", "/report")]
-											 });
+						{
+							[("Места", "/places")],
+							[("Профиль", "/person")],
+							[("Помощь", "/help"), ("Поддержка", "/report")]
+						});
 
 						if (!ObjectLists.Persons.ContainsKey(msg.Chat.Id))
 						{
 							Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
-                            ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
+							ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
 							usersState.Add(msg.Chat.Id, new());
 						}
 						break;
@@ -219,40 +221,46 @@ class Program
 						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
 
 						if (foundUser != null)
-							await bot.SendMessage(msg.Chat, $"{foundUser.UserID} - {foundUser.Username}", replyMarkup: new InlineKeyboardButton[][]
-												 {
-													[("Назад","/start")]
-												 });
+							await bot.EditMessageText(msg.Chat, msg.Id, $"{foundUser.UserID} - {foundUser.Username}", replyMarkup: new InlineKeyboardButton[][]
+							{
+								[("Назад","/start")]
+							});
 						break;
 					}
 				case ("/help"):
 					{
 						// TODO: обращение "по кусочкам" для вывода справки
-						await bot.SendMessage(msg.Chat, "TODO");
+						await bot.EditMessageText(msg.Chat, msg.Id, $"TODO: help", replyMarkup: new InlineKeyboardButton[][]
+							{
+								[("Назад","/start")]
+							});
 						break;
 					}
 				case ("/report"):
 					{
 						// TODO: Сообщать нам только о тех ошибках, которые реально мешают юзерам, а не о фантомных стикерах
-						await bot.SendMessage(msg.Chat, "TODO");
+						await bot.EditMessageText(msg.Chat, msg.Id, $"TODO: report", replyMarkup: new InlineKeyboardButton[][]
+							{
+								[("Назад","/start")]
+							});
 						break;
 					}
 				case ("/places"):
 					{
-						await bot.SendMessage(msg.Chat, "Выбор типа точек", replyMarkup: new InlineKeyboardButton[][]
-											 {
-												[("Столовые", "/placeSelector -C")],
-												[("Буфеты", "/placeSelector -B")],
-												[("Внешние магазины", "/placeSelector -G")],
-												[("Назад", "/start")]
-											 });
+						await bot.EditMessageText(msg.Chat, msg.Id, "Выбор типа точек", replyMarkup: new InlineKeyboardButton[][]
+						{
+							[("Столовые", "/placeSelector -C")],
+							[("Буфеты", "/placeSelector -B")],
+							[("Внешние магазины", "/placeSelector -G")],
+							[("Назад", "/start")]
+						});
 						break;
 					}
 				case ("/placeSelector"):
 					{
 						if (args == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /placeSelector не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: /placeSelector не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -262,7 +270,7 @@ class Program
 						int page = 0;
 						if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..], out page)))
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /placeSelector.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /placeSelector.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -292,10 +300,10 @@ class Program
 								}
 							default:
 								{
-									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /placeSelector.", replyMarkup: new InlineKeyboardButton[]
-									   {
-										   ("Назад", "/places")
-									   });
+									await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /placeSelector.", replyMarkup: new InlineKeyboardButton[]
+									{
+										("Назад", "/places")
+									});
 									throw new Exception($"Invalid command agrs: {msg.Text}");
 								}
 						}
@@ -304,7 +312,7 @@ class Program
 						if (places.FirstOrDefault() is ILocatedUni)
 							checker = true;
 
-                            if (args[0] != '-')
+						if (args[0] != '-')
 						{
 							for (int i = 0; i < places.Count; ++i)
 							{
@@ -313,59 +321,75 @@ class Program
 									places.RemoveAt(i);
 									--i;
 								}
-                            }
+							}
 						}
 
-						places = [.. places.OrderByDescending(x => x.Reviews.Sum(x => x.Rating))];
-
+						List<BasePlace> sortedPlaces = [.. places.OrderByDescending(x => x.Reviews.Sum(x => x.Rating) / (x.Reviews.Count + 1))];
 						int placesCounter = places.Count;
-						await bot.SendMessage(msg.Chat, "Выбор точки", replyMarkup: new InlineKeyboardButton[][]
-											 {
-												[($"{((args[0] == '-' && checker) ? "Сортировка по корпусу" : (checker ? "Отключить сортировку" : ""))}", (args[0] == '-') ? $"/buildingNumberSelector {args[1..]}" : $"/placeSelector -{args[1]}")],
-                                                [($"{((placesCounter != 0) ? places[nowCounter].Name : "")}", $"/info {args[1]}{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[1]}{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[1]}{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[1]}{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[1]}{nowCounter}")],
-												[($"{((page != 0) ? "◀️" : "")}", $"/placeSelector {args[..2]}{page - 1}"), ("Назад","/places"), ($"{(placesCounter > nowCounter ? "▶️" : "")}", $"/placeSelector {args[..2]}{page + 1}")]
-											 });
+
+						Dictionary<int, int> indexPairs = [];
+						for (int i = 0; i < placesCounter; ++i)
+							indexPairs.Add(i, places.IndexOf(sortedPlaces[i]));
+
+						await bot.EditMessageText(msg.Chat, msg.Id, "Выбор точки", replyMarkup: new InlineKeyboardButton[][]
+						{
+							[($"{((args[0] == '-' && checker) ? "Сортировка по корпусу" : (checker ? "Отключить сортировку" : ""))}", (args[0] == '-') ? $"/buildingNumberSelector {args[1..]}" : $"/placeSelector -{args[1]}")],
+							[($"{((placesCounter != 0) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[1]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
+							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[1]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
+							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[1]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
+							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[1]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
+							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[1]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
+							[($"{((page != 0) ? "◀️" : "")}", $"/placeSelector {args[..2]}{page - 1}"), ("Назад","/places"), ($"{(placesCounter > nowCounter ? "▶️" : "")}", $"/placeSelector {args[..2]}{page + 1}")]
+						});
 						break;
 					}
 				case ("/buildingNumberSelector"):
 					{
-                        if (args == null)
-                        {
-                            await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /buildingNumberSelector не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
-                            {
-                                ("Назад", "/places")
-                            });
-                            throw new Exception($"No command args: {msg.Text}");
-                        }
-
-                        await bot.SendMessage(msg.Chat, "Выбор точки", replyMarkup: new InlineKeyboardButton[][]
-                                             {
-                                                [("1", $"/placeSelector 1{args[0]}"), ("2", $"/placeSelector 2{args}"), ("3", $"/placeSelector 3{args[0]}")],
-                                                [("4", $"/placeSelector 4{args[0]}"), ("5", $"/placeSelector 5{args}"), ("6", $"/placeSelector 6{args[0]}")],
-                                                [("ИАТУ", $"/placeSelector 0{args[0]}"), ("На территории кампуса", $"/placeSelector 7{args[0]}")],
-                                                [("Назад","/places")]
-                                             });
-						break;
-					}
-				case ("/info"):
-					{
 						if (args == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /info не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: /buildingNumberSelector не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						int index = 0;
-						if (!char.IsLetter(args[0]) || (args.Length > 1 && !int.TryParse(args[1..], out index)))
+						await bot.EditMessageText(msg.Chat, msg.Id, "Выбор точки", replyMarkup: new InlineKeyboardButton[][]
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
+							[("1", $"/placeSelector 1{args[0]}"), ("2", $"/placeSelector 2{args[0]}"), ("3", $"/placeSelector 3{args[0]}")],
+							[("4", $"/placeSelector 4{args[0]}"), ("5", $"/placeSelector 5{args[0]}"), ("6", $"/placeSelector 6{args[0]}")],
+							[("ИАТУ", $"/placeSelector 0{args[0]}"), ("На территории кампуса", $"/placeSelector 7{args[0]}")],
+							[("Назад","/places")]
+						});
+						break;
+					}
+				case ("/info"):
+					{
+						if (args == null)
+						{
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: /info не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							{
+								("Назад", "/places")
+							});
+							throw new Exception($"No command args: {msg.Text}");
+						}
+
+						int index = 0, page = 0;
+						if (args.Contains('_'))
+						{
+							if (!char.IsLetter(args[0]) || (args.Length > 2 && !int.TryParse(args[1..args.IndexOf('_')], out index)) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
+							{
+								await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
+									{
+									("Назад", "/places")
+									});
+								throw new Exception($"Invalid command agrs: {msg.Text}");
+							}
+						}
+						else if (!char.IsLetter(args[0]) || (args.Length > 2 && !int.TryParse(args[1..], out index)))
+						{
+							
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -392,36 +416,32 @@ class Program
 								}
 							default:
 								{
-									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
-									   {
-										   ("Назад", "/places")
-									   });
+									await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
+									{
+										("Назад", "/places")
+									});
 									throw new Exception($"Invalid command agrs: {msg.Text}");
 								}
 						}
 
-                        await bot.SendHtml(msg.Chat.Id, $"""
-							Название: {place.Name}
-							Средний рейтинг: {(place.Reviews.Count != 0 ? $"{Math.Round((double)place.Reviews.Sum(x => x.Rating) / place.Reviews.Count, 2)}⭐" : "Отзывы не найдены")}
-							Всего отзывов: {place.Reviews.Count}
-							Последний текстовый отзыв: {((place.Reviews.Count != 0 && place.Reviews.Where(x => x.Comment != null).Any()) ? ($"{place.Reviews.Where(x => x.Comment != null).Last().Rating} ⭐️| {place.Reviews.Where(x => x.Comment != null).Last().Comment}") : "Отзывы с комментариями не найдены")}
-							<keyboard>
-							<button text="Меню" callback="/menu -{args}"
-							</row>
-							<row> <button text="Оставить отзыв" callback="/sendReview {args}"
-							<row> <button text="Отзывы" callback="/reviews N{args}"
-							</row>
-							<row> <button text="Назад" callback="/placeSelector -{args[0]}{index / 5}"
-							</row>
-							</keyboard>
-							""");
+						await bot.EditMessageText(msg.Chat, msg.Id, $"""
+						Название: {place.Name}
+						Средний рейтинг: {(place.Reviews.Count != 0 ? $"{Math.Round((double)place.Reviews.Sum(x => x.Rating) / place.Reviews.Count, 2)}⭐" : "Отзывы не найдены")}
+						Всего отзывов: {place.Reviews.Count}
+						Последний текстовый отзыв: {((place.Reviews.Count != 0 && place.Reviews.Where(x => x.Comment != null).Any()) ? ($"{place.Reviews.Where(x => x.Comment != null).Last().Rating} ⭐️| {place.Reviews.Where(x => x.Comment != null).Last().Comment}") : "Отзывы с комментариями не найдены")}
+						""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
+						{
+							[("Меню", $"/menu -{(args.Contains('_') ? args[..args.IndexOf('_')] : args)}")],
+							[("Оставить отзыв", $"/sendReview {(args.Contains('_') ? args[..args.IndexOf('_')] : args)}"), ("Отзывы", $"/reviews N{(args.Contains('_') ? args[..args.IndexOf('_')] : args)}")],
+							[("Назад", $"/placeSelector -{args[0]}{page}")]
+						});
 						break;
 					}
 				case ("/menu"):
 					{
 						if (args == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /menu не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: /menu не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -433,7 +453,7 @@ class Program
 						{
 							if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..args.IndexOf('_')], out index)) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
 							{
-								await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
+								await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
 									{
 									("Назад", "/places")
 									});
@@ -443,7 +463,7 @@ class Program
 						else if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..], out index)))
 						{
 							Console.WriteLine(args[2..]);
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -478,7 +498,7 @@ class Program
 								}
 							default:
 								{
-									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
+									await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
 									   {
 										   ("Назад", "/places")
 									   });
@@ -504,46 +524,40 @@ class Program
 							case ('D'):
 								{
 									productType = ProductType.Drink;
-									menu = [..menu.Where(x => x.Type == ProductType.Drink)];
+									menu = [.. menu.Where(x => x.Type == ProductType.Drink)];
 									break;
 								}
 							case ('A'):
 								{
 									productType = ProductType.Appetizer;
-									menu = [..menu.Where(x => x.Type == ProductType.Appetizer)];
+									menu = [.. menu.Where(x => x.Type == ProductType.Appetizer)];
 									break;
 								}
 						}
 
-						await bot.SendHtml(msg.Chat.Id, $"""
-										Название: {placeName}
-										Всего позиций: {$"{menu.Count}"}
-										{(productType != null ? $"Режим сортировки: {productType}\n" : "")}
-										{(menu.Count > nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : $"{(productType == null ? $"Меню у {placeName} не обнаружено" : $"Позиций по тегу {productType} не обнаружено")}")}
-										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-										<keyboard>
-										</row>
-										<row><button text="{(productType == null ? "" : "Без сортировки")}" callback="/menu -{args[1]}{index}"
-										</row>
-										<row><button text="{(productType == ProductType.MainDish ? "" : "Блюда")}" callback="/menu M{args[1]}{index}"
-										<row><button text="{(productType == ProductType.SideDish ? "" : "Гарниры")}" callback="/menu S{args[1]}{index}"
-										<row><button text="{(productType == ProductType.Drink ? "" : "Напитки")}" callback="/menu D{args[1]}{index}"
-										<row><button text="{(productType == ProductType.Appetizer ? "" : "Закуски")}" callback="/menu A{args[1]}{index}"
-										</row>
-										<row><button text="{((page != 0) ? "◀️" : "")}" callback="/menu {args[..2]}{index}_{page - 1}"
-										<row><button text="Назад" callback="/info {args[1]}{index}"
-										<row><button text="{(menu.Count > ++nowCounter ? "▶️" : "")}" callback="/menu {args[..2]}{index}_{page + 1}"
-										</row>
-										</keyboard>
-										""");
+						await bot.EditMessageText(msg.Chat, msg.Id, $"""
+						Название: {placeName}
+						Всего позиций: {$"{menu.Count}"}
+						{(productType != null ? $"Режим сортировки: {productType}\n" : "")}
+						{(menu.Count > nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : $"{(productType == null ? $"Меню у {placeName} не обнаружено" : $"Позиций по тегу {productType} не обнаружено")}")}
+						{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+						{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+						{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+						{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+						{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+						{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+						{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+						{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+						{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+						""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
+						{
+							[(productType == null ? "" : "Без сортировки", $"/menu -{args[1]}{index}")],
+
+							[(productType == ProductType.MainDish ? "" : "Блюда", $"/menu M{args[1]}{index}"), (productType == ProductType.SideDish ? "" : "Гарниры", $"/menu S{args[1]}{index}"),
+							(productType == ProductType.Drink ? "" : "Напитки", $"/menu D{args[1]}{index}"), (productType == ProductType.Appetizer ? "" : "Закуски", $"/menu A{args[1]}{index}")],
+
+							[((page != 0) ? "◀️" : "", $"/menu {args[..2]}{index}_{page - 1}"), ("Назад", $"/info {args[1]}{index}"), (menu.Count > ++nowCounter ? "▶️" : "", $"/menu {args[..2]}{index}_{page + 1}")]
+						});
 						break;
 					}
 				case ("/reviews"):
@@ -616,7 +630,7 @@ class Program
 						}
 
 						int reviewCounter = reviews.Count;
-						reviews = [..reviews.Where(x => x.Comment != null)];
+						reviews = [.. reviews.Where(x => x.Comment != null)];
 
 						ReviewSort? sortType = null;
 						switch (args[0])

@@ -102,7 +102,7 @@ class Program
 
 						if (foundUser == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
+							await bot.EditMessageText(msg.Chat, msg.Id, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
 								replyMarkup: new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
 							break;
 						}
@@ -150,18 +150,17 @@ class Program
 										usersState[foundUser.UserID].Comment = msg.Text.Trim();
 
 									usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
-									await bot.SendHtml(msg.Chat.Id, $"""
-										Ваш отзыв:
-										
-											• Оценка: {usersState[foundUser.UserID].Rating}
-											• Комментарий: {((msg.Text[0] == '-') ? "Отсутствует" : usersState[foundUser.UserID].Comment)}
-
-										Всё верно?
-										<keyboard>
-										<button text="Да" callback="/sendReview {usersState[foundUser.UserID].ReferenceToPlace}"
-										<button text="Нет" callback="callback_resetAction"
-										</keyboard>
-										""");
+									await bot.SendMessage(msg.Chat, $"""
+									Ваш отзыв:
+									
+										• Оценка: {usersState[foundUser.UserID].Rating}
+										• Комментарий: {((msg.Text[0] == '-') ? "Отсутствует" : usersState[foundUser.UserID].Comment)}
+									
+									Всё верно?
+									""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
+									{
+										[("Да", $"/sendReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"callback_resetAction")],
+									});
 									break;
 								}
 							case (UserAction.CommentChange):
@@ -564,7 +563,7 @@ class Program
 					{
 						if (args == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /reviews не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: /reviews не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -576,17 +575,17 @@ class Program
 						{
 							if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..args.IndexOf('_')], out index)) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
 							{
-								await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
-									{
+								await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
+								{
 									("Назад", "/places")
-									});
+								});
 								throw new Exception($"Invalid command agrs: {msg.Text}");
 							}
 						}
 						else if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..], out index)))
 						{
 							Console.WriteLine(args[2..]);
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -621,10 +620,10 @@ class Program
 								}
 							default:
 								{
-									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
-									   {
-										   ("Назад", "/places")
-									   });
+									await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
+									{
+										("Назад", "/places")
+									});
 									throw new Exception($"Invalid command agrs: {msg.Text}");
 								}
 						}
@@ -661,37 +660,30 @@ class Program
 								}
 						}
 
-						await bot.SendHtml(msg.Chat.Id, $"""
-										Название: {placeName}
-										Всего отзывов: {$"{reviewCounter}"}
-										Всего отзывов с комментариями: {$"{reviews.Count}"}
-										{(sortType != null ? $"Режим сортировки: {sortType}\n" : "")}
-										{(reviews.Count > nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : $"{(sortType == null ? $"Развёрнутые отзывы на {placeName} не обнаружено" : $"Развёрнутых отзывов по тегу {sortType} не обнаружено")}")}
-										{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
-										{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
-										{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
-										{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
-										<keyboard>
-										</row>
-										<row><button text="{(sortType == ReviewSort.Upper ? "" : "Оценка ↑")}" callback="/reviews U{args[1]}{index}"
-										<row><button text="{(sortType == ReviewSort.Lower ? "" : "Оценка ↓")}" callback="/reviews L{args[1]}{index}"
-										</row>
-										<row><button text="{(sortType == ReviewSort.NewDate ? "" : "Новые")}" callback="/reviews N{args[1]}{index}"
-										<row><button text="{(sortType == ReviewSort.OldDate ? "" : "Старые")}" callback="/reviews O{args[1]}{index}"
-										</row>
-										<row><button text="{((page != 0) ? "◀️" : "")}" callback="/reviews {args[..2]}{index}_{page - 1}"
-										<row><button text="Назад" callback="/info {args[1]}{index}"
-										<row><button text="{(reviews.Count > ++nowCounter ? "▶️" : "")}" callback="/reviews {args[..2]}{index}_{page + 1}"
-										</row>
-										</keyboard>
-										""");
+						await bot.EditMessageText(msg.Chat, msg.Id, $"""
+						Название: {placeName}
+						Всего отзывов: {$"{reviewCounter}"}
+						Всего отзывов с комментариями: {$"{reviews.Count}"}
+						{(sortType != null ? $"Режим сортировки: {sortType}\n" : "")}
+						{(reviews.Count > nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : $"{(sortType == null ? $"Развёрнутые отзывы на {placeName} не обнаружено" : $"Развёрнутых отзывов по тегу {sortType} не обнаружено")}")}
+						{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
+						{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
+						{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
+						{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
+						""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
+						{
+							[(sortType == ReviewSort.Upper ? "" : "Оценка ↑", $"/reviews U{args[1]}{index}"), (sortType == ReviewSort.Lower ? "" : "Оценка ↓", $"/reviews L{args[1]}{index}"),
+							(sortType == ReviewSort.NewDate ? "" : "Новые", $"/reviews N{args[1]}{index}"), (sortType == ReviewSort.OldDate ? "" : "Старые", $"/reviews O{args[1]}{index}")],
+
+							[((page != 0) ? "◀️" : "", $"/reviews {args[..2]}{index}_{page - 1}"), ("Назад", $"/info {args[1]}{index}"), (reviews.Count > ++nowCounter ? "▶️" : "", $"/reviews {args[..2]}{index}_{page + 1}")]
+						});
 						break;
 					}
 				case ("/sendReview"):
 					{
 						if (args == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /sendReview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: /sendReview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -710,7 +702,7 @@ class Program
 						int index = 0;
 						if (!char.IsLetter(args[0]) || (args.Length > 1 && !int.TryParse(args[1..], out index)))
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -737,31 +729,26 @@ class Program
 								}
 							default:
 								{
-									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
-									   {
-										   ("Назад", "/places")
-									   });
+									await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
+									{
+										("Назад", "/places")
+									});
 									throw new Exception($"Invalid command agrs: {msg.Text}");
 								}
 						}
 
 						if (place.Reviews.Where(x => x.UserID == foundUser.UserID).Any())
 						{
-							await bot.SendHtml(msg.Chat.Id, $"""
+							await bot.EditMessageText(msg.Chat, msg.Id, $"""
 								Вы уже оставили отзыв на {place.Name}
-								
+
 								• Оценка: {place.Reviews.Where(x => x.UserID == foundUser.UserID).First().Rating}
 								• Комментарий: {place.Reviews.Where(x => x.UserID == foundUser.UserID).First().Comment ?? "Отсутствует"}
-								
-								<keyboard>
-								</row>
-								<row><button text="Изменить" callback="/changeReview -{args}" 
-								<row><button text="Удалить" callback="/deleteReview {args}"
-								</row>
-								<row><button text="Назад" callback="/info {args}"
-								</row>
-								</keyboard>
-								""");
+								""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
+								{
+									[("Изменить", $"/changeReview -{args}"), ("Удалить", $"/deleteReview {args}")],
+									[("Назад", $"/info {args}")]
+								});
 							break;
 						}
 
@@ -786,7 +773,7 @@ class Program
 									}
 									else
 									{
-										await bot.SendMessage(msg.Chat.Id, $"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].Rating}⭐️| {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}", replyMarkup: new InlineKeyboardButton[]
+										await bot.EditMessageText(msg.Chat, msg.Id, $"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].Rating}⭐️| {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}", replyMarkup: new InlineKeyboardButton[]
 											{
 												("Назад", $"/info {usersState[foundUser.UserID].ReferenceToPlace}")
 											});
@@ -811,7 +798,7 @@ class Program
 					{
 						if (args == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /deleteReview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: /deleteReview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -822,7 +809,7 @@ class Program
 
 						if (foundUser == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
+							await bot.EditMessageText(msg.Chat, msg.Id, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
 								replyMarkup: new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
 							break;
 						}
@@ -830,7 +817,7 @@ class Program
 						int index = 0;
 						if (!char.IsLetter(args[0]) || (args.Length > 1 && !int.TryParse(args[1..], out index)))
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /deleteReview.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /deleteReview.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -857,7 +844,7 @@ class Program
 								}
 							default:
 								{
-									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /deleteReview.", replyMarkup: new InlineKeyboardButton[]
+									await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /deleteReview.", replyMarkup: new InlineKeyboardButton[]
 									   {
 										   ("Назад", "/places")
 									   });
@@ -867,16 +854,14 @@ class Program
 
 						if (!place.Reviews.Where(x => x.UserID == foundUser.UserID).Any())
 						{
-							await bot.SendHtml(msg.Chat.Id, $"""
-								Вы не можете удалить отзыв на {place.Name}
-								
-								Причина: Ваш не существует в системе
-								<keyboard>
-								</row>
-								<row><button text="Назад" callback="/info {args}"
-								</row>
-								</keyboard>
-								""");
+							await bot.EditMessageText(msg.Chat, msg.Id, $"""
+							Вы не можете удалить отзыв на {place.Name}
+
+							Причина: Ваш отзыв не существует в системе
+							""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[]
+							{
+								("Назад", $"/placeSelector -{args}")
+							});
 							break;
 						}
 
@@ -887,7 +872,7 @@ class Program
 						}
 						else
 						{
-							await bot.SendMessage(msg.Chat.Id, $"Ошибка при попытке удалить отзыв на {place.Name}", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, $"Ошибка при попытке удалить отзыв на {place.Name}", replyMarkup: new InlineKeyboardButton[]
 										{
 														("Назад", $"/info {args}")
 										});
@@ -899,7 +884,7 @@ class Program
 					{
 						if (args == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: /changeReview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: /changeReview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -910,7 +895,7 @@ class Program
 
 						if (foundUser == null)
 						{
-							await bot.SendMessage(msg.Chat.Id, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
+							await bot.EditMessageText(msg.Chat, msg.Id, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
 								replyMarkup: new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
 							break;
 						}
@@ -918,7 +903,7 @@ class Program
 						int index = 0;
 						if (!char.IsLetter(args[1]) || (args.Length > 1 && !int.TryParse(args[2..], out index)))
 						{
-							await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /changeReview.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /changeReview.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -945,7 +930,7 @@ class Program
 								}
 							default:
 								{
-									await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: некорректный аргумент команды /changeReview.", replyMarkup: new InlineKeyboardButton[]
+									await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /changeReview.", replyMarkup: new InlineKeyboardButton[]
 									   {
 										   ("Назад", "/places")
 									   });
@@ -955,16 +940,14 @@ class Program
 
 						if (!place.Reviews.Where(x => x.UserID == foundUser.UserID).Any())
 						{
-							await bot.SendHtml(msg.Chat.Id, $"""
-								Вы не можете удалить отзыв на {place.Name}
-								
-								Причина: Ваш не существует в системе
-								<keyboard>
-								</row>
-								<row><button text="Назад" callback="/info {args}"
-								</row>
-								</keyboard>
-								""");
+							await bot.EditMessageText(msg.Chat, msg.Id, $"""
+							Вы не можете удалить отзыв на {place.Name}
+
+							Причина: Ваш отзыв не существует в системе
+							""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[]
+							{
+								("Назад", $"/placeSelector -{args}")
+							});
 							break;
 						}
 
@@ -992,17 +975,14 @@ class Program
 						{
 							case (null):
 								{
-									await bot.SendHtml(msg.Chat.Id, $"""
-										Что вы хотите изменить в отзыве на {place.Name}?
-										<keyboard>
-										</row>
-										<row><button text="Оценку" callback="/changeReview R{args[1..]}" 
-										<row><button text="Комментарий" callback="/changeReview C{args[1..]}"
-										</row>
-										<row><button text="Назад" callback="/info {args[1..]}"
-										</row>
-										</keyboard>
-										""");
+									await bot.EditMessageText(msg.Chat, msg.Id, $"""
+									Что вы хотите изменить в отзыве на {place.Name}?
+									""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
+									{
+										[("Оценку", $"/changeReview R{args[1..]}"), ("Комментарий", $"/changeReview C{args[1..]}")],
+										[("Назад", $"/info {args[1..]}")]
+									});
+
 									break;
 								}
 							case (UserAction.NoActiveChange):
@@ -1015,18 +995,17 @@ class Program
 									if (usersState[foundUser.UserID].Comment != "-")
 										newComment = usersState[foundUser.UserID].Comment;
 
-									await bot.SendHtml(msg.Chat.Id, $"""
-										Ваш НОВЫЙ отзыв:
-										
-											• Оценка: {newRating}
-											• Комментарий: {((newComment == "-") ? "Отсутствует" : newComment)}
-
-										Всё верно?
-										<keyboard>
-										<button text="Да" callback="/info {usersState[foundUser.UserID].ReferenceToPlace}"
-										<button text="Нет" callback="/changeReview -{usersState[foundUser.UserID].ReferenceToPlace}"
-										</keyboard>
-										""");
+									await bot.SendMessage(msg.Chat, $"""
+									Ваш НОВЫЙ отзыв:
+									
+										• Оценка: {newRating}
+										• Комментарий: {((newComment == "-") ? "Отсутствует" : newComment)}
+									
+									Всё верно?
+									""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
+									{
+										[("Да", $"/info {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{usersState[foundUser.UserID].ReferenceToPlace}")],
+									});
 
 									place.DeleteReview(foundUser.UserID);
 									place.AddReview(foundUser.UserID, newRating, newComment);
@@ -1042,7 +1021,7 @@ class Program
 					}
 				default:
 					{
-						await bot.SendMessage(msg.Chat.Id, "Ошибка при запросе: неизвестная команда.", replyMarkup: new InlineKeyboardButton[]
+						await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: неизвестная команда.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});

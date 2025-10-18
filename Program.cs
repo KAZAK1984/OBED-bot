@@ -377,17 +377,17 @@ class Program
 						{
 							case ('C'):
 								{
-									place = ObjectLists.Canteens[index];
+									place = ObjectLists.Canteens.ElementAt(index);
 									break;
 								}
 							case ('B'):
 								{
-									place = ObjectLists.Buffets[index];
+									place = ObjectLists.Buffets.ElementAt(index);
 									break;
 								}
 							case ('G'):
 								{
-									place = ObjectLists.Groceries[index];
+									place = ObjectLists.Groceries.ElementAt(index);
 									break;
 								}
 							default:
@@ -460,20 +460,20 @@ class Program
 						{
 							case ('C'):
 								{
-									placeName = ObjectLists.Canteens[index].Name;
-									menu = ObjectLists.Canteens[index].Menu;
+									placeName = ObjectLists.Canteens.ElementAt(index).Name;
+									menu = ObjectLists.Canteens.ElementAt(index).Menu;
 									break;
 								}
 							case ('B'):
 								{
-									placeName = ObjectLists.Buffets[index].Name;
-									menu = ObjectLists.Buffets[index].Menu;
+									placeName = ObjectLists.Buffets.ElementAt(index).Name;
+									menu = ObjectLists.Buffets.ElementAt(index).Menu;
 									break;
 								}
 							case ('G'):
 								{
-									placeName = ObjectLists.Groceries[index].Name;
-									menu = ObjectLists.Groceries[index].Menu;
+									placeName = ObjectLists.Groceries.ElementAt(index).Name;
+									menu = ObjectLists.Groceries.ElementAt(index).Menu;
 									break;
 								}
 							default:
@@ -589,20 +589,20 @@ class Program
 						{
 							case ('C'):
 								{
-									placeName = ObjectLists.Canteens[index].Name;
-									reviews = ObjectLists.Canteens[index].Reviews;
+									placeName = ObjectLists.Canteens.ElementAt(index).Name;
+									reviews = ObjectLists.Canteens.ElementAt(index).Reviews;
 									break;
 								}
 							case ('B'):
 								{
-									placeName = ObjectLists.Buffets[index].Name;
-									reviews = ObjectLists.Buffets[index].Reviews;
+									placeName = ObjectLists.Buffets.ElementAt(index).Name;
+									reviews = ObjectLists.Buffets.ElementAt(index).Reviews;
 									break;
 								}
 							case ('G'):
 								{
-									placeName = ObjectLists.Groceries[index].Name;
-									reviews = ObjectLists.Groceries[index].Reviews;
+									placeName = ObjectLists.Groceries.ElementAt(index).Name;
+									reviews = ObjectLists.Groceries.ElementAt(index).Reviews;
 									break;
 								}
 							default:
@@ -708,17 +708,17 @@ class Program
 						{
 							case ('C'):
 								{
-									place = ObjectLists.Canteens[index];
+									place = ObjectLists.Canteens.ElementAt(index);
 									break;
 								}
 							case ('B'):
 								{
-									place = ObjectLists.Buffets[index];
+									place = ObjectLists.Buffets.ElementAt(index);
 									break;
 								}
 							case ('G'):
 								{
-									place = ObjectLists.Groceries[index];
+									place = ObjectLists.Groceries.ElementAt(index);
 									break;
 								}
 							default:
@@ -828,17 +828,17 @@ class Program
 						{
 							case ('C'):
 								{
-									place = ObjectLists.Canteens[index];
+									place = ObjectLists.Canteens.ElementAt(index);
 									break;
 								}
 							case ('B'):
 								{
-									place = ObjectLists.Buffets[index];
+									place = ObjectLists.Buffets.ElementAt(index);
 									break;
 								}
 							case ('G'):
 								{
-									place = ObjectLists.Groceries[index];
+									place = ObjectLists.Groceries.ElementAt(index);
 									break;
 								}
 							default:
@@ -877,7 +877,7 @@ class Program
 										{
 														("Назад", $"/info {args}")
 										});
-							throw new Exception($"Error while user {foundUser.UserID} trying to delete review on {ObjectLists.Canteens[index].Name}");
+							throw new Exception($"Error while user {foundUser.UserID} trying to delete review on {ObjectLists.Canteens.ElementAt(index).Name}");
 						}
 						break;
 					}
@@ -916,17 +916,17 @@ class Program
 						{
 							case ('C'):
 								{
-									place = ObjectLists.Canteens[index];
+									place = ObjectLists.Canteens.ElementAt(index);
 									break;
 								}
 							case ('B'):
 								{
-									place = ObjectLists.Buffets[index];
+									place = ObjectLists.Buffets.ElementAt(index);
 									break;
 								}
 							case ('G'):
 								{
-									place = ObjectLists.Groceries[index];
+									place = ObjectLists.Groceries.ElementAt(index);
 									break;
 								}
 							default:

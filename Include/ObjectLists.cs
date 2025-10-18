@@ -4,9 +4,9 @@ namespace OBED.Include
 {
     class ObjectLists
     {
-        public static List<Buffet> Buffets { get; private set; } = [];
-        public static List<Canteen> Canteens { get; private set; } = [];
-        public static List<Grocery> Groceries { get; private set; } = [];
+        public static ConcurrentBag<Buffet> Buffets { get; private set; } = [];
+        public static ConcurrentBag<Canteen> Canteens { get; private set; } = [];
+        public static ConcurrentBag<Grocery> Groceries { get; private set; } = [];
 		public static ConcurrentDictionary<long, Person> Persons { get; private set; } = [];
 
 		/// <summary>
@@ -21,17 +21,20 @@ namespace OBED.Include
 			{
 				case (List<Buffet> buffets):
 					{
-						Buffets.AddRange(buffets);
+						foreach (var buffet in buffets)
+							Buffets.Add(buffet);
 						break;
 					}
 				case (List<Canteen> canteens):
 					{
-						Canteens.AddRange(canteens);
+						foreach (var canteen in canteens)
+							Canteens.Add(canteen);
 						break;
 					}
 				case (List<Grocery> groceries):
 					{
-						Groceries.AddRange(groceries);
+						foreach (var grocery in groceries)
+							Groceries.Add(grocery);
 						break;
 					}
 				case (List<Person> persons):

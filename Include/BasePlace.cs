@@ -1,64 +1,82 @@
 ﻿namespace OBED.Include
 {
-    public enum ReviewSort
-    {
-        Upper,
-        Lower,
-        OldDate,
-        NewDate
-    }
+	public enum ReviewSort
+	{
+		Upper,
+		Lower,
+		OldDate,
+		NewDate
+	}
 
-    class Review(long userID, int rating, string? comment = null)
-    {
-        public long UserID { get; init; } = userID;
-        public int Rating { get; private set; } = rating;
-        public string? Comment { get; private set; } = comment;
-        public DateTime Date { get; private set; } = DateTime.Now;
+	class Review
+	{
+		public long UserID { get; init; }
+		public int Rating { get; private set; }
+		public string? Comment { get; private set; }
+		public DateTime? Date { get; private set; }
 
-        // TODO: ChangeReview()
-    }
+		public Review(long userID, int rating, string? comment = null, DateTime? date = null)
+		{
+			if (userID < 0)
+				throw new ArgumentException("UserID должно быть больше 0", nameof(userID));
+			if (rating < 1 || rating > 10)
+				throw new ArgumentOutOfRangeException(nameof(rating), "Рейтинг должен быть от 1 до 10");
 
-    abstract class BasePlace(string name, string? description = null, List<Review>? reviews = null, List<Product>? menu = null, List<string>? tegs = null)
-    {
-        public string Name { get; private set; } = name;
-        public string? Description { get; private set; } = description;
+			UserID = userID;
+			Rating = rating;
+			Comment = comment;
+			Date = date ?? DateTime.Now;
+		}
+	}
 
-        public List<Review> Reviews { get; private set; } = reviews ?? [];
-        public List<Product> Menu { get; private set; } = menu ?? [];
-        public List<string> Tegs { get; private set; } = tegs ?? []; // TODO: Возможное изменение типа на enum
-        // TODO: public List<T> photos []
+	abstract class BasePlace(string name, string? description = null, List<Review>? reviews = null, List<Product>? menu = null, List<string>? tegs = null)
+	{
+		public string Name { get; private set; } = name;
+		public string? Description { get; private set; } = description;
 
-        // TODO: Загрузка с бд/файла
-        //abstract public void Load(string file);
-        //abstract public void Save(string file);
-        public virtual bool AddReview(Review review)
-        {
-            if (!Reviews.Where(x => x.UserID == review.UserID).Any())
-            {
-                Reviews.Add(review);
-                return true;
-            }
-            return false;
-        }
-        public virtual bool AddReview(long userID, int rating, string? comment)
-        {
-            if (!Reviews.Where(x => x.UserID == userID).Any())
-            {
-                Reviews.Add(new Review(userID, rating, comment));
-                return true;
-            }
-            return false;
-        }
-        public virtual bool DeleteReview(long userID)
-        {
-            var removeCheck = Reviews.Where(x => x.UserID == userID);
-            if (removeCheck.Any())
-            {
-                Reviews.Remove(removeCheck.First());
-                return true;
-            }
-            return false;
-        }
-        public virtual Review? GetReview(long userID) => Reviews.Where(x => x.UserID == userID).FirstOrDefault();
-    }
+		public List<Review> Reviews { get; private set; } = reviews ?? [];
+		public List<Product> Menu { get; private set; } = menu ?? [];
+		public List<string> Tegs { get; private set; } = tegs ?? []; // TODO: Возможное изменение типа на enum
+																	 // TODO: public List<T> photos []
+
+		// TODO: Загрузка с бд/файла
+		//abstract public void Load(string file);
+		//abstract public void Save(string file);
+		public virtual bool AddReview(Review review)
+		{
+			ArgumentNullException.ThrowIfNull(review);
+
+			if (Reviews.Any(x => x.UserID == review.UserID))
+			{
+				Reviews.Add(review);
+				return true;
+			}
+			return false;
+		}
+		public virtual bool AddReview(long userID, int rating, string? comment)
+		{
+			if (userID < 0)
+				throw new ArgumentException("UserID должно быть больше 0", nameof(userID));
+			if (rating < 1 || rating > 10)
+				throw new ArgumentOutOfRangeException(nameof(rating), "Рейтинг должен быть от 1 до 10");
+
+			if (!Reviews.Any(x => x.UserID == userID))
+			{
+				Reviews.Add(new Review(userID, rating, comment));
+				return true;
+			}
+			return false;
+		}
+		public virtual bool DeleteReview(long userID)
+		{
+			var reviewToRemove = Reviews.FirstOrDefault(x => x.UserID == userID);
+			if (reviewToRemove != null)
+			{
+				Reviews.Remove(reviewToRemove);
+				return true;
+			}
+			return false;
+		}
+		public virtual Review? GetReview(long userID) => Reviews.FirstOrDefault(x => x.UserID == userID);
+	}
 }

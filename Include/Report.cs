@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-
-namespace OBED.Include
+﻿namespace OBED.Include
 {
     class Report(long userID, string comment, List<string> tegs)
     {
@@ -17,6 +15,6 @@ namespace OBED.Include
 
     class Complaint(long userID, string comment, List<string> tegs, Review review) : Report(userID, comment, tegs)
     {
-        public Review review { get; init; } = review;
+        public Review Review { get; init; } = review;
     }
 }

@@ -40,7 +40,7 @@ class Program
 		List<Review> reviews3 = [new(123456789, 7, "Old"), new(123456789, 9, "Old"), new(123456789, 5, "Old"), new(123456789, 10, "Old"), new(123456789, 6, "Old"), new(123456789, 8, "Old"), new(123456789, 4, "Old")];
 		reviews3.Add(new(987654321, 3, "New"));
 
-		ObjectLists.Canteens = [new("Canteen1", 1, 1, null, reviews3, products1, null),
+		ObjectLists.AddList<Canteen>([new("Canteen1", 1, 1, null, reviews3, products1, null),
 			new("Canteen2", 2, 2, null, reviews2, products2, null),
 			new("Canteen3", 2, 2, null, reviews1, products3, null),
 			new("Canteen4", 2, 2, null, null, null, null),
@@ -55,13 +55,13 @@ class Program
 			new("Canteen13", 2, 2, null, null, null, null),
 			new("Canteen14", 2, 2, null, null, null, null),
 			new("Canteen15", 2, 2, null, reviews1, products5, null),
-			new("Canteen16", 3, 3, null, reviews1, products4, null)];
-		ObjectLists.Buffets = [new("Buffet1", 1, 1, null, reviews1, products1, null),
+			new("Canteen16", 3, 3, null, reviews1, products4, null)]);
+		ObjectLists.AddList<Buffet>([new("Buffet1", 1, 1, null, reviews1, products1, null),
 			new("Buffet2", 2, 2, null, reviews2, products2, null),
-			new("Buffet3", 3, 3, null, reviews3, products4, null)];
-		ObjectLists.Groceries = [new("Grocery1", null, reviews1, products1, null),
+			new("Buffet3", 3, 3, null, reviews3, products4, null)]);
+		ObjectLists.AddList<Grocery>([new("Grocery1", null, reviews1, products1, null),
 			new("Grocery2", null, reviews2, products2, null),
-			new("Grocery3", null, reviews3, products4, null)];
+			new("Grocery3", null, reviews3, products4, null)]);
 
 		reviews3.Add(new(611614145, 3, "SuperNew"));
 
@@ -96,11 +96,10 @@ class Program
 									await OnCommand(splitStr[0].ToLower(), splitStr[1].ToLower(), msg);
 								else
 									await OnCommand(splitStr[0].ToLower(), null, msg);
+								break;
 							}
 
-						var foundUser = ObjectLists.Persons
-							.Where(x => x.UserID == msg.Chat.Id)
-							.FirstOrDefault();
+						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
 
 						if (foundUser == null)
 						{
@@ -131,7 +130,7 @@ class Program
 										usersState[foundUser.UserID].Rating = rating;
 										usersState[foundUser.UserID].Comment = "-";
 										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].RefTo}", msg);
+										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
 										break;
 									}
 
@@ -160,7 +159,7 @@ class Program
 
 										Всё верно?
 										<keyboard>
-										<button text="Да" callback="/sendReview {usersState[foundUser.UserID].RefTo}"
+										<button text="Да" callback="/sendReview {usersState[foundUser.UserID].ReferenceToPlace}"
 										<button text="Нет" callback="callback_resetAction"
 										</keyboard>
 										""");
@@ -181,7 +180,7 @@ class Program
 
 									usersState[foundUser.UserID].Rating = 0;
 									usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-									await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].RefTo}", msg);
+									await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
 									break;
 								}
 						}
@@ -207,19 +206,17 @@ class Program
 												[("Помощь", "/help"), ("Поддержка", "/report")]
 											 });
 
-						if (!ObjectLists.Persons.Select(x => x.UserID).Contains(msg.Chat.Id))
+						if (!ObjectLists.Persons.ContainsKey(msg.Chat.Id))
 						{
 							Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
-                            ObjectLists.Persons.Add(new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.Common_User));
+                            ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.Common_User));
 							usersState.Add(msg.Chat.Id, new());
 						}
 						break;
 					}
 				case ("/person"):
 					{
-						var foundUser = ObjectLists.Persons
-                            .Where(x => x.UserID == msg.Chat.Id)
-							.FirstOrDefault();
+						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
 
 						if (foundUser != null)
 							await bot.SendMessage(msg.Chat, $"{foundUser.UserID} - {foundUser.Username}", replyMarkup: new InlineKeyboardButton[][]
@@ -687,9 +684,7 @@ class Program
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						var foundUser = ObjectLists.Persons
-                            .Where(x => x.UserID == msg.Chat.Id)
-							.FirstOrDefault();
+						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
 
 						if (foundUser == null)
 						{
@@ -761,7 +756,7 @@ class Program
 							case (null):
 								{
 									usersState[foundUser.UserID].Action = UserAction.RatingRequest;
-									usersState[foundUser.UserID].RefTo = args;
+									usersState[foundUser.UserID].ReferenceToPlace = args;
 
 									await bot.SendMessage(msg.Chat, $"Введите оценку от 1⭐️ до 10⭐️", replyMarkup: new ForceReplyMarkup());
 									break;
@@ -770,24 +765,24 @@ class Program
 								{
 									usersState[foundUser.UserID].Action = null;
 
-									if (ObjectLists.Canteens[index].AddReview(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment))
+									if (place.AddReview(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment))
 									{
 										await bot.SendMessage(msg.Chat.Id, $"Отзыв успешно оставлен!");
-										await OnCommand("/info", usersState[foundUser.UserID].RefTo, msg);
+										await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, msg);
 									}
 									else
 									{
 										await bot.SendMessage(msg.Chat.Id, $"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].Rating}⭐️| {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}", replyMarkup: new InlineKeyboardButton[]
 											{
-												("Назад", $"/info {usersState[foundUser.UserID].RefTo}")
+												("Назад", $"/info {usersState[foundUser.UserID].ReferenceToPlace}")
 											});
-										throw new Exception($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].RefTo} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
+										throw new Exception($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].ReferenceToPlace} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
 									}
 									break;
 								}
 							default:
 								{
-									if (usersState[foundUser.UserID].RefTo != args)
+									if (usersState[foundUser.UserID].ReferenceToPlace != args)
 									{
 										await bot.SendMessage(msg.Chat, $"Зафиксирована попытка оставить отзыв на другую точку. Сброс ранее введённой информации...");
 										usersState[foundUser.UserID].Action = null;
@@ -809,9 +804,7 @@ class Program
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						var foundUser = ObjectLists.Persons
-                            .Where(x => x.UserID == msg.Chat.Id)
-							.FirstOrDefault();
+						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
 
 						if (foundUser == null)
 						{
@@ -899,9 +892,7 @@ class Program
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						var foundUser = ObjectLists.Persons
-                            .Where(x => x.UserID == msg.Chat.Id)
-							.FirstOrDefault();
+						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
 
 						if (foundUser == null)
 						{
@@ -968,7 +959,7 @@ class Program
 							case ('R'):
 								{
 									usersState[foundUser.UserID].Action = UserAction.RatingChange;
-									usersState[foundUser.UserID].RefTo = args[1..];
+									usersState[foundUser.UserID].ReferenceToPlace = args[1..];
 
 									await bot.SendMessage(msg.Chat, $"Введите НОВУЮ оценку от 1⭐️ до 10⭐️", replyMarkup: new ForceReplyMarkup());
 									break;
@@ -976,7 +967,7 @@ class Program
 							case ('C'):
 								{
 									usersState[foundUser.UserID].Action = UserAction.CommentChange;
-									usersState[foundUser.UserID].RefTo = args[1..];
+									usersState[foundUser.UserID].ReferenceToPlace = args[1..];
 
 									await bot.SendMessage(msg.Chat, $"Введите НОВЫЙ текст отзыва или удалите его отправив -", replyMarkup: new ForceReplyMarkup());
 									break;
@@ -1018,8 +1009,8 @@ class Program
 
 										Всё верно?
 										<keyboard>
-										<button text="Да" callback="/info {usersState[foundUser.UserID].RefTo}"
-										<button text="Нет" callback="/changeReview -{usersState[foundUser.UserID].RefTo}"
+										<button text="Да" callback="/info {usersState[foundUser.UserID].ReferenceToPlace}"
+										<button text="Нет" callback="/changeReview -{usersState[foundUser.UserID].ReferenceToPlace}"
 										</keyboard>
 										""");
 
@@ -1080,12 +1071,15 @@ class Program
 			{
 				await bot.AnswerCallbackQuery(callbackQuery.Id);
 
-				var foundUser = ObjectLists.Persons
-                            .Where(x => x.UserID == callbackQuery.Message!.Chat.Id)
-							.FirstOrDefault();
+				ObjectLists.Persons.TryGetValue(callbackQuery.Message!.Chat.Id, out Person? foundUser);
 
-				usersState[foundUser!.UserID].Action = null;
-				await OnCommand("/info", usersState[foundUser!.UserID].RefTo, callbackQuery.Message!);
+				if (foundUser == null)
+					await OnCommand("/start", null, callbackQuery.Message!);
+				else
+				{
+					usersState[foundUser!.UserID].Action = null;
+					await OnCommand("/info", usersState[foundUser!.UserID].ReferenceToPlace, callbackQuery.Message!);
+				}
 			}
 			else
 				Console.WriteLine($"Received unhandled callbackQuery {callbackQuery.Data}");

@@ -1,4 +1,4 @@
-﻿namespace OBED.Include
+namespace OBED.Include
 {
 	public enum RoleType
 	{
@@ -12,6 +12,15 @@
 		public long UserID { get; init; }
 		public RoleType Role { get; private set; }
 		
+		/// <summary>
+		/// Initializes a Person with the specified username, user ID, and role.
+		/// </summary>
+		/// <param name="username">The person's username; must not be null, empty, or whitespace.</param>
+		/// <param name="userID">The unique user identifier; must be greater than zero.</param>
+		/// <param name="role">The person's role as a <see cref="RoleType"/>; must be a defined enum value.</param>
+		/// <exception cref="ArgumentException">Thrown when <paramref name="userID"/> is less than or equal to zero.</exception>
+		/// <exception cref="ArgumentException">Thrown when <paramref name="username"/> is null, empty, or consists only of whitespace.</exception>
+		/// <exception cref="ArgumentException">Thrown when <paramref name="role"/> is not a defined <see cref="RoleType"/> value.</exception>
 		public Person(string username, long userID, RoleType role)
 		{
 			if (userID <= 0)

@@ -1,4 +1,4 @@
-﻿namespace OBED.Include
+namespace OBED.Include
 {
 	/// <summary>
 	/// Тип сортировки отзывов.
@@ -22,6 +22,15 @@
 		public string? Comment { get; private set; }
 		public DateTime Date { get; private set; }
 
+		/// <summary>
+		/// Initializes a new Review with the specified user ID, rating, optional comment, and optional date.
+		/// </summary>
+		/// <param name="userID">The identifier of the user who created the review; must be greater than 0.</param>
+		/// <param name="rating">The review rating from 1 to 10.</param>
+		/// <param name="comment">An optional text comment; may be null.</param>
+		/// <param name="date">An optional review date; when null, the current date and time are used.</param>
+		/// <exception cref="ArgumentException">Thrown when <paramref name="userID"/> is less than or equal to 0.</exception>
+		/// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="rating"/> is not between 1 and 10.</exception>
 		public Review(long userID, int rating, string? comment = null, DateTime? date = null)
 		{
 			if (userID <= 0)
@@ -49,7 +58,12 @@
 
 		// TODO: Загрузка с бд/файла
 		//abstract public void Load(string file);
-		//abstract public void Save(string file);
+		/// <summary>
+		/// Adds the specified review to the place when there is no existing review from the same user.
+		/// </summary>
+		/// <param name="review">The review to add.</param>
+		/// <returns>`true` if the review was added; `false` if a review from the same user already exists.</returns>
+		/// <exception cref="ArgumentNullException">Thrown when <paramref name="review"/> is null.</exception>
 		public virtual bool AddReview(Review review)
 		{
 			ArgumentNullException.ThrowIfNull(review);
@@ -61,6 +75,13 @@
 			}
 			return false;
 		}
+		/// <summary>
+		/// Adds a new review for the specified user if that user has no existing review.
+		/// </summary>
+		/// <param name="userID">The identifier of the user; must be greater than 0.</param>
+		/// <param name="rating">The review rating; must be between 1 and 10 inclusive.</param>
+		/// <param name="comment">Optional review comment.</param>
+		/// <returns>`true` if the review was added, `false` if a review by the same user already exists.</returns>
 		public virtual bool AddReview(long userID, int rating, string? comment)
 		{
 			lock (reviewLock)
@@ -73,6 +94,11 @@
 				return false;
 			}
 		}
+		/// <summary>
+		/// Removes the first review for the specified user.
+		/// </summary>
+		/// <param name="userID">The identifier of the user whose review should be removed.</param>
+		/// <returns>`true` if a review by the specified user was found and removed, `false` otherwise.</returns>
 		public virtual bool DeleteReview(long userID)
 		{
 			var reviewToRemove = Reviews.FirstOrDefault(x => x.UserID == userID);
@@ -87,6 +113,11 @@
 				return false;
 			}
 		}
-		public virtual Review? GetReview(long userID) => Reviews.FirstOrDefault(x => x.UserID == userID);
+		/// <summary>
+/// Retrieves the first review created by the specified user.
+/// </summary>
+/// <param name="userID">The identifier of the user whose review to find.</param>
+/// <returns>The first <see cref="Review"/> with a matching <c>UserID</c>, or <c>null</c> if none exists.</returns>
+public virtual Review? GetReview(long userID) => Reviews.FirstOrDefault(x => x.UserID == userID);
 	}
 }

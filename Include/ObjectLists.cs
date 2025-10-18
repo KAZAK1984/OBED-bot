@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 
 namespace OBED.Include
 {
@@ -14,7 +14,11 @@ namespace OBED.Include
 		/// Для Person: дубликаты UserID игнорируются без ошибки.
 		/// </summary>
 		/// <param name="values">Лист с новыми точками/учётками.</param>
-		/// <exception cref="ArgumentException">Ошибки.</exception>
+		/// <summary>
+		/// Adds a batch of domain objects to the corresponding in-memory collection based on the list's element type.
+		/// </summary>
+		/// <param name="values">A list of domain objects whose element type determines the target collection: List&lt;Buffet&gt;, List&lt;Canteen&gt;, List&lt;Grocery&gt;, or List&lt;Person&gt;. For Person lists, each person is added by UserID; entries with duplicate UserID are ignored.</param>
+		/// <exception cref="ArgumentException">Thrown when <paramref name="values"/> contains an unsupported element type.</exception>
 		public static void AddRangeList<T>(List<T> values)
         {
 			switch (values)

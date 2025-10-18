@@ -302,18 +302,35 @@ class Program
 									throw new Exception($"Invalid command agrs: {msg.Text}");
 								}
 						}
+
+						bool checker = false;
+						if (places.FirstOrDefault() is ILocatedUni)
+							checker = true;
+
+                            if (args[0] != '-')
+						{
+							for (int i = 0; i < places.Count; ++i)
+							{
+								if (places[i] is ILocatedUni located && located.BuildingNumber != (args[0] - '0'))
+								{
+									places.RemoveAt(i);
+									--i;
+								}
+                            }
+						}
+
 						places = [.. places.OrderByDescending(x => x.Reviews.Sum(x => x.Rating))];
 
 						int placesCounter = places.Count;
 						await bot.SendMessage(msg.Chat, "Выбор точки", replyMarkup: new InlineKeyboardButton[][]
 											 {
-                                                [($"{((args.Length > 1 && places[0] is ILocatedUni) ? "Сортировка по корпусу" : "Отключить сортировку")}", (args.Length > 2) ? "/buildingNumberSelector" : $"/placeSelector {args[1]}")],
-                                                [($"{((placesCounter != 0) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
-												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[0]}{nowCounter}")],
-												[($"{((page != 0) ? "◀️" : "")}", $"/placeSelector {args[0]}{page - 1}"), ("Назад","/places"), ($"{(placesCounter > nowCounter ? "▶️" : "")}", $"/placeSelector {args[0]}{page + 1}")]
+												[($"{((args[0] == '-' && checker) ? "Сортировка по корпусу" : (checker ? "Отключить сортировку" : ""))}", (args[0] == '-') ? $"/buildingNumberSelector {args[1..]}" : $"/placeSelector -{args[1]}")],
+                                                [($"{((placesCounter != 0) ? places[nowCounter].Name : "")}", $"/info {args[1]}{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[1]}{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[1]}{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[1]}{nowCounter}")],
+												[($"{((placesCounter > ++nowCounter) ? places[nowCounter].Name : "")}", $"/info {args[1]}{nowCounter}")],
+												[($"{((page != 0) ? "◀️" : "")}", $"/placeSelector {args[..2]}{page - 1}"), ("Назад","/places"), ($"{(placesCounter > nowCounter ? "▶️" : "")}", $"/placeSelector {args[..2]}{page + 1}")]
 											 });
 						break;
 					}
@@ -330,9 +347,9 @@ class Program
 
                         await bot.SendMessage(msg.Chat, "Выбор точки", replyMarkup: new InlineKeyboardButton[][]
                                              {
-                                                [("1", $"/placeSelector 1{args[1..]}")], [("2", $"/placeSelector 2{args[1..]}")], [("3", $"/placeSelector 3{args[1..]}")],
-                                                [("4", $"/placeSelector 4{args[1..]}")], [("5", $"/placeSelector 5{args[1..]}")], [("6", $"/placeSelector 6{args[1..]}")],
-                                                [("ИАТУ", $"/placeSelector 10{args[1..]}")], [("На территории кампуса", $"/placeSelector 9{args[1..]}")],
+                                                [("1", $"/placeSelector 1{args[0]}"), ("2", $"/placeSelector 2{args}"), ("3", $"/placeSelector 3{args[0]}")],
+                                                [("4", $"/placeSelector 4{args[0]}"), ("5", $"/placeSelector 5{args}"), ("6", $"/placeSelector 6{args[0]}")],
+                                                [("ИАТУ", $"/placeSelector 0{args[0]}"), ("На территории кампуса", $"/placeSelector 7{args[0]}")],
                                                 [("Назад","/places")]
                                              });
 						break;
@@ -397,7 +414,7 @@ class Program
 							<row> <button text="Оставить отзыв" callback="/sendReview {args}"
 							<row> <button text="Отзывы" callback="/reviews N{args}"
 							</row>
-							<row> <button text="Назад" callback="/placeSelector {args[0]}{index / 5}"
+							<row> <button text="Назад" callback="/placeSelector -{args[0]}{index / 5}"
 							</row>
 							</keyboard>
 							""");

@@ -20,7 +20,7 @@
 		public long UserID { get; init; }
 		public int Rating { get; private set; }
 		public string? Comment { get; private set; }
-		public DateTime? Date { get; private set; }
+		public DateTime Date { get; private set; }
 
 		public Review(long userID, int rating, string? comment = null, DateTime? date = null)
 		{
@@ -45,6 +45,7 @@
 		public List<Product> Menu { get; private set; } = menu ?? [];
 		public List<string> Tegs { get; private set; } = tegs ?? []; // TODO: Возможное изменение типа на enum
 																	 // TODO: public List<T> photos []
+		private static readonly object reviewLock = new();
 
 		// TODO: Загрузка с бд/файла
 		//abstract public void Load(string file);
@@ -62,27 +63,29 @@
 		}
 		public virtual bool AddReview(long userID, int rating, string? comment)
 		{
-			if (userID <= 0)
-				throw new ArgumentException("UserID должно быть больше 0", nameof(userID));
-			if (rating < 1 || rating > 10)
-				throw new ArgumentOutOfRangeException(nameof(rating), "Рейтинг должен быть от 1 до 10");
-
-			if (!Reviews.Any(x => x.UserID == userID))
+			lock (reviewLock)
 			{
-				Reviews.Add(new Review(userID, rating, comment));
-				return true;
+				if (!Reviews.Any(x => x.UserID == userID))
+				{
+					Reviews.Add(new Review(userID, rating, comment));
+					return true;
+				}
+				return false;
 			}
-			return false;
 		}
 		public virtual bool DeleteReview(long userID)
 		{
 			var reviewToRemove = Reviews.FirstOrDefault(x => x.UserID == userID);
-			if (reviewToRemove != null)
+
+			lock (reviewLock)
 			{
-				Reviews.Remove(reviewToRemove);
-				return true;
+				if (reviewToRemove != null)
+				{
+					Reviews.Remove(reviewToRemove);
+					return true;
+				}
+				return false;
 			}
-			return false;
 		}
 		public virtual Review? GetReview(long userID) => Reviews.FirstOrDefault(x => x.UserID == userID);
 	}

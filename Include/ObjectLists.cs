@@ -11,6 +11,7 @@ namespace OBED.Include
 
 		/// <summary>
 		/// Добавляет к общей базе новые точки или учётки.
+		/// Для Person: дубликаты UserID игнорируются без ошибки.
 		/// </summary>
 		/// <param name="values">Лист с новыми точками/учётками.</param>
 		/// <exception cref="ArgumentException">Ошибки.</exception>

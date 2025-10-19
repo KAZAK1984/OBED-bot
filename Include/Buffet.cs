@@ -1,18 +1,8 @@
 ﻿namespace OBED.Include
 {
-    class Buffet : BasePlace, ILocatedUni
+    class Buffet(string name, int buildingNumber, int floor, string? description = null, List<Review>? reviews = null, List<Product>? menu = null, List<string>? tegs = null) : BasePlace(name, description, reviews, menu, tegs), ILocatedUni
     {
-        public int BuildingNumber { get; private set; }
-        public int Floor { get; private set; }
-
-#pragma warning disable IDE0290 // Использовать основной конструктор
-		public Buffet(string name, int buildingNumber, int floor, string? description = null, List<Review>? reviews = null, List<Product>? menu = null, List<string>? tegs = null) : base(name, description, reviews, menu, tegs)
-#pragma warning restore IDE0290 // Использовать основной конструктор
-		{
-            BuildingNumber = buildingNumber;
-            Floor = floor;
-
-            //ObjectLists.Buffets.Add(this);
-        }
-    }
+		public int BuildingNumber { get; private set; } = buildingNumber;
+		public int Floor { get; private set; } = floor;
+	}
 }

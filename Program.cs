@@ -1,7 +1,6 @@
 ﻿using OBED.Include;
-using System;
+using System.Collections.Concurrent;
 using Telegram.Bot;
-using Telegram.Bot.Extensions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -66,7 +65,7 @@ class Program
 		reviews3.Add(new(611614145, 3, "SuperNew"));
 
 		// TODO: переход на noSQL
-		Dictionary<long, UserState> usersState = [];
+		ConcurrentDictionary<long, UserState> usersState = [];
 
 		bot.OnError += OnError;
 		bot.OnMessage += OnMessage;
@@ -103,7 +102,7 @@ class Program
 
 						if (foundUser == null)
 						{
-							await bot.EditMessageText(msg.Chat, msg.Id, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
+							await bot.SendMessage(msg.Chat, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
 								replyMarkup: new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
 							break;
 						}
@@ -149,6 +148,7 @@ class Program
 										usersState[foundUser.UserID].Comment = null;
 									else
 										usersState[foundUser.UserID].Comment = msg.Text.Trim();
+									HtmlEscape(usersState[foundUser.UserID].Comment);
 
 									usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
 									await bot.SendMessage(msg.Chat, $"""
@@ -176,6 +176,7 @@ class Program
 										usersState[foundUser.UserID].Comment = null;
 									else
 										usersState[foundUser.UserID].Comment = msg.Text.Trim();
+									HtmlEscape(usersState[foundUser.UserID].Comment);
 
 									usersState[foundUser.UserID].Rating = 0;
 									usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
@@ -212,7 +213,7 @@ class Program
 						{
 							Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
 							ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
-							usersState.Add(msg.Chat.Id, new());
+							usersState.TryAdd(msg.Chat.Id, new());
 						}
 						break;
 					}
@@ -312,7 +313,7 @@ class Program
 						if (places.FirstOrDefault() is ILocatedUni)
 							checker = true;
 
-						List<BasePlace> sortedPlaces = [.. places.OrderByDescending(x => x.Reviews.Sum(x => x.Rating) / (x.Reviews.Count + 1))];
+						List<BasePlace> sortedPlaces = [.. places.OrderByDescending(x => (double)x.Reviews.Sum(x => x.Rating) / (x.Reviews.Count + 1))];
 
 						if (args[0] != '-')
 						{
@@ -802,7 +803,7 @@ class Program
 
 						if (foundUser == null)
 						{
-							await bot.EditMessageText(msg.Chat, msg.Id, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
+							await bot.SendMessage(msg.Chat, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
 								replyMarkup: new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
 							break;
 						}
@@ -860,7 +861,7 @@ class Program
 						if (!place.Reviews.Where(x => x.UserID == foundUser.UserID).Any())
 						{
 							await bot.EditMessageText(msg.Chat, msg.Id, $"""
-							Вы не можете удалить отзыв на {place.Name}
+							Вы не можете изменить отзыв на {place.Name}
 
 							Причина: Ваш отзыв не существует в системе
 							""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[]
@@ -929,6 +930,7 @@ class Program
 					}
 				case ("/admin"):
 					{
+						// TODO: при реализации runtime добавления новых точек обязательно использовать lock
 						break;
 					}
 				default:
@@ -1083,7 +1085,7 @@ class Program
 										{
 											("Назад", $"/info {splitStr[1]}")
 										});
-										throw new Exception($"Error while user {foundUser.UserID} trying to delete review on {ObjectLists.Canteens.ElementAt(index).Name}");
+										throw new Exception($"Error while user {foundUser.UserID} trying to delete review on {place.Name}");
 									}
 									break;
 								}
@@ -1128,5 +1130,6 @@ class Program
 					}
 			}
 		}
+		static string HtmlEscape(string? s) => (s ?? "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 	}
 }

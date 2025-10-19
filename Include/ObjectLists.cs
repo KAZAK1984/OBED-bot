@@ -45,6 +45,8 @@ namespace OBED.Include
 							Persons.TryAdd(person.UserID, person);
 						break;
 					}
+				default:
+					throw new ArgumentException($"Тип списка не поддерживается: {typeof(T).Name}", nameof(values));
 			}
 		}
 	}

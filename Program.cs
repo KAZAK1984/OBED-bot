@@ -374,10 +374,10 @@ class Program
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						int index = 0, page = 0;
+						int index = 0, placeSelectorPage = 0;
 						if (args.Contains('_'))
 						{
-							if (!char.IsLetter(args[1]) || !int.TryParse(args[2..args.IndexOf('_')], out index) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
+							if (!char.IsLetter(args[1]) || !int.TryParse(args[2..args.IndexOf('_')], out index) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out placeSelectorPage))
 							{
 								await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
 								{
@@ -432,8 +432,8 @@ class Program
 						""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
 						{
 							[("Меню", $"/menu -{args}")],
-							[("Оставить отзыв", $"/sendReview {(args.Contains('_') ? args[..args.IndexOf('_')] : args)}"), ("Отзывы", $"/reviews N{(args.Contains('_') ? args[..args.IndexOf('_')] : args)}")],
-							[("Назад", $"/placeSelector {args[..2]}{page}")]
+							[("Оставить отзыв", $"/sendReview {args}"), ("Отзывы", $"/reviews N{args}")],
+							[("Назад", $"/placeSelector {args[..2]}{placeSelectorPage}")]
 						});
 						break;
 					}
@@ -448,11 +448,11 @@ class Program
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						int index = 0, page = 0, backPage = 0;
+						int index = 0, page = 0, placeSelectorPage = 0;
 						if (args.Contains('|'))
 						{
 							if (!char.IsLetter(args[2]) || !int.TryParse(args[3..args.IndexOf('|')], out index) 
-								|| !int.TryParse(args[(args.IndexOf('|') + 1)..args.IndexOf('_')], out page) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out backPage))
+								|| !int.TryParse(args[(args.IndexOf('|') + 1)..args.IndexOf('_')], out page) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out placeSelectorPage))
 							{
 								await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
 								{
@@ -462,7 +462,7 @@ class Program
 							}
 						}
 						else if (!char.IsLetter(args[2]) || !int.TryParse(args[3..args.IndexOf('_')], out index) 
-							|| !int.TryParse(args[(args.IndexOf('_') + 1)..], out backPage))
+							|| !int.TryParse(args[(args.IndexOf('_') + 1)..], out placeSelectorPage))
 						{
 							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
 							{
@@ -552,12 +552,12 @@ class Program
 						{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
 						""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
 						{
-							[(productType == null ? "" : "Без сортировки", $"/menu -{args[1..3]}{index}_{backPage}")],
+							[(productType == null ? "" : "Без сортировки", $"/menu -{args[1..3]}{index}_{placeSelectorPage}")],
 
-							[(productType == ProductType.MainDish ? "" : "Блюда", $"/menu M{args[1..3]}{index}_{backPage}"), (productType == ProductType.SideDish ? "" : "Гарниры", $"/menu S{args[1..3]}{index}_{backPage}"),
-							(productType == ProductType.Drink ? "" : "Напитки", $"/menu D{args[1..3]}{index}_{backPage}"), (productType == ProductType.Appetizer ? "" : "Закуски", $"/menu A{args[1..3]}{index}_{backPage}")],
+							[(productType == ProductType.MainDish ? "" : "Блюда", $"/menu M{args[1..3]}{index}_{placeSelectorPage}"), (productType == ProductType.SideDish ? "" : "Гарниры", $"/menu S{args[1..3]}{index}_{placeSelectorPage}"),
+							(productType == ProductType.Drink ? "" : "Напитки", $"/menu D{args[1..3]}{index}_{placeSelectorPage}"), (productType == ProductType.Appetizer ? "" : "Закуски", $"/menu A{args[1..3]}{index}_{placeSelectorPage}")],
 
-							[((page != 0) ? "◀️" : "", $"/menu {args[..3]}{index}|{page - 1}_{backPage}"), ("Назад", $"/info {args[1..3]}{index}_{backPage}"), (menu.Count > ++nowCounter ? "▶️" : "", $"/menu {args[..3]}{index}|{page + 1}_{backPage}")]
+							[((page != 0) ? "◀️" : "", $"/menu {args[..3]}{index}|{page - 1}_{placeSelectorPage}"), ("Назад", $"/info {args[1..3]}{index}_{placeSelectorPage}"), (menu.Count > ++nowCounter ? "▶️" : "", $"/menu {args[..3]}{index}|{page + 1}_{placeSelectorPage}")]
 						});
 						break;
 					}
@@ -572,10 +572,11 @@ class Program
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						int index = 0, page = 0;
-						if (args.Contains('_'))
+						int index = 0, page = 0, placeSelectorPage = 0;
+						if (args.Contains('|'))
 						{
-							if (!char.IsLetter(args[1]) || (!int.TryParse(args[2..args.IndexOf('_')], out index)) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
+							if (!char.IsLetter(args[2]) || !int.TryParse(args[3..args.IndexOf('|')], out index)
+								|| !int.TryParse(args[(args.IndexOf('|') + 1)..args.IndexOf('_')], out page) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out placeSelectorPage))
 							{
 								await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
 								{
@@ -584,9 +585,9 @@ class Program
 								throw new Exception($"Invalid command agrs: {msg.Text}");
 							}
 						}
-						else if (!char.IsLetter(args[1]) || !int.TryParse(args[2..], out index))
+						else if (!char.IsLetter(args[2]) || !int.TryParse(args[3..args.IndexOf('_')], out index)
+							|| !int.TryParse(args[(args.IndexOf('_') + 1)..], out placeSelectorPage))
 						{
-							Console.WriteLine(args[2..]);
 							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
@@ -600,7 +601,7 @@ class Program
 
 						string placeName;
 						List<Review> reviews;
-						switch (args[1])
+						switch (args[2])
 						{
 							case ('C'):
 								{
@@ -674,10 +675,10 @@ class Program
 						{(reviews.Count > ++nowCounter ? $"{reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment}" : "")}
 						""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
 						{
-							[(sortType == ReviewSort.Upper ? "" : "Оценка ↑", $"/reviews U{args[1]}{index}"), (sortType == ReviewSort.Lower ? "" : "Оценка ↓", $"/reviews L{args[1]}{index}"),
-							(sortType == ReviewSort.NewDate ? "" : "Новые", $"/reviews N{args[1]}{index}"), (sortType == ReviewSort.OldDate ? "" : "Старые", $"/reviews O{args[1]}{index}")],
+							[(sortType == ReviewSort.Upper ? "" : "Оценка ↑", $"/reviews U{args[1..3]}{index}_{placeSelectorPage}"), (sortType == ReviewSort.Lower ? "" : "Оценка ↓", $"/reviews L{args[1..3]}{index}_{placeSelectorPage}"),
+							(sortType == ReviewSort.NewDate ? "" : "Новые", $"/reviews N{args[1..3]}{index}_{placeSelectorPage}"), (sortType == ReviewSort.OldDate ? "" : "Старые", $"/reviews O{args[1..3]}{index}_{placeSelectorPage}")],
 
-							[((page != 0) ? "◀️" : "", $"/reviews {args[..2]}{index}_{page - 1}"), ("Назад", $"/info {args[1]}{index}"), (reviews.Count > ++nowCounter ? "▶️" : "", $"/reviews {args[..2]}{index}_{page + 1}")]
+							[((page != 0) ? "◀️" : "", $"/reviews {args[..3]}{index}|{page - 1}_{placeSelectorPage}"), ("Назад", $"/info {args[1..3]}{index}_{placeSelectorPage}"), (reviews.Count > ++nowCounter ? "▶️" : "", $"/reviews {args[..3]}{index}|{page + 1}_{placeSelectorPage}")]
 						});
 						break;
 					}

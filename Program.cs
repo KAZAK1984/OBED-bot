@@ -311,21 +311,21 @@ class Program
 						if (places.FirstOrDefault() is ILocatedUni)
 							checker = true;
 
+						List<BasePlace> sortedPlaces = [.. places.OrderByDescending(x => x.Reviews.Sum(x => x.Rating) / (x.Reviews.Count + 1))];
+
 						if (args[0] != '-')
 						{
-							for (int i = 0; i < places.Count; ++i)
+							for (int i = 0; i < sortedPlaces.Count; ++i)
 							{
-								if (places[i] is ILocatedUni located && located.BuildingNumber != (args[0] - '0'))
+								if (sortedPlaces[i] is ILocatedUni located && located.BuildingNumber != (args[0] - '0'))
 								{
-									places.RemoveAt(i);
+									sortedPlaces.RemoveAt(i);
 									--i;
 								}
 							}
 						}
 
-						List<BasePlace> sortedPlaces = [.. places.OrderByDescending(x => x.Reviews.Sum(x => x.Rating) / (x.Reviews.Count + 1))];
-						int placesCounter = places.Count;
-
+						int placesCounter = sortedPlaces.Count;
 						Dictionary<int, int> indexPairs = [];
 						for (int i = 0; i < placesCounter; ++i)
 							indexPairs.Add(i, places.IndexOf(sortedPlaces[i]));

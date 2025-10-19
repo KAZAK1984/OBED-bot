@@ -1,5 +1,6 @@
 ﻿using OBED.Include;
 using System.Collections.Concurrent;
+using System.Xml.Linq;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -144,13 +145,13 @@ class Program
 										break;
 									}
 
-									usersState[foundUser.UserID].Comment = HtmlEscape(usersState[foundUser.UserID].Comment).Trim();
+									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
 									usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
 									await bot.SendMessage(msg.Chat, $"""
 									Ваш отзыв:
 									
 										• Оценка: {usersState[foundUser.UserID].Rating}
-										• Комментарий: {((msg.Text[0] == '-') ? "Отсутствует" : usersState[foundUser.UserID].Comment)}
+										• Комментарий: {((usersState[foundUser.UserID].Comment == "-") ? "Отсутствует" : usersState[foundUser.UserID].Comment)}
 									
 									Всё верно?
 									""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
@@ -167,7 +168,7 @@ class Program
 										break;
 									}
 
-									usersState[foundUser.UserID].Comment = HtmlEscape(usersState[foundUser.UserID].Comment).Trim();
+									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
 									usersState[foundUser.UserID].Rating = 0;
 									usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
 									await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);

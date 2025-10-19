@@ -761,7 +761,7 @@ class Program
 								• Комментарий: {place.Reviews.Where(x => x.UserID == foundUser.UserID).First().Comment ?? "Отсутствует"}
 								""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
 								{
-									[("Изменить", $"/changeReview -{args}"), ("Удалить", $"/deleteReview {args}")],
+									[("Изменить", $"/changeReview -{args}"), ("Удалить", $"#deleteReview {args}")],
 									[("Назад", $"/info {args}")]
 								});
 							break;
@@ -807,9 +807,22 @@ class Program
 							break;
 						}
 
-						if (!char.IsLetter(args[1]) || !int.TryParse(args[2..], out int index))
+						int index = 0, placeSelectorPage = 0;
+						if (args.Contains('_'))
 						{
-							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /changeReview.", replyMarkup: new InlineKeyboardButton[]
+							if (!char.IsLetter(args[2]) || !int.TryParse(args[3..args.IndexOf('_')], out index) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out placeSelectorPage))
+							{
+								await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
+								{
+									("Назад", "/places")
+								});
+								throw new Exception($"Invalid command agrs: {msg.Text}");
+							}
+						}
+						else if (!char.IsLetter(args[2]) || !int.TryParse(args[3..], out index))
+						{
+
+							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
 							});
@@ -817,7 +830,7 @@ class Program
 						}
 
 						BasePlace place;
-						switch (args[1])
+						switch (args[2])
 						{
 							case ('C'):
 								{
@@ -888,34 +901,27 @@ class Program
 										[("Оценку", $"/changeReview R{args[1..]}"), ("Комментарий", $"/changeReview C{args[1..]}")],
 										[("Назад", $"/info {args[1..]}")]
 									});
-
 									break;
 								}
 							case (UserAction.NoActiveChange):
 								{
-									int newRating = place.Reviews.First(x => x.UserID == foundUser.UserID).Rating;
-									string? newComment = place.Reviews.First(x => x.UserID == foundUser.UserID).Comment;
+									if (usersState[foundUser.UserID].Rating == 0)
+										usersState[foundUser.UserID].Rating = place.Reviews.First(x => x.UserID == foundUser.UserID).Rating;
+									if (usersState[foundUser.UserID].Comment == "-")
+										usersState[foundUser.UserID].Comment = "Отсутствует";
 
-									if (usersState[foundUser.UserID].Rating != 0)
-										newRating = usersState[foundUser.UserID].Rating;
-									if (usersState[foundUser.UserID].Comment != "-")
-										newComment = usersState[foundUser.UserID].Comment;
-
+									usersState[foundUser.UserID].Action = null;
 									await bot.SendMessage(msg.Chat, $"""
 									Ваш НОВЫЙ отзыв:
 									
-										• Оценка: {newRating}
-										• Комментарий: {((newComment == "-") ? "Отсутствует" : newComment)}
+										• Оценка: {usersState[foundUser.UserID].Rating}
+										• Комментарий: {usersState[foundUser.UserID].Comment}
 									
 									Всё верно?
 									""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
 									{
 										[("Да", $"#changeReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{usersState[foundUser.UserID].ReferenceToPlace}")],
 									});
-
-									place.DeleteReview(foundUser.UserID);
-									place.AddReview(foundUser.UserID, newRating, newComment);
-									usersState[foundUser.UserID].Action = null;
 									break;
 								}
 						}
@@ -1061,7 +1067,7 @@ class Program
 										Причина: Ваш отзыв не существует в системе
 										""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[]
 										{
-											("Назад", $"/placeSelector -{splitStr[1]}")
+											("Назад", $"/placeSelector {splitStr[1]}")
 										});
 										break;
 									}
@@ -1083,10 +1089,12 @@ class Program
 								}
 							case ("changeReview"):
 								{
-									if (usersState[foundUser.UserID].Action != UserAction.NoActiveChange)
+									if (usersState[foundUser.UserID].Action != null)
 										break;
 
-									usersState[foundUser.UserID].Action = null;
+									place.DeleteReview(foundUser.UserID);
+									place.AddReview(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment);
+
 									await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно изменён!");
 									await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
 									break;

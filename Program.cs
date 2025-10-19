@@ -145,10 +145,10 @@ class Program
 									}
 
 									if (msg.Text.Trim() == "-")
-										usersState[foundUser.UserID].Comment = null;
+										usersState[foundUser.UserID].Comment = "-";
 									else
 										usersState[foundUser.UserID].Comment = msg.Text.Trim();
-									HtmlEscape(usersState[foundUser.UserID].Comment);
+									usersState[foundUser.UserID].Comment = HtmlEscape(usersState[foundUser.UserID].Comment);
 
 									usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
 									await bot.SendMessage(msg.Chat, $"""
@@ -173,10 +173,10 @@ class Program
 									}
 
 									if (msg.Text.Trim() == "-")
-										usersState[foundUser.UserID].Comment = null;
+										usersState[foundUser.UserID].Comment = "-";
 									else
 										usersState[foundUser.UserID].Comment = msg.Text.Trim();
-									HtmlEscape(usersState[foundUser.UserID].Comment);
+									usersState[foundUser.UserID].Comment = HtmlEscape(usersState[foundUser.UserID].Comment);
 
 									usersState[foundUser.UserID].Rating = 0;
 									usersState[foundUser.UserID].Action = UserAction.NoActiveChange;

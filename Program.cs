@@ -702,8 +702,21 @@ class Program
 							break;
 						}
 
-						if (!char.IsLetter(args[0]) || !int.TryParse(args[1..], out int index))
+						int index = 0, placeSelectorPage = 0;
+						if (args.Contains('_'))
 						{
+							if (!char.IsLetter(args[1]) || !int.TryParse(args[2..args.IndexOf('_')], out index) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out placeSelectorPage))
+							{
+								await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
+								{
+									("Назад", "/places")
+								});
+								throw new Exception($"Invalid command agrs: {msg.Text}");
+							}
+						}
+						else if (!char.IsLetter(args[1]) || !int.TryParse(args[2..], out index))
+						{
+
 							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
@@ -712,7 +725,7 @@ class Program
 						}
 
 						BasePlace place;
-						switch (args[0])
+						switch (args[1])
 						{
 							case ('C'):
 								{
@@ -766,12 +779,9 @@ class Program
 								}
 							default:
 								{
-									if (usersState[foundUser.UserID].ReferenceToPlace != args)
-									{
-										await bot.SendMessage(msg.Chat, $"Зафиксирована попытка оставить отзыв на другую точку. Сброс ранее введённой информации...");
-										usersState[foundUser.UserID].Action = null;
-										await OnCommand("/sendReview", args, msg);
-									}
+									await bot.SendMessage(msg.Chat, $"Зафиксирована попытка оставить отзыв на другую точку. Сброс ранее введённой информации...");
+									usersState[foundUser.UserID].Action = null;
+									await OnCommand("/sendReview", args, msg);
 									break;
 								}
 						}
@@ -976,16 +986,16 @@ class Program
 						var splitStr = callbackQuery.Data.Split(' ');
 						if (splitStr.Length < 2)
 						{
-							await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, "Ошибка при запросе: /deleteReview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, $"Ошибка при #{callbackQuery.Data} запросе: некорректный аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 											("Назад", "/places")
 							});
 							throw new Exception($"No command args: {callbackQuery.Message.Text}");
 						}
 
-						if (!char.IsLetter(splitStr[1][0]) || !int.TryParse(splitStr[1][1..], out int index))
+						if (!char.IsLetter(splitStr[1][1]) || !int.TryParse(splitStr[1][2..splitStr[1].IndexOf('_')], out int index))
 						{
-							await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, "Ошибка при запросе: некорректный аргумент команды /deleteReview.", replyMarkup: new InlineKeyboardButton[]
+							await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, $"Ошибка при #{callbackQuery.Data} запросе: некорректный аргументов.", replyMarkup: new InlineKeyboardButton[]
 							{
 											("Назад", "/places")
 							});
@@ -993,7 +1003,7 @@ class Program
 						}
 
 						BasePlace place;
-						switch (splitStr[1][0])
+						switch (splitStr[1][1])
 						{
 							case ('C'):
 								{
@@ -1012,7 +1022,7 @@ class Program
 								}
 							default:
 								{
-									await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, "Ошибка при запросе: некорректный аргумент команды /deleteReview.", replyMarkup: new InlineKeyboardButton[]
+									await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, $"Ошибка при #{callbackQuery.Data} запросе: некорректный аргументов.", replyMarkup: new InlineKeyboardButton[]
 									   {
 										   ("Назад", "/places")
 									   });

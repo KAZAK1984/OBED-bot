@@ -1,4 +1,5 @@
 ﻿using OBED.Include;
+using System;
 using Telegram.Bot;
 using Telegram.Bot.Extensions;
 using Telegram.Bot.Polling;
@@ -159,7 +160,7 @@ class Program
 									Всё верно?
 									""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
 									{
-										[("Да", $"/sendReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"callback_resetAction")],
+										[("Да", $"#sendReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"callback_resetAction")],
 									});
 									break;
 								}
@@ -333,11 +334,11 @@ class Program
 						await bot.EditMessageText(msg.Chat, msg.Id, "Выбор точки", replyMarkup: new InlineKeyboardButton[][]
 						{
 							[($"{((args[0] == '-' && checker) ? "Сортировка по корпусу" : (checker ? "Отключить сортировку" : ""))}", (args[0] == '-') ? $"/buildingNumberSelector {args[1..]}" : $"/placeSelector -{args[1]}")],
-							[($"{((placesCounter != 0) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[1]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
-							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[1]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
-							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[1]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
-							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[1]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
-							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[1]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
+							[($"{((placesCounter != 0) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[..2]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
+							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[..2]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
+							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[..2]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
+							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[..2]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
+							[($"{((placesCounter > ++nowCounter) ? sortedPlaces[nowCounter].Name : "")}", $"{((indexPairs.Count - 1) >= nowCounter ? $"/info {args[..2]}{indexPairs[nowCounter]}_{page}" : "/places")}")],
 							[($"{((page != 0) ? "◀️" : "")}", $"/placeSelector {args[..2]}{page - 1}"), ("Назад","/places"), ($"{(placesCounter > nowCounter ? "▶️" : "")}", $"/placeSelector {args[..2]}{page + 1}")]
 						});
 						break;
@@ -376,16 +377,16 @@ class Program
 						int index = 0, page = 0;
 						if (args.Contains('_'))
 						{
-							if (!char.IsLetter(args[0]) || (args.Length > 2 && !int.TryParse(args[1..args.IndexOf('_')], out index)) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
+							if (!char.IsLetter(args[1]) || !int.TryParse(args[2..args.IndexOf('_')], out index) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
 							{
 								await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
-									{
+								{
 									("Назад", "/places")
-									});
+								});
 								throw new Exception($"Invalid command agrs: {msg.Text}");
 							}
 						}
-						else if (!char.IsLetter(args[0]) || (args.Length > 2 && !int.TryParse(args[1..], out index)))
+						else if (!char.IsLetter(args[1]) || !int.TryParse(args[2..], out index))
 						{
 							
 							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /info.", replyMarkup: new InlineKeyboardButton[]
@@ -396,7 +397,7 @@ class Program
 						}
 
 						BasePlace place;
-						switch (args[0])
+						switch (args[1])
 						{
 							case ('C'):
 								{
@@ -430,9 +431,9 @@ class Program
 						Последний текстовый отзыв: {((place.Reviews.Count != 0 && place.Reviews.Where(x => x.Comment != null).Any()) ? ($"{place.Reviews.Where(x => x.Comment != null).Last().Rating} ⭐️| {place.Reviews.Where(x => x.Comment != null).Last().Comment}") : "Отзывы с комментариями не найдены")}
 						""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
 						{
-							[("Меню", $"/menu -{(args.Contains('_') ? args[..args.IndexOf('_')] : args)}")],
+							[("Меню", $"/menu -{args}")],
 							[("Оставить отзыв", $"/sendReview {(args.Contains('_') ? args[..args.IndexOf('_')] : args)}"), ("Отзывы", $"/reviews N{(args.Contains('_') ? args[..args.IndexOf('_')] : args)}")],
-							[("Назад", $"/placeSelector -{args[0]}{page}")]
+							[("Назад", $"/placeSelector {args[..2]}{page}")]
 						});
 						break;
 					}
@@ -447,21 +448,22 @@ class Program
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						int index = 0, page = 0;
-						if (args.Contains('_'))
+						int index = 0, page = 0, backPage = 0;
+						if (args.Contains('|'))
 						{
-							if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..args.IndexOf('_')], out index)) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
+							if (!char.IsLetter(args[2]) || !int.TryParse(args[3..args.IndexOf('|')], out index) 
+								|| !int.TryParse(args[(args.IndexOf('|') + 1)..args.IndexOf('_')], out page) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out backPage))
 							{
 								await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
-									{
+								{
 									("Назад", "/places")
-									});
+								});
 								throw new Exception($"Invalid command agrs: {msg.Text}");
 							}
 						}
-						else if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..], out index)))
+						else if (!char.IsLetter(args[2]) || !int.TryParse(args[3..args.IndexOf('_')], out index) 
+							|| !int.TryParse(args[(args.IndexOf('_') + 1)..], out backPage))
 						{
-							Console.WriteLine(args[2..]);
 							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /menu.", replyMarkup: new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
@@ -475,7 +477,7 @@ class Program
 
 						string placeName;
 						List<Product> menu;
-						switch (args[1])
+						switch (args[2])
 						{
 							case ('C'):
 								{
@@ -550,12 +552,12 @@ class Program
 						{(menu.Count > ++nowCounter ? $"{menu[nowCounter].Name} | {menu[nowCounter].Price.value} за {(menu[nowCounter].Price.perGram ? "100 грамм" : "порцию")}" : "")}
 						""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
 						{
-							[(productType == null ? "" : "Без сортировки", $"/menu -{args[1]}{index}")],
+							[(productType == null ? "" : "Без сортировки", $"/menu -{args[1..3]}{index}_{backPage}")],
 
-							[(productType == ProductType.MainDish ? "" : "Блюда", $"/menu M{args[1]}{index}"), (productType == ProductType.SideDish ? "" : "Гарниры", $"/menu S{args[1]}{index}"),
-							(productType == ProductType.Drink ? "" : "Напитки", $"/menu D{args[1]}{index}"), (productType == ProductType.Appetizer ? "" : "Закуски", $"/menu A{args[1]}{index}")],
+							[(productType == ProductType.MainDish ? "" : "Блюда", $"/menu M{args[1..3]}{index}_{backPage}"), (productType == ProductType.SideDish ? "" : "Гарниры", $"/menu S{args[1..3]}{index}_{backPage}"),
+							(productType == ProductType.Drink ? "" : "Напитки", $"/menu D{args[1..3]}{index}_{backPage}"), (productType == ProductType.Appetizer ? "" : "Закуски", $"/menu A{args[1..3]}{index}_{backPage}")],
 
-							[((page != 0) ? "◀️" : "", $"/menu {args[..2]}{index}_{page - 1}"), ("Назад", $"/info {args[1]}{index}"), (menu.Count > ++nowCounter ? "▶️" : "", $"/menu {args[..2]}{index}_{page + 1}")]
+							[((page != 0) ? "◀️" : "", $"/menu {args[..3]}{index}|{page - 1}_{backPage}"), ("Назад", $"/info {args[1..3]}{index}_{backPage}"), (menu.Count > ++nowCounter ? "▶️" : "", $"/menu {args[..3]}{index}|{page + 1}_{backPage}")]
 						});
 						break;
 					}
@@ -573,7 +575,7 @@ class Program
 						int index = 0, page = 0;
 						if (args.Contains('_'))
 						{
-							if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..args.IndexOf('_')], out index)) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
+							if (!char.IsLetter(args[1]) || (!int.TryParse(args[2..args.IndexOf('_')], out index)) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out page))
 							{
 								await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
 								{
@@ -582,7 +584,7 @@ class Program
 								throw new Exception($"Invalid command agrs: {msg.Text}");
 							}
 						}
-						else if (!char.IsLetter(args[1]) || (args.Length > 2 && !int.TryParse(args[2..], out index)))
+						else if (!char.IsLetter(args[1]) || !int.TryParse(args[2..], out index))
 						{
 							Console.WriteLine(args[2..]);
 							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /reviews.", replyMarkup: new InlineKeyboardButton[]
@@ -699,8 +701,7 @@ class Program
 							break;
 						}
 
-						int index = 0;
-						if (!char.IsLetter(args[0]) || (args.Length > 1 && !int.TryParse(args[1..], out index)))
+						if (!char.IsLetter(args[0]) || !int.TryParse(args[1..], out int index))
 						{
 							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /sendReview.", replyMarkup: new InlineKeyboardButton[]
 							{
@@ -762,25 +763,6 @@ class Program
 									await bot.SendMessage(msg.Chat, $"Введите оценку от 1⭐️ до 10⭐️", replyMarkup: new ForceReplyMarkup());
 									break;
 								}
-							case (UserAction.NoActiveRequest):
-								{
-									usersState[foundUser.UserID].Action = null;
-
-									if (place.AddReview(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment))
-									{
-										await bot.SendMessage(msg.Chat.Id, $"Отзыв успешно оставлен!");
-										await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, msg);
-									}
-									else
-									{
-										await bot.EditMessageText(msg.Chat, msg.Id, $"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].Rating}⭐️| {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}", replyMarkup: new InlineKeyboardButton[]
-											{
-												("Назад", $"/info {usersState[foundUser.UserID].ReferenceToPlace}")
-											});
-										throw new Exception($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].ReferenceToPlace} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
-									}
-									break;
-								}
 							default:
 								{
 									if (usersState[foundUser.UserID].ReferenceToPlace != args)
@@ -791,92 +773,6 @@ class Program
 									}
 									break;
 								}
-						}
-						break;
-					}
-				case ("/deleteReview"):
-					{
-						if (args == null)
-						{
-							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: /deleteReview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
-							{
-								("Назад", "/places")
-							});
-							throw new Exception($"No command args: {msg.Text}");
-						}
-
-						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
-
-						if (foundUser == null)
-						{
-							await bot.EditMessageText(msg.Chat, msg.Id, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
-								replyMarkup: new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
-							break;
-						}
-
-						int index = 0;
-						if (!char.IsLetter(args[0]) || (args.Length > 1 && !int.TryParse(args[1..], out index)))
-						{
-							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /deleteReview.", replyMarkup: new InlineKeyboardButton[]
-							{
-								("Назад", "/places")
-							});
-							throw new Exception($"Invalid command agrs: {msg.Text}");
-						}
-
-						BasePlace place;
-						switch (args[0])
-						{
-							case ('C'):
-								{
-									place = ObjectLists.Canteens.ElementAt(index);
-									break;
-								}
-							case ('B'):
-								{
-									place = ObjectLists.Buffets.ElementAt(index);
-									break;
-								}
-							case ('G'):
-								{
-									place = ObjectLists.Groceries.ElementAt(index);
-									break;
-								}
-							default:
-								{
-									await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /deleteReview.", replyMarkup: new InlineKeyboardButton[]
-									   {
-										   ("Назад", "/places")
-									   });
-									throw new Exception($"Invalid command agrs: {msg.Text}");
-								}
-						}
-
-						if (!place.Reviews.Where(x => x.UserID == foundUser.UserID).Any())
-						{
-							await bot.EditMessageText(msg.Chat, msg.Id, $"""
-							Вы не можете удалить отзыв на {place.Name}
-
-							Причина: Ваш отзыв не существует в системе
-							""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[]
-							{
-								("Назад", $"/placeSelector -{args}")
-							});
-							break;
-						}
-
-						if (place.DeleteReview(foundUser.UserID))
-						{
-							await bot.SendMessage(msg.Chat.Id, $"Отзыв на {place.Name} успешно удалён!");
-							await OnCommand("/info", args, msg);
-						}
-						else
-						{
-							await bot.EditMessageText(msg.Chat, msg.Id, $"Ошибка при попытке удалить отзыв на {place.Name}", replyMarkup: new InlineKeyboardButton[]
-										{
-														("Назад", $"/info {args}")
-										});
-							throw new Exception($"Error while user {foundUser.UserID} trying to delete review on {ObjectLists.Canteens.ElementAt(index).Name}");
 						}
 						break;
 					}
@@ -900,8 +796,7 @@ class Program
 							break;
 						}
 
-						int index = 0;
-						if (!char.IsLetter(args[1]) || (args.Length > 1 && !int.TryParse(args[2..], out index)))
+						if (!char.IsLetter(args[1]) || !int.TryParse(args[2..], out int index))
 						{
 							await bot.EditMessageText(msg.Chat, msg.Id, "Ошибка при запросе: некорректный аргумент команды /changeReview.", replyMarkup: new InlineKeyboardButton[]
 							{
@@ -1004,7 +899,7 @@ class Program
 									Всё верно?
 									""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
 									{
-										[("Да", $"/info {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{usersState[foundUser.UserID].ReferenceToPlace}")],
+										[("Да", $"#changeReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{usersState[foundUser.UserID].ReferenceToPlace}")],
 									});
 
 									place.DeleteReview(foundUser.UserID);
@@ -1050,32 +945,169 @@ class Program
 
 		async Task OnCallbackQuery(CallbackQuery callbackQuery)
 		{
-			if (callbackQuery.Data![0] == '/')
+			ArgumentNullException.ThrowIfNull(callbackQuery.Data);
+
+			switch (callbackQuery.Data[0])
 			{
-				await bot.AnswerCallbackQuery(callbackQuery.Id);
+				case ('/'):
+					{
+						await bot.AnswerCallbackQuery(callbackQuery.Id);
 
-				var splitStr = callbackQuery.Data.Split(' ');
-				if (splitStr.Length > 1)
-					await OnCommand(splitStr[0], splitStr[1], callbackQuery.Message!);
-				else
-					await OnCommand(splitStr[0], null, callbackQuery.Message!);
+						var splitStr = callbackQuery.Data.Split(' ');
+						if (splitStr.Length > 1)
+							await OnCommand(splitStr[0], splitStr[1], callbackQuery.Message!);
+						else
+							await OnCommand(splitStr[0], null, callbackQuery.Message!);
+						break;
+					}
+				case ('#'):
+					{
+						ArgumentNullException.ThrowIfNull(callbackQuery.Message);
+						ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
+
+						if (foundUser == null)
+						{
+							await bot.SendMessage(callbackQuery.Message.Chat.Id, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
+								replyMarkup: new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
+							break;
+						}
+
+						var splitStr = callbackQuery.Data.Split(' ');
+						if (splitStr.Length < 2)
+						{
+							await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, "Ошибка при запросе: /deleteReview не применяется без аргументов.", replyMarkup: new InlineKeyboardButton[]
+							{
+											("Назад", "/places")
+							});
+							throw new Exception($"No command args: {callbackQuery.Message.Text}");
+						}
+
+						if (!char.IsLetter(splitStr[1][0]) || !int.TryParse(splitStr[1][1..], out int index))
+						{
+							await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, "Ошибка при запросе: некорректный аргумент команды /deleteReview.", replyMarkup: new InlineKeyboardButton[]
+							{
+											("Назад", "/places")
+							});
+							throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
+						}
+
+						BasePlace place;
+						switch (splitStr[1][0])
+						{
+							case ('C'):
+								{
+									place = ObjectLists.Canteens.ElementAt(index);
+									break;
+								}
+							case ('B'):
+								{
+									place = ObjectLists.Buffets.ElementAt(index);
+									break;
+								}
+							case ('G'):
+								{
+									place = ObjectLists.Groceries.ElementAt(index);
+									break;
+								}
+							default:
+								{
+									await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, "Ошибка при запросе: некорректный аргумент команды /deleteReview.", replyMarkup: new InlineKeyboardButton[]
+									   {
+										   ("Назад", "/places")
+									   });
+									throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
+								}
+						}
+
+						switch (splitStr[0][1..])
+						{
+							case ("sendReview"):
+								{
+									if (place.AddReview(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment) && usersState[foundUser.UserID].Action == UserAction.NoActiveRequest)
+									{
+										usersState[foundUser.UserID].Action = null;
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно оставлен!");
+										await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
+									}
+									else
+									{
+										await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, $"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].Rating}⭐️| {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}", replyMarkup: new InlineKeyboardButton[]
+										{
+											("Назад", $"/info {usersState[foundUser.UserID].ReferenceToPlace}")
+										});
+										throw new Exception($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].ReferenceToPlace} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
+									}
+
+									break;
+								}
+							case ("deleteReview"):
+								{
+									if (!place.Reviews.Where(x => x.UserID == foundUser.UserID).Any())
+									{
+										await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, $"""
+										Вы не можете удалить отзыв на {place.Name}
+
+										Причина: Ваш отзыв не существует в системе
+										""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[]
+										{
+											("Назад", $"/placeSelector -{splitStr[1]}")
+										});
+										break;
+									}
+
+									if (place.DeleteReview(foundUser.UserID))
+									{
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно удалён!");
+										await OnCommand("/info", splitStr[1], callbackQuery.Message);
+									}
+									else
+									{
+										await bot.EditMessageText(callbackQuery.Message.Chat, callbackQuery.Message.Id, $"Ошибка при попытке удалить отзыв на {place.Name}", replyMarkup: new InlineKeyboardButton[]
+										{
+											("Назад", $"/info {splitStr[1]}")
+										});
+										throw new Exception($"Error while user {foundUser.UserID} trying to delete review on {ObjectLists.Canteens.ElementAt(index).Name}");
+									}
+									break;
+								}
+							case ("changeReview"):
+								{
+									if (usersState[foundUser.UserID].Action != UserAction.NoActiveChange)
+										break;
+
+									usersState[foundUser.UserID].Action = null;
+									await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно изменён!");
+									await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
+									break;
+								}
+							default:
+								{
+									throw new InvalidDataException($"Некорректный #аргумент: {callbackQuery.Data}");
+								}
+						}
+						break;
+					}
+				default:
+					{
+						if (callbackQuery.Data == "callback_resetAction")
+						{
+							await bot.AnswerCallbackQuery(callbackQuery.Id);
+
+							ObjectLists.Persons.TryGetValue(callbackQuery.Message!.Chat.Id, out Person? foundUser);
+
+							if (foundUser == null)
+								await OnCommand("/start", null, callbackQuery.Message!);
+							else
+							{
+								usersState[foundUser!.UserID].Action = null;
+								await OnCommand("/info", usersState[foundUser!.UserID].ReferenceToPlace, callbackQuery.Message!);
+							}
+						}
+						else
+							Console.WriteLine($"Зафиксирован необработанный callbackQuery {callbackQuery.Data}");
+						break;
+					}
 			}
-			else if (callbackQuery.Data == "callback_resetAction")
-			{
-				await bot.AnswerCallbackQuery(callbackQuery.Id);
-
-				ObjectLists.Persons.TryGetValue(callbackQuery.Message!.Chat.Id, out Person? foundUser);
-
-				if (foundUser == null)
-					await OnCommand("/start", null, callbackQuery.Message!);
-				else
-				{
-					usersState[foundUser!.UserID].Action = null;
-					await OnCommand("/info", usersState[foundUser!.UserID].ReferenceToPlace, callbackQuery.Message!);
-				}
-			}
-			else
-				Console.WriteLine($"Received unhandled callbackQuery {callbackQuery.Data}");
 		}
 	}
 }

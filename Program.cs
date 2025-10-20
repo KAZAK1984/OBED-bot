@@ -1,6 +1,5 @@
 ﻿using OBED.Include;
 using System.Collections.Concurrent;
-using System.Xml.Linq;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -76,6 +75,8 @@ class Program
 		Console.ReadLine();
 		cts.Cancel();
 
+		static string HtmlEscape(string? s) => (s ?? "-").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
+
 		async Task OnError(Exception exception, HandleErrorSource source)
 		{
 			Console.WriteLine(exception);
@@ -99,7 +100,7 @@ class Program
 								break;
 							}
 
-						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
+						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);	
 
 						if (foundUser == null)
 						{
@@ -146,12 +147,15 @@ class Program
 									}
 
 									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+									if (usersState[foundUser.UserID].Comment == "-")
+										usersState[foundUser.UserID].Comment = null;
+
 									usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
 									await bot.SendMessage(msg.Chat, $"""
 									Ваш отзыв:
 									
 										• Оценка: {usersState[foundUser.UserID].Rating}
-										• Комментарий: {((usersState[foundUser.UserID].Comment == "-") ? "Отсутствует" : usersState[foundUser.UserID].Comment)}
+										• Комментарий: {usersState[foundUser.UserID].Comment ?? "Отсутствует"}
 									
 									Всё верно?
 									""", ParseMode.Html, replyMarkup: new InlineKeyboardButton[][]
@@ -1121,6 +1125,5 @@ class Program
 					}
 			}
 		}
-		static string HtmlEscape(string? s) => (s ?? "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 	}
 }

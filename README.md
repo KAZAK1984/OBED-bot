@@ -28,7 +28,7 @@ Telegram-бот для оценки точек питания в универс�
 
 - **[.NET 8](https://dotnet.microsoft.com/ru-ru/download/dotnet/8.0)** - платформа разработки
 - **[Telegram.Bot API](https://github.com/TelegramBots/Telegram.Bot)** - работа с Telegram API
-- **База данных** - в процессе выбора (возможен [PostgreSQL](https://www.postgresql.org) или другая)
+- **[SQLite](https://sqlite.org/index.html)** - база данных
 
 ## 🚀 Быстрый старт
 

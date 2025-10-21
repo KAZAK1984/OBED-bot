@@ -2,7 +2,7 @@
 
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![Telegram](https://img.shields.io/badge/Telegram-Bot-2AABEE?logo=telegram)](https://core.telegram.org/bots)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791?logo=postgresql)](https://www.postgresql.org)
+[![SQLite](https://img.shields.io/badge/SQLite-Database-78A498?style=flat&logo=sqlite&logoColor=78A498)](https://sqlite.org/index.html)
 
 Telegram-бот для оценки точек питания в университете и ближайших заведениях. Позволяет студентам оставлять отзывы, просматривать рейтинги столовых, буфетов и других точек питания.
 

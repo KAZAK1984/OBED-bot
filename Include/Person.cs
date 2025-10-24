@@ -25,8 +25,8 @@
 			UserID = userID;
 			Role = role;
 		}
+		public void SetRole(RoleType role) => Role = role;
 		// TODO: ChangeUsername()
-		// TODO: SetRole()
 	}
 	/// <summary>
 	/// Текущий тип обработки сообщений в чате от юзера. Без данных тегов UserState у сообщения игнорируются

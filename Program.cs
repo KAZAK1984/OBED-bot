@@ -71,10 +71,79 @@ class Program
 		bot.OnMessage += OnMessage;
 		bot.OnUpdate += OnUpdate;
 
-		Console.WriteLine($"@{meBot.Username} is running... Press Enter to terminate\n");
-		Console.ReadLine();
-		cts.Cancel();
+		string? hostCommand = null;
+		do
+		{
+			Console.WriteLine($"@{meBot.Username} is running... Write host-command or 0 for terminate\n");
+			Console.WriteLine($"Host-command:");
+			Console.WriteLine($"- addAdmin <USER ID>");
+			Console.WriteLine($"- removeAdmin <USER ID>");
+			Console.WriteLine($"- clearConsole");
 
+			hostCommand = Console.ReadLine();
+			try
+			{
+				ArgumentNullException.ThrowIfNullOrWhiteSpace(hostCommand);
+
+				var splitCommand = hostCommand.Split(' ');
+
+				switch (splitCommand[0])
+				{
+					case ("addAdmin"):
+						{
+							if (splitCommand.Length < 2)
+								throw new InvalidDataException("Need 2 args");
+							if (!long.TryParse(splitCommand[1], out long ID))
+								throw new InvalidDataException("Can't parse ID");
+							ObjectLists.Persons.TryGetValue(ID, out Person? foundUser);
+
+							if (foundUser == null)
+								throw new InvalidDataException($"User {splitCommand[1]} not found");
+
+							ObjectLists.Persons[ID].SetRole(RoleType.Administrator);
+							Console.WriteLine("Success\n---\n");
+							break;
+						}
+					case ("removeAdmin"):
+						{
+							if (splitCommand.Length < 2)
+								throw new InvalidDataException("Need 2 args");
+							if (!long.TryParse(splitCommand[1], out long ID))
+								throw new InvalidDataException("Can't parse ID");
+							ObjectLists.Persons.TryGetValue(ID, out Person? foundUser);
+
+							if (foundUser == null)
+								throw new InvalidDataException($"User {splitCommand[1]} not found");
+							if (ObjectLists.Persons[ID].Role != RoleType.Administrator)
+								throw new InvalidDataException($"User {splitCommand[1]} is not an administrator");
+
+							ObjectLists.Persons[ID].SetRole(RoleType.CommonUser);
+							Console.WriteLine("Success\n---\n");
+							break;
+						}
+					case ("clearConsole"):
+						{
+							Console.Clear();
+							break;
+						}
+					case ("0"):
+						{
+							cts.Cancel();
+							return;
+						}
+					default:
+						{
+							Console.WriteLine($"Unknown command {hostCommand}\n---\n");
+							break;
+						}
+				}
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine($"{e}\n---\n");
+			}
+		} while (true);
+		
 		static string HtmlEscape(string? s) => (s ?? "-").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 
         async Task EditOrSendMessage(Message msg, string text, InlineKeyboardMarkup? markup = null, ParseMode parser = ParseMode.None, bool isForceReply = false)
@@ -229,10 +298,13 @@ class Program
 						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
 
 						if (foundUser != null)
-							await EditOrSendMessage(msg, $"{foundUser.UserID} - {foundUser.Username}", new InlineKeyboardButton[][]
+							await EditOrSendMessage(msg, $"""
+							Ваше имя: {foundUser.Username} ({foundUser.UserID})
+							Ваш статус: {foundUser.Role}
+							""", new InlineKeyboardButton[]
 							{
-								[("Назад","/start")]
-							});
+								("Назад","/start")
+							}, ParseMode.Html);
 						break;
 					}
 				case ("/help"):

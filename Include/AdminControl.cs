@@ -51,5 +51,19 @@
 				ReviewCollector.RemoveAt(index);
 			}
 		}
+
+		public static void SetReviewStatus(string censorStr, int index = 0)
+		{
+			lock (adminControlLock)
+			{
+				if (index < 0 || index >= ReviewCollector.Count)
+					throw new InvalidDataException($"index {index} должен быть в рамках ReviewCollector ({ReviewCollector.Count})");
+
+				ReviewCollector[index].place.AddReview(ReviewCollector[index].review.UserID,
+					ReviewCollector[index].review.Rating, censorStr);
+
+				ReviewCollector.RemoveAt(index);
+			}
+		}
 	}
 }

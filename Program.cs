@@ -262,6 +262,19 @@ class Program
 									await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
 									break;
 								}
+							case (UserAction.Moderation):
+								{
+									if (string.IsNullOrWhiteSpace(msg.Text))
+									{
+										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или удалите сообщение отправив -", null, ParseMode.None, true);
+										break;
+									}
+
+									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+									usersState[foundUser.UserID].Action = UserAction.NoActiveModeration;
+									await OnCommand("/admin", "chkA", msg);
+									break;
+								}
 						}
 						break;
 					}
@@ -1096,7 +1109,7 @@ class Program
 											""", new InlineKeyboardButton[][]
 												{
 												[("Изменить вручную", $"/admin chkA")],
-												[("Принять авто-мод", $"/admin chkM"), ("Принять оригинал", $"/admin chkO")],
+												[("Принять авто-мод", $"#admin chkM"), ("Принять оригинал", $"#admin chkO")],
 												[("Назад", $"/admin")]
 												}, ParseMode.Html);
 										}
@@ -1114,14 +1127,42 @@ class Program
 									{
 										case ('A'):
 											{
-												break;
-											}
-										case ('M'):
-											{
-												break;
-											}
-										case ('O'):
-											{
+												switch (usersState[foundUser.UserID].Action)
+												{
+													case (null):
+														{
+															usersState[foundUser.UserID].Action = UserAction.Moderation;
+															await EditOrSendMessage(msg, $"Введите ОТРЕДАКТИРОВАННЫЙ текст отзыва или удалите его отправив -", null, ParseMode.None, true);
+															break;
+														}
+													case (UserAction.NoActiveModeration):
+														{
+															if (usersState[foundUser.UserID].Comment == "-")
+																usersState[foundUser.UserID].Comment = null;
+
+															usersState[foundUser.UserID].Action = null;
+															await EditOrSendMessage(msg, $"""
+															ОТРЕДАКТИРОВАННЫЙ отзыв:
+									
+																• Оценка: {AdminControl.ReviewCollector[0].review.Rating}
+																• Комментарий: {usersState[foundUser.UserID].Comment ?? "Удалён"}
+									
+															Всё верно?
+															""", new InlineKeyboardButton[][]
+															{
+																[("Да", $"#admin chkA"), ("Нет", "/admin chkA")],
+																[("Назад", "/admin chk")]
+															}, ParseMode.Html);
+															break;
+														}
+													default:
+														{
+															await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к модерации в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
+															usersState[foundUser.UserID].Action = null;
+															await OnCommand("/admin", args, msg);
+															break;
+														}
+												}
 												break;
 											}
 										default:
@@ -1215,6 +1256,43 @@ class Program
 							throw new Exception($"No command args: {callbackQuery.Message.Text}");
 						}
 
+						if (splitStr[0] == "#admin" && foundUser.Role == RoleType.Administrator)
+						{
+							switch (splitStr[1])
+							{
+								case ("chkA"):
+									{
+										if (usersState[foundUser.UserID].Comment != null)
+											AdminControl.SetReviewStatus(usersState[foundUser.UserID].Comment!);
+										else
+										{
+											AdminControl.ReviewCollector[0].place.AddReview(AdminControl.ReviewCollector[0].review.UserID, AdminControl.ReviewCollector[0].review.Rating, null);
+											AdminControl.SetReviewStatus();
+										}
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
+										break;
+									}
+								case ("chkM"):
+									{
+										AdminControl.SetReviewStatus(AutoMod.AddCensor(AdminControl.ReviewCollector[0].review.Comment!));
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв после авто-мода успешно оставлен!");
+										break;
+									}
+								case ("chkO"):
+									{
+										AdminControl.SetReviewStatus(true);
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Оригинальный отзыв успешно оставлен!");
+										break;
+									}
+								default:
+									{
+										throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
+									}
+							}
+							await OnCommand("/admin", "chk", callbackQuery.Message);
+							break;
+						}
+
 						if (!char.IsLetter(splitStr[1][1]) || !int.TryParse(splitStr[1][2..splitStr[1].IndexOf('_')], out int index))
 						{
 							await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректный аргументов.", new InlineKeyboardButton[]
@@ -1256,7 +1334,6 @@ class Program
 						{
 							case ("sendReview"):
 								{
-									//if (place.AddReview(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment) && usersState[foundUser.UserID].Action == UserAction.NoActiveRequest)
 									if (AdminControl.AddReviewOnMod(place, foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment) && usersState[foundUser.UserID].Action == UserAction.NoActiveRequest)
 									{
 										usersState[foundUser.UserID].Action = null;
@@ -1318,7 +1395,6 @@ class Program
 									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
 										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
 
-									//place.AddReview(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment);
 									AdminControl.AddReviewOnMod(place, foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment);
 									await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно изменён!");
 									await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);

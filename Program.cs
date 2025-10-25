@@ -8,7 +8,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 class Program
 {
-    static async Task Main()
+	static async Task Main()
 	{
 		using var cts = new CancellationTokenSource();
 		var token = Environment.GetEnvironmentVariable("TOKEN");
@@ -143,23 +143,23 @@ class Program
 				Console.WriteLine($"{e}\n---\n");
 			}
 		} while (true);
-		
+
 		static string HtmlEscape(string? s) => (s ?? "-").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 
-        async Task EditOrSendMessage(Message msg, string text, InlineKeyboardMarkup? markup = null, ParseMode parser = ParseMode.None, bool isForceReply = false)
-        {
-            ArgumentNullException.ThrowIfNull(msg.From);
+		async Task EditOrSendMessage(Message msg, string text, InlineKeyboardMarkup? markup = null, ParseMode parser = ParseMode.None, bool isForceReply = false)
+		{
+			ArgumentNullException.ThrowIfNull(msg.From);
 
 			if (isForceReply)
 			{
-                await bot.SendMessage(msg.Chat, text, parser, replyMarkup: new ForceReplyMarkup());
-                return;
+				await bot.SendMessage(msg.Chat, text, parser, replyMarkup: new ForceReplyMarkup());
+				return;
 			}
 			if (msg.From.IsBot)
 				await bot.EditMessageText(msg.Chat, msg.Id, text, parser, replyMarkup: markup);
 			else
-                await bot.SendMessage(msg.Chat, text, parser, replyMarkup: markup);
-        }
+				await bot.SendMessage(msg.Chat, text, parser, replyMarkup: markup);
+		}
 
 		async Task OnError(Exception exception, HandleErrorSource source)
 		{
@@ -184,7 +184,7 @@ class Program
 								break;
 							}
 
-						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);	
+						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
 
 						if (foundUser == null)
 						{
@@ -468,7 +468,7 @@ class Program
 						}
 						else if (!char.IsLetter(args[1]) || !int.TryParse(args[2..], out index))
 						{
-							
+
 							await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /info.", new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
@@ -531,7 +531,7 @@ class Program
 						int index = 0, page = 0, placeSelectorPage = 0;
 						if (args.Contains('|'))
 						{
-							if (!char.IsLetter(args[2]) || !int.TryParse(args[3..args.IndexOf('|')], out index) 
+							if (!char.IsLetter(args[2]) || !int.TryParse(args[3..args.IndexOf('|')], out index)
 								|| !int.TryParse(args[(args.IndexOf('|') + 1)..args.IndexOf('_')], out page) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out placeSelectorPage))
 							{
 								await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /menu.", new InlineKeyboardButton[]
@@ -541,7 +541,7 @@ class Program
 								throw new Exception($"Invalid command agrs: {msg.Text}");
 							}
 						}
-						else if (!char.IsLetter(args[2]) || !int.TryParse(args[3..args.IndexOf('_')], out index) 
+						else if (!char.IsLetter(args[2]) || !int.TryParse(args[3..args.IndexOf('_')], out index)
 							|| !int.TryParse(args[(args.IndexOf('_') + 1)..], out placeSelectorPage))
 						{
 							await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /menu.", new InlineKeyboardButton[]
@@ -913,7 +913,6 @@ class Program
 						}
 						else if (!char.IsLetter(args[2]) || !int.TryParse(args[3..], out index))
 						{
-
 							await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /sendReview.", new InlineKeyboardButton[]
 							{
 								("Назад", "/places")
@@ -997,13 +996,21 @@ class Program
 								}
 							case (UserAction.NoActiveChange):
 								{
-									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID) && usersState[foundUser.UserID].Rating == 0)
-										usersState[foundUser.UserID].Rating = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser.UserID).review.Rating;
-									else if (usersState[foundUser.UserID].Rating == 0)
-										usersState[foundUser.UserID].Rating = place.Reviews.First(x => x.UserID == foundUser.UserID).Rating;
-									
-									if (usersState[foundUser.UserID].Comment == "saved_mark")
-										usersState[foundUser.UserID].Comment = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser.UserID).review.Comment;
+									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
+									{
+										if (usersState[foundUser.UserID].Rating == 0)
+											usersState[foundUser.UserID].Rating = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser.UserID).review.Rating;
+										if (usersState[foundUser.UserID].Comment == "saved_mark")
+											usersState[foundUser.UserID].Comment = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser.UserID).review.Comment;
+									}
+									else
+									{
+										if (usersState[foundUser.UserID].Rating == 0)
+											usersState[foundUser.UserID].Rating = place.Reviews.First(x => x.UserID == foundUser.UserID).Rating;
+										if (usersState[foundUser.UserID].Comment == "saved_mark")
+											usersState[foundUser.UserID].Comment = null;    // Если есть сохранённый коммент - его бы нашли в админ контроле
+									}
+
 									if (usersState[foundUser.UserID].Comment == "-")
 										usersState[foundUser.UserID].Comment = null;
 
@@ -1018,14 +1025,14 @@ class Program
 									""", new InlineKeyboardButton[][]
 									{
 										[("Да", $"#changeReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{usersState[foundUser.UserID].ReferenceToPlace}")],
-                                        [("Назад", $"/info {args[1..]}")]
-                                    }, ParseMode.Html);
+										[("Назад", $"/info {args[1..]}")]
+									}, ParseMode.Html);
 									break;
 								}
 						}
 						break;
 					}
-				case ("/admin"):	// TODO: при реализации runtime добавления новых точек обязательно использовать lock
+				case ("/admin"):    // TODO: при реализации runtime добавления новых точек обязательно использовать lock
 					{
 						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
 
@@ -1043,18 +1050,101 @@ class Program
 							});
 							break;
 						}
-						await EditOrSendMessage(msg, $"""
+
+						if (args == null)
+						{
+							await EditOrSendMessage(msg, $"""
 							Доброго времени, адмеместратор {foundUser.Username}
 							
-							Кол-во отзывов на проверку: TODO
+							Кол-во отзывов на проверку: {AdminControl.ReviewCollector.Count}
 							Оповещение: TODO
 							""", new InlineKeyboardButton[][]
 							{
+								[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
 								[("Назад", $"/start")]
 							}, ParseMode.Html);
+							break;
+						}
 
-						foreach (var (review, place) in AdminControl.ReviewCollector)
-							Console.WriteLine($"{place.Name} - {review.Rating}");
+						if (args.Length < 3)
+						{
+							await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin.", new InlineKeyboardButton[]
+							{
+								("Назад", "/admin")
+							});
+							throw new Exception($"Invalid command agrs: {msg.Text}");
+						}
+
+						switch (args[..3])
+						{
+							case ("chk"):
+								{
+									if (args.Length < 4)
+									{
+										if (AdminControl.ReviewCollector.Count > 0)
+										{
+											ObjectLists.Persons.TryGetValue(AdminControl.ReviewCollector[0].review.UserID, out Person? writer);
+											ArgumentNullException.ThrowIfNull(writer);
+
+											await EditOrSendMessage(msg, $"""
+											Отзыв ({AdminControl.ReviewCollector[0].review.Rating}⭐) от @{writer.Username}, {writer.Role} на {AdminControl.ReviewCollector[0].place.Name}.
+											Дата отправки на модерацию: {AdminControl.ReviewCollector[0].review.Date}
+											
+											Оригинал: {AutoMod.BoldCandidateCensor(AdminControl.ReviewCollector[0].review.Comment!)}
+											
+											Авто-мод: {AutoMod.AddCensor(AdminControl.ReviewCollector[0].review.Comment!)}
+											""", new InlineKeyboardButton[][]
+												{
+												[("Изменить вручную", $"/admin chkA")],
+												[("Принять авто-мод", $"/admin chkM"), ("Принять оригинал", $"/admin chkO")],
+												[("Назад", $"/admin")]
+												}, ParseMode.Html);
+										}
+										else
+											await EditOrSendMessage(msg, $"""
+											Отзывов на проверку не осталось, отличная работа!
+											""", new InlineKeyboardButton[][]
+												{
+												[("Назад", $"/admin")]
+												}, ParseMode.Html);
+										break;
+									}
+
+									switch (args[3])
+									{
+										case ('A'):
+											{
+												break;
+											}
+										case ('M'):
+											{
+												break;
+											}
+										case ('O'):
+											{
+												break;
+											}
+										default:
+											{
+												await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin chk...", new InlineKeyboardButton[]
+												{
+													("Назад", "/admin chk")
+												});
+												throw new Exception($"Invalid command agrs: {msg.Text}");
+											}
+									}
+									break;
+								}
+							default:
+								{
+									await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin.", new InlineKeyboardButton[]
+									{
+										("Назад", "/admin")
+									});
+									throw new Exception($"Invalid command agrs: {msg.Text}");
+								}
+						}
+
 						break;
 					}
 				default:

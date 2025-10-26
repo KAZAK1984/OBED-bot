@@ -230,6 +230,14 @@ class Program
 										break;
 									}
 
+									if (msg.Text.Length > 720)
+									{
+										await EditOrSendMessage(msg, $"""
+											Ошибка при обработке! Комментарий не может быть больше 720 символов. Текущая длина сообщения: {msg.Text.Length}.
+											Убедитесь, что ваше новое сообщение содержит текст или откажитесь от сообщения отправив -
+											""", null, ParseMode.Html, true);
+										break;
+									}
 									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
 									if (usersState[foundUser.UserID].Comment == "-")
 										usersState[foundUser.UserID].Comment = null;
@@ -291,19 +299,22 @@ class Program
 			{
 				case ("/start"):
 					{
-						await EditOrSendMessage(msg, "Старт", new InlineKeyboardButton[][]
+                        ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
+                        if (foundUser == null)
+                        {
+                            Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
+                            ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
+                            usersState.TryAdd(msg.Chat.Id, new());
+                            ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
+                        }
+
+                        await EditOrSendMessage(msg, "Старт", new InlineKeyboardButton[][]
 						{
 							[("Места", "/places")],
 							[("Профиль", "/person")],
-							[("Помощь", "/help"), ("Поддержка", "/report")]
+							[("Помощь", "/help"), ("Поддержка", "/report")],
+							[(foundUser!.Role == RoleType.Administrator ? "Админ панель" : "", "/admin")]
 						});
-
-						if (!ObjectLists.Persons.ContainsKey(msg.Chat.Id))
-						{
-							Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
-							ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
-							usersState.TryAdd(msg.Chat.Id, new());
-						}
 						break;
 					}
 				case ("/person"):
@@ -969,7 +980,7 @@ class Program
 							Причина: Ваш отзыв не существует в системе
 							""", new InlineKeyboardButton[]
 							{
-								("Назад", $"/placeSelector -{args}")
+								("Назад", $"/info {args[1..]}")
 							}, ParseMode.Html);
 							break;
 						}

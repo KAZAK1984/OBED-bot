@@ -230,6 +230,14 @@ class Program
 										break;
 									}
 
+									if (msg.Text.Length > 720)
+									{
+										await EditOrSendMessage(msg, $"""
+											Ошибка при обработке! Комментарий не может быть больше 720 символов. Текущая длина сообщения: {msg.Text.Length}.
+											Убедитесь, что ваше новое сообщение содержит текст или откажитесь от сообщения отправив -
+											""", null, ParseMode.Html, true);
+										break;
+									}
 									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
 									if (usersState[foundUser.UserID].Comment == "-")
 										usersState[foundUser.UserID].Comment = null;
@@ -969,7 +977,7 @@ class Program
 							Причина: Ваш отзыв не существует в системе
 							""", new InlineKeyboardButton[]
 							{
-								("Назад", $"/placeSelector -{args}")
+								("Назад", $"/info {args[1..]}")
 							}, ParseMode.Html);
 							break;
 						}

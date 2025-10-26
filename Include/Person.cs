@@ -42,7 +42,9 @@
 		/// <summary> Для ОБНОВЛЕНИЯ отзывов. Запрос новой не-пустой строки</summary>
 		CommentChange,
 		/// <summary> Для НОВЫХ отзывов. Отметка, позволяющая перейти к финальному этапу отправки отзыва</summary>
-		NoActiveRequest,
+		ReportRequest,
+        /// <summary> Для НОВЫХ отчетов (репортов). Запрос нового комментария</summary>
+        NoActiveRequest,
 		/// <summary> Для ОБНОВЛЕНИЯ отзывов. Отметка, позволяющая перейти к финальному этапу обновления отзыва</summary>
 		NoActiveChange
 	}
@@ -50,6 +52,7 @@
 	{
 		public UserAction? Action { get; set; }
 		public string? ReferenceToPlace { get; set; }
+		public string? ReportType { get; set; }
 		public string? Comment { get; set; }
 		public int Rating { get; set; }
 	}

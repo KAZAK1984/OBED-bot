@@ -1,5 +1,6 @@
 ﻿using OBED.Include;
 using System.Collections.Concurrent;
+using System.Numerics;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -193,6 +194,35 @@ class Program
 									await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
 									break;
 								}
+							case (UserAction.ReportRequest):
+								{
+                                    if (string.IsNullOrWhiteSpace(msg.Text))
+                                    {
+                                        await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
+                                        break;
+                                    }
+
+                                    usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+                                    if (usersState[foundUser.UserID].Comment == "-")
+                                        usersState[foundUser.UserID].Comment = null;
+
+                                    usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
+
+									string message = (usersState[foundUser.UserID].ReportType[1] == 'B') ? "Сообщение об ошибке:" : ((usersState[foundUser.UserID].ReportType[1] == 'C') ? "Ваша жалоба" : "Ваш отзыв на бота:");
+                                    await EditOrSendMessage(msg, $"""
+
+										{message}
+									
+										{usersState[foundUser.UserID].Comment}
+									
+									Всё верно?
+									""", new InlineKeyboardButton[][]
+                                    {
+                                        [("Да", $"#sendReview {usersState[foundUser.UserID].ReportType}"), ("Нет", $"callback_resetAction")],
+                                    }, ParseMode.Html);
+
+                                    break;
+								}
 						}
 						break;
 					}
@@ -247,12 +277,82 @@ class Program
 				case ("/report"):
 					{
 						// TODO: Сообщать нам только о тех ошибках, которые реально мешают юзерам, а не о фантомных стикерах
-						await EditOrSendMessage(msg, $"TODO: report", new InlineKeyboardButton[][]
+						await EditOrSendMessage(msg, $"Что вы хотите сделать?", new InlineKeyboardButton[][]
 							{
-								[("Назад","/start")]
+                                [("Сообщить об ошибке","/sendReport -B")],
+                                [("Пожаловаться","/sendReport -C")],
+                                [("Оставить отзыв о боте","/sendReport -R")],
+                                [("Назад","/start")]
 							});
 						break;
 					}
+				case ("/sendReport"):
+					{
+                        if (args == null)
+                        {
+                            await EditOrSendMessage(msg, "Ошибка при запросе: /reportSelector не применяется без аргументов.", new InlineKeyboardButton[]
+                            {
+                                ("Назад", "/report")
+                            });
+                            throw new Exception($"No command args: {msg.Text}");
+                        }
+
+                        if (!char.IsLetter(args[1]) || args.Length > 2)
+                        {
+                            await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /reportSelector.", new InlineKeyboardButton[]
+                            {
+                                ("Назад", "/report")
+                            });
+                            throw new Exception($"Invalid command agrs: {msg.Text}");
+                        }
+
+                        ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
+
+                        if (foundUser == null)
+                        {
+                            await EditOrSendMessage(msg, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
+                                new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
+                            break;
+                        }
+
+                        switch (usersState[foundUser.UserID].Action)
+                        {
+                            case (null):
+                                {
+                                    usersState[foundUser.UserID].Action = UserAction.ReportRequest;
+                                    usersState[foundUser.UserID].ReportType = args;
+
+									switch(args[1])
+									{
+										case ('B'):
+											{
+                                                await EditOrSendMessage(msg, $"Опишите подробно, в чем была проблема, условия возникновения бага, и ожидаемое поведение", null, ParseMode.None, true);
+                                                break;
+											}
+                                        case ('С'):
+                                            {
+                                                await EditOrSendMessage(msg, $"Укажите, кто и на какую точку питания оставил недопустимый отзыв. Объясните причину жалобы", null, ParseMode.None, true);
+                                                break;
+                                            }
+                                        case ('R'):
+                                            {
+                                                await EditOrSendMessage(msg, $"Что вы думаете об этом боте, или какие у вас есть предложения по его улучшению?", null, ParseMode.None, true);
+                                                break;
+                                            }
+                                    }
+                                    break;
+                                }
+                            default:
+                                {
+                                    await EditOrSendMessage(msg, $"Сброс ранее введённой информации...");
+                                    usersState[foundUser.UserID].Action = null;
+                                    await OnCommand("/sendReport", args, msg);
+                                    break;
+                                }
+                        }
+
+                        break;
+                    }
 				case ("/places"):
 					{
 						await EditOrSendMessage(msg, "Выбор типа точек", new InlineKeyboardButton[][]

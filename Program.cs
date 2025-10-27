@@ -291,7 +291,16 @@ class Program
 
 		async Task OnCommand(string command, string? args, Message msg)
 		{
-			if (args == null)
+            ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
+
+            if (foundUser == null && command != "/start")
+            {
+				await EditOrSendMessage(msg, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
+					new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
+				return;
+            }
+			
+            if (args == null)
 				Console.WriteLine($"NOW COMMAND {msg.Chat.Username ?? msg.Chat.FirstName + msg.Chat.LastName}: {command}");
 			else
 				Console.WriteLine($"NOW COMMAND {msg.Chat.Username ?? msg.Chat.FirstName + msg.Chat.LastName}: {command} {args}");
@@ -299,7 +308,6 @@ class Program
 			{
 				case ("/start"):
 					{
-                        ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
                         if (foundUser == null)
                         {
                             Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
@@ -319,15 +327,12 @@ class Program
 					}
 				case ("/person"):
 					{
-						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
-
-						if (foundUser != null)
-							await EditOrSendMessage(msg, $"""
-							Ваше имя: {foundUser.Username} ({foundUser.UserID})
-							Ваш статус: {foundUser.Role}
-							""", new InlineKeyboardButton[]
-							{
-								("Назад","/start")
+						await EditOrSendMessage(msg, $"""
+						Ваше имя: {foundUser!.Username} ({foundUser!.UserID})
+						Ваш статус: {foundUser!.Role}
+						""", new InlineKeyboardButton[]
+						{
+							("Назад","/start")
 							}, ParseMode.Html);
 						break;
 					}
@@ -797,15 +802,6 @@ class Program
 							throw new Exception($"No command args: {msg.Text}");
 						}
 
-						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
-
-						if (foundUser == null)
-						{
-							await EditOrSendMessage(msg, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
-								new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
-							break;
-						}
-
 						int index = 0, placeSelectorPage = 0;
 						if (args.Contains('_'))
 						{
@@ -856,14 +852,14 @@ class Program
 								}
 						}
 
-						if (place.Reviews.Any(x => x.UserID == foundUser.UserID) || AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
+						if (place.Reviews.Any(x => x.UserID == foundUser!.UserID) || AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
 						{
-							if (place.Reviews.Any(x => x.UserID == foundUser.UserID))
+							if (place.Reviews.Any(x => x.UserID == foundUser!.UserID))
 								await EditOrSendMessage(msg, $"""
 									Вы уже оставили отзыв на {place.Name}
 
-									• Оценка: {place.Reviews.Where(x => x.UserID == foundUser.UserID).First().Rating}
-									• Комментарий: {place.Reviews.Where(x => x.UserID == foundUser.UserID).First().Comment ?? "Отсутствует"}
+									• Оценка: {place.Reviews.Where(x => x.UserID == foundUser!.UserID).First().Rating}
+									• Комментарий: {place.Reviews.Where(x => x.UserID == foundUser!.UserID).First().Comment ?? "Отсутствует"}
 									""", new InlineKeyboardButton[][]
 									{
 										[("Изменить", $"/changeReview -{args}"), ("Удалить", $"#deleteReview {args}")],
@@ -873,8 +869,8 @@ class Program
 								await EditOrSendMessage(msg, $"""
 									Вы уже оставили отзыв на {place.Name}
 
-									• Оценка: {AdminControl.ReviewCollector.Where(x => x.place == place && x.review.UserID == foundUser.UserID).First().review.Rating}
-									• Комментарий: {AdminControl.ReviewCollector.Where(x => x.place == place && x.review.UserID == foundUser.UserID).First().review.Comment}
+									• Оценка: {AdminControl.ReviewCollector.Where(x => x.place == place && x.review.UserID == foundUser!.UserID).First().review.Rating}
+									• Комментарий: {AdminControl.ReviewCollector.Where(x => x.place == place && x.review.UserID == foundUser!.UserID).First().review.Comment}
 									""", new InlineKeyboardButton[][]
 									{
 										[("Изменить", $"/changeReview -{args}"), ("Удалить", $"#deleteReview {args}")],
@@ -883,12 +879,12 @@ class Program
 							break;
 						}
 
-						switch (usersState[foundUser.UserID].Action)
+						switch (usersState[foundUser!.UserID].Action)
 						{
 							case (null):
 								{
-									usersState[foundUser.UserID].Action = UserAction.RatingRequest;
-									usersState[foundUser.UserID].ReferenceToPlace = args;
+									usersState[foundUser!.UserID].Action = UserAction.RatingRequest;
+									usersState[foundUser!.UserID].ReferenceToPlace = args;
 
 									await EditOrSendMessage(msg, $"Введите оценку от 1⭐️ до 10⭐️", null, ParseMode.None, true);
 									break;
@@ -896,7 +892,7 @@ class Program
 							default:
 								{
 									await EditOrSendMessage(msg, $"Зафиксирована попытка оставить отзыв на другую точку. Сброс ранее введённой информации...");
-									usersState[foundUser.UserID].Action = null;
+									usersState[foundUser!.UserID].Action = null;
 									await OnCommand("/sendReview", args, msg);
 									break;
 								}
@@ -912,15 +908,6 @@ class Program
 								("Назад", "/places")
 							});
 							throw new Exception($"No command args: {msg.Text}");
-						}
-
-						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
-
-						if (foundUser == null)
-						{
-							await EditOrSendMessage(msg, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
-								new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
-							break;
 						}
 
 						int index = 0, placeSelectorPage = 0;
@@ -972,7 +959,7 @@ class Program
 								}
 						}
 
-						if (!place.Reviews.Where(x => x.UserID == foundUser.UserID).Any() && !AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
+						if (!place.Reviews.Where(x => x.UserID == foundUser!.UserID).Any() && !AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
 						{
 							await EditOrSendMessage(msg, $"""
 							Вы не можете изменить отзыв на {place.Name}
@@ -989,23 +976,23 @@ class Program
 						{
 							case ('R'):
 								{
-									usersState[foundUser.UserID].Action = UserAction.RatingChange;
-									usersState[foundUser.UserID].ReferenceToPlace = args[1..];
+									usersState[foundUser!.UserID].Action = UserAction.RatingChange;
+									usersState[foundUser!.UserID].ReferenceToPlace = args[1..];
 
 									await EditOrSendMessage(msg, $"Введите НОВУЮ оценку от 1⭐️ до 10⭐️", null, ParseMode.None, true);
 									break;
 								}
 							case ('C'):
 								{
-									usersState[foundUser.UserID].Action = UserAction.CommentChange;
-									usersState[foundUser.UserID].ReferenceToPlace = args[1..];
+									usersState[foundUser!.UserID].Action = UserAction.CommentChange;
+									usersState[foundUser!.UserID].ReferenceToPlace = args[1..];
 
 									await EditOrSendMessage(msg, $"Введите НОВЫЙ текст отзыва или удалите его отправив -", null, ParseMode.None, true);
 									break;
 								}
 						}
 
-						switch (usersState[foundUser.UserID].Action)
+						switch (usersState[foundUser!.UserID].Action)
 						{
 							case (null):
 								{
@@ -1020,35 +1007,35 @@ class Program
 								}
 							case (UserAction.NoActiveChange):
 								{
-									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
+									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
 									{
-										if (usersState[foundUser.UserID].Rating == 0)
-											usersState[foundUser.UserID].Rating = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser.UserID).review.Rating;
-										if (usersState[foundUser.UserID].Comment == "saved_mark")
-											usersState[foundUser.UserID].Comment = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser.UserID).review.Comment;
+										if (usersState[foundUser!.UserID].Rating == 0)
+											usersState[foundUser!.UserID].Rating = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Rating;
+										if (usersState[foundUser!.UserID].Comment == "saved_mark")
+											usersState[foundUser!.UserID].Comment = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Comment;
 									}
 									else
 									{
-										if (usersState[foundUser.UserID].Rating == 0)
-											usersState[foundUser.UserID].Rating = place.Reviews.First(x => x.UserID == foundUser.UserID).Rating;
-										if (usersState[foundUser.UserID].Comment == "saved_mark")
-											usersState[foundUser.UserID].Comment = null;    // Если есть сохранённый коммент - его бы нашли в админ контроле
+										if (usersState[foundUser!.UserID].Rating == 0)
+											usersState[foundUser!.UserID].Rating = place.Reviews.First(x => x.UserID == foundUser!.UserID).Rating;
+										if (usersState[foundUser!.UserID].Comment == "saved_mark")
+											usersState[foundUser!.UserID].Comment = null;    // Если есть сохранённый коммент - его бы нашли в админ контроле
 									}
 
-									if (usersState[foundUser.UserID].Comment == "-")
-										usersState[foundUser.UserID].Comment = null;
+									if (usersState[foundUser!.UserID].Comment == "-")
+										usersState[foundUser!.UserID].Comment = null;
 
-									usersState[foundUser.UserID].Action = null;
+									usersState[foundUser!.UserID].Action = null;
 									await EditOrSendMessage(msg, $"""
 									Ваш НОВЫЙ отзыв:
 									
-										• Оценка: {usersState[foundUser.UserID].Rating}
-										• Комментарий: {usersState[foundUser.UserID].Comment ?? "Отсутствует"}
+										• Оценка: {usersState[foundUser!.UserID].Rating}
+										• Комментарий: {usersState[foundUser!.UserID].Comment ?? "Отсутствует"}
 									
 									Всё верно?
 									""", new InlineKeyboardButton[][]
 									{
-										[("Да", $"#changeReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{usersState[foundUser.UserID].ReferenceToPlace}")],
+										[("Да", $"#changeReview {usersState[foundUser!.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{usersState[foundUser!.UserID].ReferenceToPlace}")],
 										[("Назад", $"/info {args[1..]}")]
 									}, ParseMode.Html);
 									break;
@@ -1058,15 +1045,8 @@ class Program
 					}
 				case ("/admin"):    // TODO: при реализации runtime добавления новых точек обязательно использовать lock
 					{
-						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
 
-						if (foundUser == null)
-						{
-							await EditOrSendMessage(msg, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
-								new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
-							break;
-						}
-						if (foundUser.Role != RoleType.Administrator)
+						if (foundUser!.Role != RoleType.Administrator)
 						{
 							await EditOrSendMessage(msg, "Ошибка при запросе: неизвестная команда.", new InlineKeyboardButton[]
 							{
@@ -1078,7 +1058,7 @@ class Program
 						if (args == null)
 						{
 							await EditOrSendMessage(msg, $"""
-							Доброго времени, адмеместратор {foundUser.Username}
+							Доброго времени, адмеместратор {foundUser!.Username}
 							
 							Кол-во отзывов на проверку: {AdminControl.ReviewCollector.Count}
 							Оповещение: TODO
@@ -1138,25 +1118,25 @@ class Program
 									{
 										case ('A'):
 											{
-												switch (usersState[foundUser.UserID].Action)
+												switch (usersState[foundUser!.UserID].Action)
 												{
 													case (null):
 														{
-															usersState[foundUser.UserID].Action = UserAction.Moderation;
+															usersState[foundUser!.UserID].Action = UserAction.Moderation;
 															await EditOrSendMessage(msg, $"Введите ОТРЕДАКТИРОВАННЫЙ текст отзыва или удалите его отправив -", null, ParseMode.None, true);
 															break;
 														}
 													case (UserAction.NoActiveModeration):
 														{
-															if (usersState[foundUser.UserID].Comment == "-")
-																usersState[foundUser.UserID].Comment = null;
+															if (usersState[foundUser!.UserID].Comment == "-")
+																usersState[foundUser!.UserID].Comment = null;
 
-															usersState[foundUser.UserID].Action = null;
+															usersState[foundUser!.UserID].Action = null;
 															await EditOrSendMessage(msg, $"""
 															ОТРЕДАКТИРОВАННЫЙ отзыв:
 									
 																• Оценка: {AdminControl.ReviewCollector[0].review.Rating}
-																• Комментарий: {usersState[foundUser.UserID].Comment ?? "Удалён"}
+																• Комментарий: {usersState[foundUser!.UserID].Comment ?? "Удалён"}
 									
 															Всё верно?
 															""", new InlineKeyboardButton[][]
@@ -1169,7 +1149,7 @@ class Program
 													default:
 														{
 															await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к модерации в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
-															usersState[foundUser.UserID].Action = null;
+															usersState[foundUser!.UserID].Action = null;
 															await OnCommand("/admin", args, msg);
 															break;
 														}
@@ -1430,8 +1410,8 @@ class Program
 								await OnCommand("/start", null, callbackQuery.Message!);
 							else
 							{
-								usersState[foundUser!.UserID].Action = null;
-								await OnCommand("/info", usersState[foundUser!.UserID].ReferenceToPlace, callbackQuery.Message!);
+								usersState[foundUser.UserID].Action = null;
+								await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message!);
 							}
 						}
 						else

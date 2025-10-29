@@ -1,6 +1,6 @@
 ﻿using OBED.Include;
 using System.Collections.Concurrent;
-using System.Numerics;
+using System.Xml.Linq;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -147,7 +147,7 @@ class Program
 										usersState[foundUser.UserID].Rating = rating;
 										usersState[foundUser.UserID].Comment = "-";
 										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
+										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ActionArguments}", msg);
 										break;
 									}
 
@@ -176,7 +176,7 @@ class Program
 									Всё верно?
 									""", new InlineKeyboardButton[][]
 									{
-										[("Да", $"#sendReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"callback_resetAction")],
+										[("Да", $"#sendReview {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"callback_resetAction")],
 									}, ParseMode.Html);
 									break;
 								}
@@ -191,7 +191,7 @@ class Program
 									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
 									usersState[foundUser.UserID].Rating = 0;
 									usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-									await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
+									await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ActionArguments}", msg);
 									break;
 								}
 							case (UserAction.ReportRequest):
@@ -206,19 +206,38 @@ class Program
                                     if (usersState[foundUser.UserID].Comment == "-")
                                         usersState[foundUser.UserID].Comment = null;
 
-                                    usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
+                                    usersState[foundUser.UserID].Action = UserAction.NoActiveReport;
 
-									string message = (usersState[foundUser.UserID].ReportType[1] == 'B') ? "Сообщение об ошибке:" : ((usersState[foundUser.UserID].ReportType[1] == 'C') ? "Ваша жалоба" : "Ваш отзыв на бота:");
+									string message = "";
+
+									switch (usersState[foundUser.UserID].ActionArguments[1])
+									{
+										case ('B'):
+											{
+												message = "Сообщение об ошибке:";
+												break;
+											}
+										case ('C'):
+											{
+												message = "Ваша жалоба";
+												break;
+											}
+										case ('R'):
+											{
+												message = "Ваш отзыв на бота:";
+												break;
+											}
+									}
+
                                     await EditOrSendMessage(msg, $"""
-
 										{message}
-									
-										{usersState[foundUser.UserID].Comment}
+										
+											{usersState[foundUser.UserID].Comment}
 									
 									Всё верно?
 									""", new InlineKeyboardButton[][]
                                     {
-                                        [("Да", $"#sendReview {usersState[foundUser.UserID].ReportType}"), ("Нет", $"callback_resetAction")],
+                                        [("Да", $"#sendReport {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"callback_resetAction")],
                                     }, ParseMode.Html);
 
                                     break;
@@ -320,7 +339,7 @@ class Program
                             case (null):
                                 {
                                     usersState[foundUser.UserID].Action = UserAction.ReportRequest;
-                                    usersState[foundUser.UserID].ReportType = args;
+                                    usersState[foundUser.UserID].ActionArguments = args;
 
 									switch(args[1])
 									{
@@ -344,7 +363,7 @@ class Program
                                 }
                             default:
                                 {
-                                    await EditOrSendMessage(msg, $"Сброс ранее введённой информации...");
+                                    await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к модерации в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
                                     usersState[foundUser.UserID].Action = null;
                                     await OnCommand("/sendReport", args, msg);
                                     break;
@@ -880,7 +899,7 @@ class Program
 							case (null):
 								{
 									usersState[foundUser.UserID].Action = UserAction.RatingRequest;
-									usersState[foundUser.UserID].ReferenceToPlace = args;
+									usersState[foundUser.UserID].ActionArguments = args;
 
 									await EditOrSendMessage(msg, $"Введите оценку от 1⭐️ до 10⭐️", null, ParseMode.None, true);
 									break;
@@ -983,7 +1002,7 @@ class Program
 							case ('R'):
 								{
 									usersState[foundUser.UserID].Action = UserAction.RatingChange;
-									usersState[foundUser.UserID].ReferenceToPlace = args[1..];
+									usersState[foundUser.UserID].ActionArguments = args[1..];
 
 									await EditOrSendMessage(msg, $"Введите НОВУЮ оценку от 1⭐️ до 10⭐️", null, ParseMode.None, true);
 									break;
@@ -991,7 +1010,7 @@ class Program
 							case ('C'):
 								{
 									usersState[foundUser.UserID].Action = UserAction.CommentChange;
-									usersState[foundUser.UserID].ReferenceToPlace = args[1..];
+									usersState[foundUser.UserID].ActionArguments = args[1..];
 
 									await EditOrSendMessage(msg, $"Введите НОВЫЙ текст отзыва или удалите его отправив -", null, ParseMode.None, true);
 									break;
@@ -1028,7 +1047,7 @@ class Program
 									Всё верно?
 									""", new InlineKeyboardButton[][]
 									{
-										[("Да", $"#changeReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{usersState[foundUser.UserID].ReferenceToPlace}")],
+										[("Да", $"#changeReview {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"/changeReview -{usersState[foundUser.UserID].ActionArguments}")],
                                         [("Назад", $"/info {args[1..]}")]
                                     }, ParseMode.Html);
 									break;
@@ -1102,7 +1121,7 @@ class Program
 						var splitStr = callbackQuery.Data.Split(' ');
 						if (splitStr.Length < 2)
 						{
-							await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректный аргументов.", new InlineKeyboardButton[]
+							await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректные аргументы.", new InlineKeyboardButton[]
 							{
 											("Назад", "/places")
 							});
@@ -1111,7 +1130,7 @@ class Program
 
 						if (!char.IsLetter(splitStr[1][1]) || !int.TryParse(splitStr[1][2..splitStr[1].IndexOf('_')], out int index))
 						{
-							await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректный аргументов.", new InlineKeyboardButton[]
+							await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректные аргументо.", new InlineKeyboardButton[]
 							{
 											("Назад", "/places")
 							});
@@ -1154,15 +1173,15 @@ class Program
 									{
 										usersState[foundUser.UserID].Action = null;
 										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно оставлен!");
-										await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
+										await OnCommand("/info", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message);
 									}
 									else
 									{
 										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].Rating}⭐️| {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}", new InlineKeyboardButton[]
 										{
-											("Назад", $"/info {usersState[foundUser.UserID].ReferenceToPlace}")
+											("Назад", $"/info {usersState[foundUser.UserID].ActionArguments}")
 										});
-										throw new Exception($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].ReferenceToPlace} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
+										throw new Exception($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].ActionArguments} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
 									}
 
 									break;
@@ -1206,8 +1225,34 @@ class Program
 									place.AddReview(foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment);
 
 									await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно изменён!");
-									await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
+									await OnCommand("/info", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message);
 									break;
+								}
+							case ("sendReport"):
+								{
+                                    switch (splitStr[1][1])
+									{
+										case ('R'):
+											{
+												ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment, []));
+                                                break;
+											}
+                                        case ('B'):
+                                            {
+                                                ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment, [])); // TODO
+                                                break;
+                                            }
+                                        case ('C'):
+                                            {
+                                                ObjectLists.FeedbackReports.Add(new ComplaintReport(foundUser.UserID, usersState[foundUser.UserID].Comment, [], -1)); // TODO
+                                                break;
+                                            }
+                                    }
+
+                                    await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет успешно добавлен!");
+                                    await OnCommand("/report", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message);
+
+                                    break;
 								}
 							default:
 								{
@@ -1229,7 +1274,7 @@ class Program
 							else
 							{
 								usersState[foundUser!.UserID].Action = null;
-								await OnCommand("/info", usersState[foundUser!.UserID].ReferenceToPlace, callbackQuery.Message!);
+								await OnCommand("/info", usersState[foundUser!.UserID].ActionArguments, callbackQuery.Message!);
 							}
 						}
 						else

@@ -8,8 +8,8 @@ namespace OBED.Include
         public static List<Canteen> Canteens { get; private set; } = [];
         public static List<Grocery> Groceries { get; private set; } = [];
 		public static ConcurrentDictionary<long, Person> Persons { get; private set; } = [];
-		public static List<Report> Reports { get; private set; } = [];
-        public static List<Complaint> Complaints { get; private set; } = [];
+		public static List<FeedbackReport> FeedbackReports { get; private set; } = [];
+        public static List<ComplaintReport> ComplaintReports { get; private set; } = [];
 
         /// <summary>
         /// Добавляет к общей базе новый лист точек или учёток.
@@ -47,16 +47,16 @@ namespace OBED.Include
 							Persons.TryAdd(person.UserID, person);
 						break;
 					}
-				case (List<Report> reports):
+				case (List<FeedbackReport> feedbackReports):
 					{
-                        foreach (var report in reports.AsEnumerable().Reverse())
-                            Reports.Add(report);
+                        foreach (var feedbackReport in feedbackReports.AsEnumerable().Reverse())
+                            FeedbackReports.Add(feedbackReport);
                         break;
                     }
-                case (List<Complaint> complaints):
+                case (List<ComplaintReport> complaintReports):
                     {
-                        foreach (var complaint in complaints.AsEnumerable().Reverse())
-                            Complaints.Add(complaint);
+                        foreach (var complaintReport in complaintReports.AsEnumerable().Reverse())
+                            ComplaintReports.Add(complaintReport);
                         break;
                     }
                 default:

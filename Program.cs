@@ -291,14 +291,14 @@ class Program
 
 		async Task OnCommand(string command, string? args, Message msg)
 		{
-            ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
+			ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
 
-            if (foundUser == null && command != "/start")
-            {
+			if (foundUser == null && command != "/start")
+			{
 				await EditOrSendMessage(msg, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
 					new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
 				return;
-            }
+			}
 
 			if (foundUser != null)
 				usersState[foundUser.UserID].LastCommand = $"{command} {args}";
@@ -311,15 +311,15 @@ class Program
 			{
 				case ("/start"):
 					{
-                        if (foundUser == null)
-                        {
-                            Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
-                            ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
-                            usersState.TryAdd(msg.Chat.Id, new());
-                            ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
-                        }
+						if (foundUser == null)
+						{
+							Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
+							ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
+							usersState.TryAdd(msg.Chat.Id, new());
+							ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
+						}
 
-                        await EditOrSendMessage(msg, "Старт", new InlineKeyboardButton[][]
+						await EditOrSendMessage(msg, "Старт", new InlineKeyboardButton[][]
 						{
 							[("Места", "/places")],
 							[("Профиль", "/person")],
@@ -545,6 +545,7 @@ class Program
 						{
 							[("Меню", $"/menu -{args}")],
 							[("Оставить отзыв", $"/sendReview {args}"), ("Отзывы", $"/reviews N{args}")],
+							[((foundUser!.Role == RoleType.Administrator && place.Reviews.Count != 0) ? "Панель удаления" : "", $"/admin delN{args}")],
 							[("Назад", $"/placeSelector {args[..2]}{placeSelectorPage}")]
 						}, ParseMode.Html);
 						break;
@@ -1048,7 +1049,6 @@ class Program
 					}
 				case ("/admin"):    // TODO: при реализации runtime добавления новых точек обязательно использовать lock
 					{
-
 						if (foundUser!.Role != RoleType.Administrator)
 						{
 							await EditOrSendMessage(msg, "Ошибка при запросе: неизвестная команда.", new InlineKeyboardButton[]
@@ -1168,6 +1168,127 @@ class Program
 												throw new Exception($"Invalid command agrs: {msg.Text}");
 											}
 									}
+									break;
+								}
+							case ("del"):
+								{
+									if (args.Length < 3)
+									{
+										await EditOrSendMessage(msg, "Ошибка при запросе: /admin del не применяется без доп. аргументов.", new InlineKeyboardButton[]
+										{
+											("Назад", "/admin")
+										});
+										throw new Exception($"No command args: {msg.Text}");
+									}
+
+									int index = 0, page = 0, placeSelectorPage = 0;
+									if (args.Contains('|'))
+									{
+										if (!char.IsLetter(args[5]) || !int.TryParse(args[6..args.IndexOf('|')], out index)
+											|| !int.TryParse(args[(args.IndexOf('|') + 1)..args.IndexOf('_')], out page) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out placeSelectorPage))
+										{
+											await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin del.", new InlineKeyboardButton[]
+											{
+												("Назад", "/admin")
+											});
+											throw new Exception($"Invalid command agrs: {msg.Text}");
+										}
+									}
+									else if (!char.IsLetter(args[5]) || !int.TryParse(args[6..args.IndexOf('_')], out index)
+										|| !int.TryParse(args[(args.IndexOf('_') + 1)..], out placeSelectorPage))
+									{
+										await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin del.", new InlineKeyboardButton[]
+										{
+											("Назад", "/places")
+										});
+										throw new Exception($"Invalid command agrs: {msg.Text}");
+									}
+
+									if (page < 0)
+										page = 0;
+									int nowCounter = page * 5;
+
+									string placeName;
+									List<Review> reviews;
+									switch (args[5])
+									{
+										case ('C'):
+											{
+												placeName = ObjectLists.Canteens.ElementAt(index).Name;
+												reviews = ObjectLists.Canteens.ElementAt(index).Reviews;
+												break;
+											}
+										case ('B'):
+											{
+												placeName = ObjectLists.Buffets.ElementAt(index).Name;
+												reviews = ObjectLists.Buffets.ElementAt(index).Reviews;
+												break;
+											}
+										case ('G'):
+											{
+												placeName = ObjectLists.Groceries.ElementAt(index).Name;
+												reviews = ObjectLists.Groceries.ElementAt(index).Reviews;
+												break;
+											}
+										default:
+											{
+												await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin del.", new InlineKeyboardButton[]
+												{
+													("Назад", "/admin")
+												});
+												throw new Exception($"Invalid command agrs: {msg.Text}");
+											}
+									}
+
+									int reviewCounter = reviews.Count;
+									reviews = [.. reviews.OrderByDescending(x => x.Comment != null)];
+
+									ReviewSort? sortType = null;
+									switch (args[3])
+									{
+										case ('U'):
+											{
+												sortType = ReviewSort.Upper;
+												reviews = [.. reviews.OrderByDescending(x => x.Rating)];
+												break;
+											}
+										case ('L'):
+											{
+												sortType = ReviewSort.Lower;
+												reviews = [.. reviews.OrderBy(x => x.Rating)];
+												break;
+											}
+										case ('N'):
+											{
+												sortType = ReviewSort.NewDate;
+												reviews = [.. reviews.OrderByDescending(x => x.Date)];
+												break;
+											}
+										case ('O'):
+											{
+												sortType = ReviewSort.OldDate;
+												reviews = [.. reviews.OrderBy(x => x.Date)];
+												break;
+											}
+									}
+
+									await EditOrSendMessage(msg, $"""
+									Название: {placeName}
+									Всего отзывов: {$"{reviewCounter}"}
+									Всего отзывов с комментариями: {$"{reviews.Where(x => x.Comment != null).Count()}"}
+									{(sortType != null ? $"Режим сортировки: {sortType}\n" : "")}
+									{(reviews.Count > nowCounter ? $"От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user1) ? user1.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+									{(reviews.Count > ++nowCounter ? $"От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user2) ? user2.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+									{(reviews.Count > ++nowCounter ? $"От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user3) ? user3.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+									{(reviews.Count > ++nowCounter ? $"От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user4) ? user4.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+									{(reviews.Count > ++nowCounter ? $"От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user5) ? user5.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+									""", new InlineKeyboardButton[][]
+									{
+										[(sortType == ReviewSort.Upper ? "" : "Оценка ↑", $"/admin delU{args[4..6]}{index}_{placeSelectorPage}"), (sortType == ReviewSort.Lower ? "" : "Оценка ↓", $"/admin delL{args[4..6]}{index}_{placeSelectorPage}"),
+										(sortType == ReviewSort.NewDate ? "" : "Новые", $"/admin delN{args[4..6]}{index}_{placeSelectorPage}"), (sortType == ReviewSort.OldDate ? "" : "Старые", $"/admin delO{args[4..6]}{index}_{placeSelectorPage}")],
+
+										[((page != 0) ? "◀️" : "", $"/admin {args[..6]}{index}|{page - 1}_{placeSelectorPage}"), ("Назад", $"/info {args[4..6]}{index}_{placeSelectorPage}"), (reviews.Count > ++nowCounter ? "▶️" : "", $"/admin {args[..6]}{index}|{page + 1}_{placeSelectorPage}")]
+									}, ParseMode.Html);
 									break;
 								}
 							default:

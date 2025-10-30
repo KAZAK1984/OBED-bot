@@ -1274,20 +1274,111 @@ class Program
 
 									await EditOrSendMessage(msg, $"""
 									Название: {placeName}
-									Всего отзывов: {$"{reviewCounter}"}
-									Всего отзывов с комментариями: {$"{reviews.Where(x => x.Comment != null).Count()}"}
+									Всего отзывов: {reviewCounter}
+									Всего отзывов с комментариями: {reviews.Where(x => x.Comment != null).Count()}
 									{(sortType != null ? $"Режим сортировки: {sortType}\n" : "")}
-									{(reviews.Count > nowCounter ? $"От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user1) ? user1.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
-									{(reviews.Count > ++nowCounter ? $"От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user2) ? user2.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
-									{(reviews.Count > ++nowCounter ? $"От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user3) ? user3.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
-									{(reviews.Count > ++nowCounter ? $"От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user4) ? user4.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
-									{(reviews.Count > ++nowCounter ? $"От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user5) ? user5.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+									{(reviews.Count > nowCounter ? $"№{nowCounter} | От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user1) ? user1.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+									{(reviews.Count > ++nowCounter ? $"№{nowCounter} | От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user2) ? user2.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+									{(reviews.Count > ++nowCounter ? $"№{nowCounter} | От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user3) ? user3.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+									{(reviews.Count > ++nowCounter ? $"№{nowCounter} | От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user4) ? user4.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+									{(reviews.Count > ++nowCounter ? $"№{nowCounter} | От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user5) ? user5.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+
+									Выберите номер удаляемого отзыва:
 									""", new InlineKeyboardButton[][]
 									{
+										[(reviews.Count > nowCounter - 4 ? $"{nowCounter - 4}" : "", $"/admin cnf{args[3..6]}{index}_{nowCounter - 4}"), (reviews.Count > nowCounter - 3 ? $"{nowCounter - 3}" : "", $"/admin cnf{args[3..6]}{index}_{nowCounter - 3}")],
+										[(reviews.Count > nowCounter - 2 ? $"{nowCounter - 2}" : "", $"/admin cnf{args[3..6]}{index}_{nowCounter - 2}"), (reviews.Count > nowCounter - 1 ? $"{nowCounter - 1}" : "", $"/admin cnf{args[3..6]}{index}_{nowCounter - 1}"), (reviews.Count > nowCounter ? $"{nowCounter}" : "", $"/admin cnf{args[3..6]}{index}_{nowCounter}")],
+
 										[(sortType == ReviewSort.Upper ? "" : "Оценка ↑", $"/admin delU{args[4..6]}{index}_{placeSelectorPage}"), (sortType == ReviewSort.Lower ? "" : "Оценка ↓", $"/admin delL{args[4..6]}{index}_{placeSelectorPage}"),
 										(sortType == ReviewSort.NewDate ? "" : "Новые", $"/admin delN{args[4..6]}{index}_{placeSelectorPage}"), (sortType == ReviewSort.OldDate ? "" : "Старые", $"/admin delO{args[4..6]}{index}_{placeSelectorPage}")],
 
 										[((page != 0) ? "◀️" : "", $"/admin {args[..6]}{index}|{page - 1}_{placeSelectorPage}"), ("Назад", $"/info {args[4..6]}{index}_{placeSelectorPage}"), (reviews.Count > ++nowCounter ? "▶️" : "", $"/admin {args[..6]}{index}|{page + 1}_{placeSelectorPage}")]
+									}, ParseMode.Html);
+									break;
+								}
+							case ("cnf"):
+								{
+									if (args.Length < 3)
+									{
+										await EditOrSendMessage(msg, "Ошибка при запросе: /admin cnf не применяется без доп. аргументов.", new InlineKeyboardButton[]
+										{
+											("Назад", "/admin")
+										});
+										throw new Exception($"No command args: {msg.Text}");
+									}
+
+									if (!char.IsLetter(args[5]) || !int.TryParse(args[6..args.IndexOf('_')], out int index) || !int.TryParse(args[(args.IndexOf('_') + 1)..], out int reviewIndex))
+									{
+										await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin cnf.", new InlineKeyboardButton[]
+										{
+											("Назад", "/places")
+										});
+										throw new Exception($"Invalid command agrs: {msg.Text}");
+									}
+
+									BasePlace basePlace;
+									switch (args[5])
+									{
+										case ('C'):
+											{
+												basePlace = ObjectLists.Canteens.ElementAt(index);
+												break;
+											}
+										case ('B'):
+											{
+												basePlace = ObjectLists.Buffets.ElementAt(index);
+												break;
+											}
+										case ('G'):
+											{
+												basePlace = ObjectLists.Groceries.ElementAt(index);
+												break;
+											}
+										default:
+											{
+												await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin cnf.", new InlineKeyboardButton[]
+												{
+													("Назад", "/admin")
+												});
+												throw new Exception($"Invalid command agrs: {msg.Text}");
+											}
+									}
+
+									List<Review> reviews = basePlace.Reviews;
+									switch (args[3])
+									{
+										case ('U'):
+											{
+												reviews = [.. reviews.OrderByDescending(x => x.Rating)];
+												break;
+											}
+										case ('L'):
+											{
+												reviews = [.. reviews.OrderBy(x => x.Rating)];
+												break;
+											}
+										case ('N'):
+											{
+												reviews = [.. reviews.OrderByDescending(x => x.Date)];
+												break;
+											}
+										case ('O'):
+											{
+												reviews = [.. reviews.OrderBy(x => x.Date)];
+												break;
+											}
+									}
+
+									int realReviewIndex = basePlace.Reviews.IndexOf(reviews[reviewIndex]);
+									await EditOrSendMessage(msg, $"""
+									Вы уверены, что хотите удалить отзыв на {basePlace.Name} от @{(ObjectLists.Persons.TryGetValue(reviews[reviewIndex].UserID, out Person? user) ? user.Username : "???")}?
+									Дата написания: {reviews[reviewIndex].Date}
+									Оценка: {reviews[reviewIndex].Rating}⭐
+									Комментарий: {reviews[reviewIndex].Comment ?? "Отсутствует"}
+									""", new InlineKeyboardButton[][]
+									{
+										[("Удалить", $"#admin delR{args[5..args.IndexOf('_')]}_{realReviewIndex}")],
+										[("Назад", $"/admin del{args[3..args.IndexOf('_')]}_0")]
 									}, ParseMode.Html);
 									break;
 								}
@@ -1352,7 +1443,7 @@ class Program
 							""", new InlineKeyboardButton[][]
 							{
 								[("Повторить попытку", callbackQuery.Data)],
-								[("Вернуться в стартовое меню"), "/start"]
+								[("Вернуться в стартовое меню", "/start")]
 							}, ParseMode.Html);
 							return;
 						}
@@ -1388,7 +1479,7 @@ class Program
 
 						if (splitStr[0] == "#admin" && foundUser.Role == RoleType.Administrator)
 						{
-							switch (splitStr[1])
+							switch (splitStr[1][..4])
 							{
 								case ("chkA"):
 									{
@@ -1400,26 +1491,80 @@ class Program
 											AdminControl.SetReviewStatus();
 										}
 										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
+										await OnCommand("/admin", "chk", callbackQuery.Message);
 										break;
 									}
 								case ("chkM"):
 									{
 										AdminControl.SetReviewStatus(AutoMod.AddCensor(AdminControl.ReviewCollector[0].review.Comment!));
 										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв после авто-мода успешно оставлен!");
+										await OnCommand("/admin", "chk", callbackQuery.Message);
 										break;
 									}
 								case ("chkO"):
 									{
 										AdminControl.SetReviewStatus(true);
 										await bot.AnswerCallbackQuery(callbackQuery.Id, "Оригинальный отзыв успешно оставлен!");
+										await OnCommand("/admin", "chk", callbackQuery.Message);
 										break;
+									}
+								case ("delR"):
+									{
+										if (!char.IsLetter(splitStr[1][4]) || !int.TryParse(splitStr[1][5..splitStr[1].IndexOf('_')], out int locationReview) || !int.TryParse(splitStr[1][(splitStr[1].IndexOf('_') + 1)..], out int reviewIndex))
+										{
+											await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды /admin cnf.", new InlineKeyboardButton[]
+											{
+											("Назад", "/places")
+											});
+											throw new Exception($"Invalid command agrs: {callbackQuery.Data}");
+										}
+
+										BasePlace placeOfReview;
+										switch (splitStr[1][4])
+										{
+											case ('C'):
+												{
+													placeOfReview = ObjectLists.Canteens.ElementAt(locationReview);
+													break;
+												}
+											case ('B'):
+												{
+													placeOfReview = ObjectLists.Buffets.ElementAt(locationReview);
+													break;
+												}
+											case ('G'):
+												{
+													placeOfReview = ObjectLists.Groceries.ElementAt(locationReview);
+													break;
+												}
+											default:
+												{
+													await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректный аргументов.", new InlineKeyboardButton[]
+													{
+														("Назад", "/places")
+													});
+													throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
+												}
+										}
+
+										if (placeOfReview.DeleteReview(placeOfReview.Reviews[reviewIndex].UserID))
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Отзыв пользователя успешно удалён!");
+											await OnCommand("/admin", $"delN-{splitStr[1][4..splitStr[1].IndexOf('_')]}_0", callbackQuery.Message);
+											break;
+										}
+
+										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке удалить отзыв на {placeOfReview.Name}", new InlineKeyboardButton[]
+										{
+											("Назад", $"/info {splitStr[1]}")
+										});
+										throw new Exception($"Error while user {foundUser.UserID} trying to delete review on {placeOfReview.Name}");
 									}
 								default:
 									{
 										throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
 									}
 							}
-							await OnCommand("/admin", "chk", callbackQuery.Message);
 							break;
 						}
 
@@ -1496,7 +1641,7 @@ class Program
 										break;
 									}
 
-									if (place.DeleteReview(foundUser.UserID))
+									if (place.DeleteReview(foundUser.UserID))	
 									{
 										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно удалён!");
 										await OnCommand("/info", splitStr[1], callbackQuery.Message);

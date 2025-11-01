@@ -193,6 +193,13 @@ class Program
 							break;
 						}
 
+						if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+						{
+							await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
+							return;
+						}
+						await SecurityManager.SecurityCheck(foundUser.UserID, msg.Text);
+
 						switch (usersState[foundUser.UserID].Action)
 						{
 							case (UserAction.RatingRequest):
@@ -301,7 +308,15 @@ class Program
 			}
 
 			if (foundUser != null)
+			{
 				usersState[foundUser.UserID].LastCommand = $"{command} {args}";
+				await SecurityManager.SecurityCheck(foundUser.UserID, msg.Text);
+				if (SecurityManager.BlockedUsers.TryGetValue(foundUser!.UserID, out string? reason))
+				{
+					await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
+					return;
+				}
+			}
 
 			if (args == null)
 				Console.WriteLine($"NOW COMMAND {msg.Chat.Username ?? msg.Chat.FirstName + msg.Chat.LastName}: {command}");
@@ -1068,6 +1083,7 @@ class Program
 							""", new InlineKeyboardButton[][]
 							{
 								[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
+								[("Обновить админ-меню", "/admin ref")],
 								[("Назад", $"/start")]
 							}, ParseMode.Html);
 							break;
@@ -1084,6 +1100,22 @@ class Program
 
 						switch (args[..3])
 						{
+							case ("ref"):
+								{
+									// Это НЕ такое же сообщение, как в главном мену, у "Доброго" английские о, чтобы не выдавались ошибки из-за смены на одно и то же
+									await EditOrSendMessage(msg, $"""	
+									Дoбрoгo времени, адмеместратор {foundUser!.Username}
+							
+									Кол-во отзывов на проверку: {AdminControl.ReviewCollector.Count}
+									Оповещение: TODO
+									""", new InlineKeyboardButton[][]
+									{
+										[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
+										[("Обновить админ-меню", "/admin")],
+										[("Назад", $"/start")]
+									}, ParseMode.Html);
+									break;
+								}
 							case ("chk"):
 								{
 									if (args.Length < 4)
@@ -1368,7 +1400,7 @@ class Program
 												break;
 											}
 									}
-
+									
 									int realReviewIndex = basePlace.Reviews.IndexOf(reviews[reviewIndex]);
 									await EditOrSendMessage(msg, $"""
 									Вы уверены, что хотите удалить отзыв на {basePlace.Name} от @{(ObjectLists.Persons.TryGetValue(reviews[reviewIndex].UserID, out Person? user) ? user.Username : "???")}?
@@ -1434,20 +1466,6 @@ class Program
 					{
 						await bot.AnswerCallbackQuery(callbackQuery.Id);
 
-						ObjectLists.Persons.TryGetValue(callbackQuery.From.Id, out Person? foundUser);
-
-						if (callbackQuery.Data != "/start" && foundUser != null && usersState[foundUser.UserID].LastCommand == callbackQuery.Data)  // Для безопасности, т.к. при попытке отредачить сообщение на такое же выдаётся ошибка																							
-						{
-							await EditOrSendMessage(callbackQuery.Message, """
-							Операция отменена: вы отправили слишком много однотипных или некорректных запросов.
-							""", new InlineKeyboardButton[][]
-							{
-								[("Повторить попытку", callbackQuery.Data)],
-								[("Вернуться в стартовое меню", "/start")]
-							}, ParseMode.Html);
-							return;
-						}
-
 						var splitStr = callbackQuery.Data.Split(' ');
 						if (splitStr.Length > 1)
 							await OnCommand(splitStr[0], splitStr[1], callbackQuery.Message);
@@ -1466,6 +1484,13 @@ class Program
 								new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
 							break;
 						}
+
+						if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+						{
+							await bot.SendMessage(callbackQuery.From.Id, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
+							return;
+						}
+						await SecurityManager.SecurityCheck(foundUser.UserID, callbackQuery.Data);
 
 						var splitStr = callbackQuery.Data.Split(' ');
 						if (splitStr.Length < 2)

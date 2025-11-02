@@ -16,17 +16,20 @@ namespace OBED.Include
 
 		public static async Task SecurityCheck(long userID, string? message)
 		{
-			if (BlockedUsers.TryGetValue(userID, out string? reason) || message == null)
+			if (message == null)
 				return;
+
+			if (BlockedUsers.ContainsKey(userID))
+			{
+				await SlowDownUserAsync(userID);
+				return;
+			}
 
 			var userRequests = LastUsersRequests.GetOrAdd(userID, _ => []);
 
 			int requestsPerSecond = 0;
 			lock (userRequests)
 			{
-				if (userRequests.TakeLast(5).Where(x => x.message == message).Any())
-					return;
-
 				userRequests.Add((DateTime.Now, message));
 				if (userRequests.Count > 10)
 					userRequests.RemoveAt(0);
@@ -45,7 +48,22 @@ namespace OBED.Include
 
 			await SlowDownUserAsync(userID);
 		}
-		private static bool UpdateSuspiciousUser(long userID, SuspiciousClass newLevel)
+		public static bool RepeatCheck(long userID, string? message)
+		{
+			if (BlockedUsers.TryGetValue(userID, out string? reason) || message == null)
+				return false;
+
+			var userRequests = LastUsersRequests.GetOrAdd(userID, _ => []);
+
+			if (userRequests.Count < 3)
+				return false;
+
+			if (userRequests[^2].message == message && userRequests[^3].message != message)
+				return true;
+
+			return false;
+		}
+		public static bool UpdateSuspiciousUser(long userID, SuspiciousClass newLevel)
 		{
 			try
 			{
@@ -60,18 +78,26 @@ namespace OBED.Include
 		}
 		private static async Task SlowDownUserAsync(long userID)
 		{
-			if (!SuspiciousUsers.TryGetValue(userID, out var suspiciousUser))
-				return;
-
-			var delay = suspiciousUser.suspiciousClass switch
+			int delay;
+			if (BlockedUsers.ContainsKey(userID))
 			{
-				SuspiciousClass.Light => 1000,
-				SuspiciousClass.Medium => 3000,
-				SuspiciousClass.High => 6000,
-				_ => 0
-			};
+				delay = 30000;
+			}
+			else
+			{
+				if (!SuspiciousUsers.TryGetValue(userID, out var suspiciousUser))
+					return;
 
-			TryReduceSuspicious(userID, suspiciousUser);
+				delay = suspiciousUser.suspiciousClass switch
+				{
+					SuspiciousClass.Light => 1000,
+					SuspiciousClass.Medium => 3000,
+					SuspiciousClass.High => 6000,
+					_ => 0
+				};
+
+				TryReduceSuspicious(userID, suspiciousUser);
+			}
 
 			if (delay > 0)
 				await Task.Delay(delay);

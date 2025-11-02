@@ -193,12 +193,15 @@ class Program
 							break;
 						}
 
-						if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+						if (msg.From != null && !msg.From.IsBot)
 						{
-							await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
-							return;
+							await SecurityManager.SecurityCheck(foundUser.UserID, msg.Text);
+							if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+							{
+								await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
+								return;
+							}
 						}
-						await SecurityManager.SecurityCheck(foundUser.UserID, msg.Text);
 
 						switch (usersState[foundUser.UserID].Action)
 						{
@@ -309,13 +312,14 @@ class Program
 
 			if (foundUser != null)
 			{
-				usersState[foundUser.UserID].LastCommand = $"{command} {args}";
-				await SecurityManager.SecurityCheck(foundUser.UserID, msg.Text);
+				await SecurityManager.SecurityCheck(foundUser.UserID, $"{command} {args ?? "!"}");
 				if (SecurityManager.BlockedUsers.TryGetValue(foundUser!.UserID, out string? reason))
 				{
 					await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
 					return;
 				}
+				if (SecurityManager.RepeatCheck(foundUser.UserID, $"{command} {args ?? "!"}"))
+					await EditOrSendMessage(msg, "Если вы видите данное сообщение, то вы отправили повторяющийся запрос. Пожалуйста, подождите, пока мы безопасно обработаем ваш запрос...");
 			}
 
 			if (args == null)
@@ -1083,6 +1087,7 @@ class Program
 							""", new InlineKeyboardButton[][]
 							{
 								[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
+								[("Блокировки", "/admin ban")],
 								[("Обновить админ-меню", "/admin ref")],
 								[("Назад", $"/start")]
 							}, ParseMode.Html);
@@ -1414,6 +1419,146 @@ class Program
 									}, ParseMode.Html);
 									break;
 								}
+							case ("ban"):
+								{
+									if (args.Length < 3)
+									{
+										await EditOrSendMessage(msg, "Ошибка при запросе: /admin ban не применяется без доп. аргументов.", new InlineKeyboardButton[]
+										{
+											("Назад", "/admin")
+										});
+										throw new Exception($"No command args: {msg.Text}");
+									}
+
+									if (args.Length == 3)
+									{
+										await EditOrSendMessage(msg, $"""
+										Количесвто <b>активных</b> пользователей: {ObjectLists.Persons.Count - SecurityManager.BlockedUsers.Count}
+
+										Количество заблокированных пользователей: {SecurityManager.BlockedUsers.Count}
+
+										Пользователей с замедлением:
+										- Лёгким: {SecurityManager.SuspiciousUsers.Where(x => x.Value.suspiciousClass == SuspiciousClass.Light).Count()}
+										- Средним: {SecurityManager.SuspiciousUsers.Where(x => x.Value.suspiciousClass == SuspiciousClass.Medium).Count()}
+										- Серьёзным: {SecurityManager.SuspiciousUsers.Where(x => x.Value.suspiciousClass == SuspiciousClass.High).Count()}
+										""", new InlineKeyboardButton[][]
+										{
+											[("Выдать замедление", "/admin banS--_0"), ("Выдать блокировку", "/admin banB--_0")],
+											[("Снять замедление", "/admin banSR-_0"), ("Снять блокировку", "/admin banBR-_0")],
+											[("Назад", "/admin")]
+										}, ParseMode.Html);
+										break;
+									}
+
+									if (args.Length < 5)
+									{
+										await EditOrSendMessage(msg, "Ошибка при запросе: /admin ban не применяется без доп. аргументов.", new InlineKeyboardButton[]
+										{
+											("Назад", "/admin")
+										});
+										throw new Exception($"No command args: {msg.Text}");
+									}
+
+									if (!int.TryParse(args[(args.IndexOf('_') + 1)..], out int page))
+									{
+										await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin ban.", new InlineKeyboardButton[]
+										{
+											("Назад", "/admin ban")
+										});
+										throw new Exception($"Invalid command agrs: {msg.Text}");
+									}
+
+									if (page < 0)
+										page = 0;
+									int nowCounter = page * 10;
+
+									switch (args[3])
+									{
+										case 'S' when args[4] == 'R':
+											{
+												break;
+											}
+										case 'B' when args[4] == 'R':
+											{
+												break;
+											}
+										case 'S':
+											{
+												if (args[5] == '-')
+												{
+													await EditOrSendMessage(msg, $"""
+													Выберите тип замедления:
+													- Лёгкое (1 секунда задержки на 3 минуты без "нарушений")
+													- Среднее (3 секунды задержки на 30 минуты без "нарушений", а после понижение до лёгкого)
+													- Серьёзное (6 секунд задержки на 5 часов без "нарушений", а после понижение до среднего)
+
+													<u>Уточнение:</u>
+													Как правило, ручная выдача <i>не требуется</i> из-за авто-выдачи замедлений. В теории добропорядочный юзер, если постарается, сможет получить <b>максимум</b> лёгкое замедление, остальные - лишь методы защиты от спаммеров.
+													""", new InlineKeyboardButton[][]
+													{
+														[("Лёгкое", "/admin banS-L_0"), ("Среднее", "/admin banS-M_0"), ("Серьёзное", "/admin banS-H_0")],
+														[("Назад", "/admin ban")]
+													}, ParseMode.Html);
+													break;
+												}
+
+												string? selectedType = args[5] switch
+												{
+													'L' => "лёгкого",
+													'M' => "среднего",
+													'H' => "серьёзного",
+													_ => null,
+												};
+												if (selectedType == null)
+												{
+													await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin banS.", new InlineKeyboardButton[]
+													{
+														("Назад", "/admin banS")
+													});
+													throw new Exception($"Invalid command agrs: {msg.Text}");
+												}
+
+
+												List<Person> activePersons = [.. ObjectLists.Persons.Where(x => !SecurityManager.BlockedUsers.ContainsKey(x.Key)).Select(x => x.Value)];
+												await EditOrSendMessage(msg, $"""
+												Кому выдать замедление {selectedType} типа?
+
+												{(activePersons.Count > nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												""", new InlineKeyboardButton[][]
+												{
+													[(activePersons.Count > (nowCounter - 9) ? $"@{activePersons[nowCounter - 9].Username}" : "", activePersons.Count > (nowCounter - 9) ? $"#admin susG{args[5]}{activePersons[nowCounter - 9].UserID}" : "-"), (activePersons.Count > (nowCounter - 8) ? $"@{activePersons[nowCounter - 8].Username}" : "", activePersons.Count > (nowCounter - 8) ? $"#admin susG{args[5]}{activePersons[nowCounter - 8].UserID}" : "-")],
+													[(activePersons.Count > (nowCounter - 7) ? $"@{activePersons[nowCounter - 7].Username}" : "", activePersons.Count > (nowCounter - 7) ? $"#admin susG{args[5]}{activePersons[nowCounter - 7].UserID}" : "-"), (activePersons.Count > (nowCounter - 6) ? $"@{activePersons[nowCounter - 6].Username}" : "", activePersons.Count > (nowCounter - 6) ? $"#admin susG{args[5]}{activePersons[nowCounter - 6].UserID}" : "-")],
+													[(activePersons.Count > (nowCounter - 5) ? $"@{activePersons[nowCounter - 5].Username}" : "", activePersons.Count > (nowCounter - 5) ? $"#admin susG{args[5]}{activePersons[nowCounter - 5].UserID}" : "-"), (activePersons.Count > (nowCounter - 4) ? $"@{activePersons[nowCounter - 4].Username}" : "", activePersons.Count > (nowCounter - 4) ? $"#admin susG{args[5]}{activePersons[nowCounter - 4].UserID}" : "-")],
+													[(activePersons.Count > (nowCounter - 3) ? $"@{activePersons[nowCounter - 3].Username}" : "", activePersons.Count > (nowCounter - 3) ? $"#admin susG{args[5]}{activePersons[nowCounter - 3].UserID}" : "-"), (activePersons.Count > (nowCounter - 2) ? $"@{activePersons[nowCounter - 2].Username}" : "", activePersons.Count > (nowCounter - 2) ? $"#admin susG{args[5]}{activePersons[nowCounter - 2].UserID}" : "-")],
+													[(activePersons.Count > (nowCounter - 1) ? $"@{activePersons[nowCounter - 1].Username}" : "", activePersons.Count > (nowCounter - 1) ? $"#admin susG{args[5]}{activePersons[nowCounter - 1].UserID}" : "-"), (activePersons.Count > nowCounter ? $"@{activePersons[nowCounter].Username}" : "", activePersons.Count > nowCounter ? $"#admin susG{args[5]}{activePersons[nowCounter].UserID}" : "-")],
+													[("Назад", "/admin banS--_0")]
+												}, ParseMode.Html);
+												break;
+											}
+										case 'B':
+											{
+												break;
+											}
+										default:
+											{
+												await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin ban.", new InlineKeyboardButton[]
+													{
+														("Назад", "/admin")
+													});
+												throw new Exception($"Invalid command agrs: {msg.Text}");
+											}
+									}
+									break;
+								}
 							default:
 								{
 									await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin.", new InlineKeyboardButton[]
@@ -1423,7 +1568,6 @@ class Program
 									throw new Exception($"Invalid command agrs: {msg.Text}");
 								}
 						}
-
 						break;
 					}
 				default:
@@ -1485,12 +1629,14 @@ class Program
 							break;
 						}
 
+						await SecurityManager.SecurityCheck(foundUser.UserID, callbackQuery.Data);
 						if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
 						{
 							await bot.SendMessage(callbackQuery.From.Id, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
 							return;
 						}
-						await SecurityManager.SecurityCheck(foundUser.UserID, callbackQuery.Data);
+						if (SecurityManager.RepeatCheck(foundUser.UserID, callbackQuery.Data))
+							await EditOrSendMessage(callbackQuery.Message, "Если вы видите данное сообщение, то вы отправили повторяющийся запрос. Пожалуйста, подождите, пока мы безопасно обработаем ваш запрос...");
 
 						var splitStr = callbackQuery.Data.Split(' ');
 						if (splitStr.Length < 2)
@@ -1584,6 +1730,37 @@ class Program
 											("Назад", $"/info {splitStr[1]}")
 										});
 										throw new Exception($"Error while user {foundUser.UserID} trying to delete review on {placeOfReview.Name}");
+									}
+								case ("susG"):
+									{
+										SuspiciousClass selectedClass = splitStr[1][4] switch
+										{
+											'L' => SuspiciousClass.Light,
+											'M' => SuspiciousClass.Medium,
+											'H' => SuspiciousClass.High,
+											_ => SuspiciousClass.Light,
+										};
+										if (!long.TryParse(splitStr[1][5..], out long userID))
+										{
+											await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке наложить замедление", new InlineKeyboardButton[]
+											{
+												("Назад", $"/admin ban")
+											});
+											throw new Exception($"Error while user {foundUser.UserID} trying to slow user");
+										}
+
+										if (SecurityManager.UpdateSuspiciousUser(userID, selectedClass))
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Отзыв пользователя успешно удалён!");
+											await OnCommand("/admin", "banS--_0", callbackQuery.Message);
+											break;
+										}
+
+										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке наложить замедление на {userID}", new InlineKeyboardButton[]
+											{
+												("Назад", $"/admin banS--_0")
+											});
+										throw new Exception($"Error while user {foundUser.UserID} trying to slow user {userID}");
 									}
 								default:
 									{

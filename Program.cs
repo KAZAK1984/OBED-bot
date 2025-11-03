@@ -1066,7 +1066,7 @@ class Program
 						}
 						break;
 					}
-				case ("/admin"):    // TODO: при реализации runtime добавления новых точек обязательно использовать lock
+				case ("/admin"):
 					{
 						if (foundUser!.Role != RoleType.Administrator)
 						{
@@ -1087,9 +1087,8 @@ class Program
 							""", new InlineKeyboardButton[][]
 							{
 								[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
-								[("Блокировки", "/admin ban")],
-								[("Обновить админ-меню", "/admin ref")],
-								[("Назад", $"/start")]
+								[("Меню блокировок", "/admin ban")],
+								[("Обновить админ-меню", "/admin ref"), ("Назад", $"/start")]
 							}, ParseMode.Html);
 							break;
 						}
@@ -1116,8 +1115,8 @@ class Program
 									""", new InlineKeyboardButton[][]
 									{
 										[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
-										[("Обновить админ-меню", "/admin")],
-										[("Назад", $"/start")]
+										[("Меню блокировок", "/admin ban")],
+										[("Обновить админ-меню", "/admin"), ("Назад", $"/start")]
 									}, ParseMode.Html);
 									break;
 								}
@@ -1444,7 +1443,7 @@ class Program
 										""", new InlineKeyboardButton[][]
 										{
 											[("Выдать замедление", "/admin banS--_0"), ("Выдать блокировку", "/admin banB--_0")],
-											[("Снять замедление", "/admin banSR-_0"), ("Снять блокировку", "/admin banBR-_0")],
+											[("Снять замедление", "/admin banSR_0"), ("Снять блокировку", "/admin banBR_0")],
 											[("Назад", "/admin")]
 										}, ParseMode.Html);
 										break;
@@ -1476,10 +1475,67 @@ class Program
 									{
 										case 'S' when args[4] == 'R':
 											{
+												var activePersons = SecurityManager.SuspiciousUsers.Where(x => !SecurityManager.BlockedUsers.ContainsKey(x.Key)).Select(x => new
+												{
+													userID = x.Key,
+													x.Value.suspiciousClass,
+													x.Value.time
+												}).ToList();
+											
+												await EditOrSendMessage(msg, $"""
+												С кого снять замедление?
+
+												{(activePersons.Count > nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user0) ? user0.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user1) ? user1.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user2) ? user2.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user3) ? user3.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user4) ? user4.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user5) ? user5.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user6) ? user6.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user7) ? user7.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user8) ? user8.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user9) ? user9.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+												""", new InlineKeyboardButton[][]
+												{
+													[(activePersons.Count > (nowCounter - 9) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 9].userID, out Person? _user9) ? _user9.Username : "")}" : "", activePersons.Count > (nowCounter - 9) ? $"#admin susR{activePersons[nowCounter - 9].userID}" : "-"), (activePersons.Count > (nowCounter - 8) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 8].userID, out Person? _user8) ? _user8.Username : "")}" : "", activePersons.Count > (nowCounter - 8) ? $"#admin susR{activePersons[nowCounter - 8].userID}" : "-")],
+													[(activePersons.Count > (nowCounter - 7) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 7].userID, out Person? _user7) ? _user7.Username : "")}" : "", activePersons.Count > (nowCounter - 7) ? $"#admin susR{activePersons[nowCounter - 7].userID}" : "-"), (activePersons.Count > (nowCounter - 6) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 6].userID, out Person? _user6) ? _user6.Username : "")}" : "", activePersons.Count > (nowCounter - 6) ? $"#admin susR{activePersons[nowCounter - 6].userID}" : "-")],
+													[(activePersons.Count > (nowCounter - 5) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 5].userID, out Person? _user5) ? _user5.Username : "")}" : "", activePersons.Count > (nowCounter - 5) ? $"#admin susR{activePersons[nowCounter - 5].userID}" : "-"), (activePersons.Count > (nowCounter - 4) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 4].userID, out Person? _user4) ? _user4.Username : "")}" : "", activePersons.Count > (nowCounter - 4) ? $"#admin susR{activePersons[nowCounter - 4].userID}" : "-")],
+													[(activePersons.Count > (nowCounter - 3) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 3].userID, out Person? _user3) ? _user3.Username : "")}" : "", activePersons.Count > (nowCounter - 3) ? $"#admin susR{activePersons[nowCounter - 3].userID}" : "-"), (activePersons.Count > (nowCounter - 2) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 2].userID, out Person? _user2) ? _user2.Username : "")}" : "", activePersons.Count > (nowCounter - 2) ? $"#admin susR{activePersons[nowCounter - 2].userID}" : "-")],
+													[(activePersons.Count > (nowCounter - 1) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 1].userID, out Person? _user1) ? _user1.Username : "")}" : "", activePersons.Count > (nowCounter - 1) ? $"#admin susR{activePersons[nowCounter - 1].userID}" : "-"), (activePersons.Count > nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? _user0) ? _user0.Username : "")}" : "", activePersons.Count > nowCounter ? $"#admin susR{activePersons[nowCounter].userID}" : "-")],
+													[("Назад", "/admin ban")]
+												}, ParseMode.Html);
 												break;
 											}
 										case 'B' when args[4] == 'R':
 											{
+												var activePersons = SecurityManager.BlockedUsers.Select(x => new
+												{
+													userID = x.Key,
+													reason = x.Value
+												}).ToList();
+
+												await EditOrSendMessage(msg, $"""
+												С кого снять блокировку?
+
+												{(activePersons.Count > nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user0) ? user0.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user1) ? user1.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user2) ? user2.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user3) ? user3.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user4) ? user4.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user5) ? user5.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user6) ? user6.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user7) ? user7.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user8) ? user8.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user9) ? user9.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+												""", new InlineKeyboardButton[][]
+												{
+													[(activePersons.Count > (nowCounter - 9) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 9].userID, out Person? _user9) ? _user9.Username : "")}" : "", activePersons.Count > (nowCounter - 9) ? $"#admin banR{activePersons[nowCounter - 9].userID}" : "-"), (activePersons.Count > (nowCounter - 8) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 8].userID, out Person? _user8) ? _user8.Username : "")}" : "", activePersons.Count > (nowCounter - 8) ? $"#admin banR{activePersons[nowCounter - 8].userID}" : "-")],
+													[(activePersons.Count > (nowCounter - 7) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 7].userID, out Person? _user7) ? _user7.Username : "")}" : "", activePersons.Count > (nowCounter - 7) ? $"#admin banR{activePersons[nowCounter - 7].userID}" : "-"), (activePersons.Count > (nowCounter - 6) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 6].userID, out Person? _user6) ? _user6.Username : "")}" : "", activePersons.Count > (nowCounter - 6) ? $"#admin banR{activePersons[nowCounter - 6].userID}" : "-")],
+													[(activePersons.Count > (nowCounter - 5) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 5].userID, out Person? _user5) ? _user5.Username : "")}" : "", activePersons.Count > (nowCounter - 5) ? $"#admin banR{activePersons[nowCounter - 5].userID}" : "-"), (activePersons.Count > (nowCounter - 4) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 4].userID, out Person? _user4) ? _user4.Username : "")}" : "", activePersons.Count > (nowCounter - 4) ? $"#admin banR{activePersons[nowCounter - 4].userID}" : "-")],
+													[(activePersons.Count > (nowCounter - 3) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 3].userID, out Person? _user3) ? _user3.Username : "")}" : "", activePersons.Count > (nowCounter - 3) ? $"#admin banR{activePersons[nowCounter - 3].userID}" : "-"), (activePersons.Count > (nowCounter - 2) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 2].userID, out Person? _user2) ? _user2.Username : "")}" : "", activePersons.Count > (nowCounter - 2) ? $"#admin banR{activePersons[nowCounter - 2].userID}" : "-")],
+													[(activePersons.Count > (nowCounter - 1) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 1].userID, out Person? _user1) ? _user1.Username : "")}" : "", activePersons.Count > (nowCounter - 1) ? $"#admin banR{activePersons[nowCounter - 1].userID}" : "-"), (activePersons.Count > nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? _user0) ? _user0.Username : "")}" : "", activePersons.Count > nowCounter ? $"#admin banR{activePersons[nowCounter].userID}" : "-")],
+													[("Назад", "/admin ban")]
+												}, ParseMode.Html);
 												break;
 											}
 										case 'S':
@@ -1513,7 +1569,7 @@ class Program
 												{
 													await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin banS.", new InlineKeyboardButton[]
 													{
-														("Назад", "/admin banS")
+														("Назад", "/admin banS--_0")
 													});
 													throw new Exception($"Invalid command agrs: {msg.Text}");
 												}
@@ -1546,6 +1602,68 @@ class Program
 											}
 										case 'B':
 											{
+												if (args[5] == '-')
+												{
+													await EditOrSendMessage(msg, $"""
+													Выберите причину блокировки:
+													- 1 | Попытка совершить спам атаку
+													- 2 | Написание отзыва, содержащего оскорбительный/спорный материал
+													- 3 | Траблмейкинг
+
+													<u>Уточнение:</u>
+													<i><b>Попытка совершить спам атаку</b></i> - данную причину выдаёт автоматическая система защиты от спам атак, но по необходимости вы можете использовать её в ручном режиме.
+													<i><b>Написание отзыва, содержащего оскорбительный/спорный материал</b></i> - данную причину стоит выдавать только за отзывы.
+													<i><b>Траблмейкинг</b></i> - "общая" причина блокировки. Следует использовать только в случаях, когда причины выше неактуальны.
+													""", new InlineKeyboardButton[][]
+													{
+														[("1 | Спам атака", "/admin banB-L_0")], 
+														[("2 | Оскорбительный отзыв", "/admin banB-M_0")], 
+														[("3 | Траблмейкинг", "/admin banB-H_0")],
+														[("Назад", "/admin ban")]
+													}, ParseMode.Html);
+													break;
+												}
+
+												string? selectedType = args[5] switch
+												{
+													'L' => "Попытка совершить спам атаку",
+													'M' => "Написание отзыва, содержащего оскорбительный/спорный материал",
+													'H' => "Траблмейкинг",
+													_ => null,
+												};
+												if (selectedType == null)
+												{
+													await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin banB.", new InlineKeyboardButton[]
+													{
+														("Назад", "/admin banB--_0")
+													});
+													throw new Exception($"Invalid command agrs: {msg.Text}");
+												}
+
+
+												List<Person> activePersons = [.. ObjectLists.Persons.Where(x => !SecurityManager.BlockedUsers.ContainsKey(x.Key)).Select(x => x.Value)];
+												await EditOrSendMessage(msg, $"""
+												Кому выдать блокировку по причине: {selectedType}
+
+												{(activePersons.Count > nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												{(activePersons.Count > ++nowCounter ? $"@{activePersons[nowCounter].Username} ({activePersons[nowCounter].UserID}) | {activePersons[nowCounter].Role}" : "")}
+												""", new InlineKeyboardButton[][]
+												{
+													[(activePersons.Count > (nowCounter - 9) ? $"@{activePersons[nowCounter - 9].Username}" : "", activePersons.Count > (nowCounter - 9) ? $"#admin banG{args[5]}{activePersons[nowCounter - 9].UserID}" : "-"), (activePersons.Count > (nowCounter - 8) ? $"@{activePersons[nowCounter - 8].Username}" : "", activePersons.Count > (nowCounter - 8) ? $"#admin banG{args[5]}{activePersons[nowCounter - 8].UserID}" : "-")],
+													[(activePersons.Count > (nowCounter - 7) ? $"@{activePersons[nowCounter - 7].Username}" : "", activePersons.Count > (nowCounter - 7) ? $"#admin banG{args[5]}{activePersons[nowCounter - 7].UserID}" : "-"), (activePersons.Count > (nowCounter - 6) ? $"@{activePersons[nowCounter - 6].Username}" : "", activePersons.Count > (nowCounter - 6) ? $"#admin banG{args[5]}{activePersons[nowCounter - 6].UserID}" : "-")],
+													[(activePersons.Count > (nowCounter - 5) ? $"@{activePersons[nowCounter - 5].Username}" : "", activePersons.Count > (nowCounter - 5) ? $"#admin banG{args[5]}{activePersons[nowCounter - 5].UserID}" : "-"), (activePersons.Count > (nowCounter - 4) ? $"@{activePersons[nowCounter - 4].Username}" : "", activePersons.Count > (nowCounter - 4) ? $"#admin banG{args[5]}{activePersons[nowCounter - 4].UserID}" : "-")],
+													[(activePersons.Count > (nowCounter - 3) ? $"@{activePersons[nowCounter - 3].Username}" : "", activePersons.Count > (nowCounter - 3) ? $"#admin banG{args[5]}{activePersons[nowCounter - 3].UserID}" : "-"), (activePersons.Count > (nowCounter - 2) ? $"@{activePersons[nowCounter - 2].Username}" : "", activePersons.Count > (nowCounter - 2) ? $"#admin banG{args[5]}{activePersons[nowCounter - 2].UserID}" : "-")],
+													[(activePersons.Count > (nowCounter - 1) ? $"@{activePersons[nowCounter - 1].Username}" : "", activePersons.Count > (nowCounter - 1) ? $"#admin banG{args[5]}{activePersons[nowCounter - 1].UserID}" : "-"), (activePersons.Count > nowCounter ? $"@{activePersons[nowCounter].Username}" : "", activePersons.Count > nowCounter ? $"#admin banG{args[5]}{activePersons[nowCounter].UserID}" : "-")],
+													[("Назад", "/admin banB--_0")]
+												}, ParseMode.Html);
 												break;
 											}
 										default:
@@ -1608,6 +1726,13 @@ class Program
 			{
 				case ('/'):
 					{
+						ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
+						if (foundUser != null && SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+						{
+							await bot.SendMessage(callbackQuery.From.Id, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
+							return;
+						}
+
 						await bot.AnswerCallbackQuery(callbackQuery.Id);
 
 						var splitStr = callbackQuery.Data.Split(' ');
@@ -1744,23 +1869,102 @@ class Program
 										{
 											await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке наложить замедление", new InlineKeyboardButton[]
 											{
-												("Назад", $"/admin ban")
+												("Назад", $"/admin banS--_0")
 											});
 											throw new Exception($"Error while user {foundUser.UserID} trying to slow user");
 										}
 
 										if (SecurityManager.UpdateSuspiciousUser(userID, selectedClass))
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Отзыв пользователя успешно удалён!");
-											await OnCommand("/admin", "banS--_0", callbackQuery.Message);
+											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Пользователь успешно замедлен!");
+											await OnCommand("/admin", $"banS--_0", callbackQuery.Message);
 											break;
 										}
 
 										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке наложить замедление на {userID}", new InlineKeyboardButton[]
-											{
-												("Назад", $"/admin banS--_0")
-											});
+										{
+											("Назад", $"/admin banS--_0")
+										});
 										throw new Exception($"Error while user {foundUser.UserID} trying to slow user {userID}");
+									}
+								case ("susR"):
+									{
+										if (!long.TryParse(splitStr[1][4..], out long userID))
+										{
+											await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке снять замедление", new InlineKeyboardButton[]
+											{
+												("Назад", $"/admin banSR_0")
+											});
+											throw new Exception($"Error while user {foundUser.UserID} trying remove slow from user");
+										}
+
+										if (SecurityManager.SuspiciousUsers.TryRemove(userID, out _))
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Замедление успешно снято!");
+											await OnCommand("/admin", $"banSR_0", callbackQuery.Message);
+											break;
+										}
+
+										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке снять замедление с {userID}", new InlineKeyboardButton[]
+										{
+											("Назад", $"/admin banSR_0")
+										});
+										throw new Exception($"Error while user {foundUser.UserID} trying remove slow from user {userID}");
+									}
+								case ("banG"):
+									{
+										string? selectedReason = splitStr[1][4] switch
+										{
+											'L' => "Попытка совершить спам атаку",
+											'M' => "Написание отзыва, содержащего оскорбительный/спорный материал",
+											'H' => "Траблмейкинг",
+											_ => "Траблмейкинг",
+										};
+										if (!long.TryParse(splitStr[1][5..], out long userID))
+										{
+											await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке заблокировать", new InlineKeyboardButton[]
+											{
+												("Назад", $"/admin banB--_0")
+											});
+											throw new Exception($"Error while user {foundUser.UserID} trying to slow user");
+										}
+
+										if (SecurityManager.BlockedUsers.TryAdd(userID, selectedReason))
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Пользователь успешно заблокирован!");
+											await OnCommand("/admin", $"banB--_0", callbackQuery.Message);
+											break;
+										}
+
+										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке наложить замедление на {userID}", new InlineKeyboardButton[]
+										{
+											("Назад", $"/admin banS--_0")
+										});
+										throw new Exception($"Error while user {foundUser.UserID} trying to slow user {userID}");
+									}
+								case ("banR"):
+									{
+										if (!long.TryParse(splitStr[1][4..], out long userID))
+										{
+											await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке снять блокировку", new InlineKeyboardButton[]
+											{
+												("Назад", $"/admin banBR_0")
+											});
+											throw new Exception($"Error while user {foundUser.UserID} trying remove ban from user");
+										}
+
+										if (SecurityManager.BlockedUsers.TryRemove(userID, out _))
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Блокировка успешно снята!");
+											await OnCommand("/admin", $"banBR_0", callbackQuery.Message);
+											break;
+										}
+
+										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке снять блокировку с {userID}", new InlineKeyboardButton[]
+										{
+											("Назад", $"/admin banBR_0")
+										});
+										throw new Exception($"Error while user {foundUser.UserID} trying remove ban from user {userID}");
 									}
 								default:
 									{

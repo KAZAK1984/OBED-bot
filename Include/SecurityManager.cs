@@ -39,7 +39,7 @@ namespace OBED.Include
 
 			_ = requestsPerSecond switch
 			{
-				> 6 => BlockedUsers.TryAdd(userID, "Попытка отправить слишком много запросов в секунду"),
+				> 6 => BlockedUsers.TryAdd(userID, "Попытка совершить спам атаку"),
 				> 5 => UpdateSuspiciousUser(userID, SuspiciousClass.High),
 				> 4 => UpdateSuspiciousUser(userID, SuspiciousClass.Medium),
 				> 3 => UpdateSuspiciousUser(userID, SuspiciousClass.Light),
@@ -76,12 +76,12 @@ namespace OBED.Include
 			}
 			return true;
 		}
-		private static async Task SlowDownUserAsync(long userID)
+		private static async Task SlowDownUserAsync(long userID)	// ТЕКУЩАЯ СИСТЕМА НАХУЙ СТОПАЕТ ВСЕХ!!!
 		{
 			int delay;
 			if (BlockedUsers.ContainsKey(userID))
 			{
-				delay = 30000;
+				delay = 12000;
 			}
 			else
 			{

@@ -71,78 +71,87 @@ class Program
 		bot.OnMessage += OnMessage;
 		bot.OnUpdate += OnUpdate;
 
-		string? hostCommand = null;
-		do
+		var queueController = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
+		while (await queueController.WaitForNextTickAsync())
 		{
-			Console.WriteLine($"@{meBot.Username} is running... Write host-command or 0 for terminate\n");
-			Console.WriteLine($"Host-command:");
-			Console.WriteLine($"- addAdmin <USER ID>");
-			Console.WriteLine($"- removeAdmin <USER ID>");
-			Console.WriteLine($"- clearConsole");
-
-			hostCommand = Console.ReadLine();
-			try
+			foreach (var request in SecurityManager.RequestQueue.Where(x => x.time < DateTime.Now))
 			{
-				ArgumentNullException.ThrowIfNullOrWhiteSpace(hostCommand);
-
-				var splitCommand = hostCommand.Split(' ');
-
-				switch (splitCommand[0])
-				{
-					case ("addAdmin"):
-						{
-							if (splitCommand.Length < 2)
-								throw new InvalidDataException("Need 2 args");
-							if (!long.TryParse(splitCommand[1], out long ID))
-								throw new InvalidDataException("Can't parse ID");
-							ObjectLists.Persons.TryGetValue(ID, out Person? foundUser);
-
-							if (foundUser == null)
-								throw new InvalidDataException($"User {splitCommand[1]} not found");
-
-							ObjectLists.Persons[ID].SetRole(RoleType.Administrator);
-							Console.WriteLine("Success\n---\n");
-							break;
-						}
-					case ("removeAdmin"):
-						{
-							if (splitCommand.Length < 2)
-								throw new InvalidDataException("Need 2 args");
-							if (!long.TryParse(splitCommand[1], out long ID))
-								throw new InvalidDataException("Can't parse ID");
-							ObjectLists.Persons.TryGetValue(ID, out Person? foundUser);
-
-							if (foundUser == null)
-								throw new InvalidDataException($"User {splitCommand[1]} not found");
-							if (ObjectLists.Persons[ID].Role != RoleType.Administrator)
-								throw new InvalidDataException($"User {splitCommand[1]} is not an administrator");
-
-							ObjectLists.Persons[ID].SetRole(RoleType.CommonUser);
-							Console.WriteLine("Success\n---\n");
-							break;
-						}
-					case ("clearConsole"):
-						{
-							Console.Clear();
-							break;
-						}
-					case ("0"):
-						{
-							cts.Cancel();
-							return;
-						}
-					default:
-						{
-							Console.WriteLine($"Unknown command {hostCommand}\n---\n");
-							break;
-						}
-				}
+				
 			}
-			catch (Exception e)
-			{
-				Console.WriteLine($"{e}\n---\n");
-			}
-		} while (true);
+		}
+
+		//string? hostCommand = null;
+		//do
+		//{
+		//	Console.WriteLine($"@{meBot.Username} is running... Write host-command or 0 for terminate\n");
+		//	Console.WriteLine($"Host-command:");
+		//	Console.WriteLine($"- addAdmin <USER ID>");
+		//	Console.WriteLine($"- removeAdmin <USER ID>");
+		//	Console.WriteLine($"- clearConsole");
+
+		//	hostCommand = Console.ReadLine();
+		//	try
+		//	{
+		//		ArgumentNullException.ThrowIfNullOrWhiteSpace(hostCommand);
+
+		//		var splitCommand = hostCommand.Split(' ');
+
+		//		switch (splitCommand[0])
+		//		{
+		//			case ("addAdmin"):
+		//				{
+		//					if (splitCommand.Length < 2)
+		//						throw new InvalidDataException("Need 2 args");
+		//					if (!long.TryParse(splitCommand[1], out long ID))
+		//						throw new InvalidDataException("Can't parse ID");
+		//					ObjectLists.Persons.TryGetValue(ID, out Person? foundUser);
+
+		//					if (foundUser == null)
+		//						throw new InvalidDataException($"User {splitCommand[1]} not found");
+
+		//					ObjectLists.Persons[ID].SetRole(RoleType.Administrator);
+		//					Console.WriteLine("Success\n---\n");
+		//					break;
+		//				}
+		//			case ("removeAdmin"):
+		//				{
+		//					if (splitCommand.Length < 2)
+		//						throw new InvalidDataException("Need 2 args");
+		//					if (!long.TryParse(splitCommand[1], out long ID))
+		//						throw new InvalidDataException("Can't parse ID");
+		//					ObjectLists.Persons.TryGetValue(ID, out Person? foundUser);
+
+		//					if (foundUser == null)
+		//						throw new InvalidDataException($"User {splitCommand[1]} not found");
+		//					if (ObjectLists.Persons[ID].Role != RoleType.Administrator)
+		//						throw new InvalidDataException($"User {splitCommand[1]} is not an administrator");
+
+		//					ObjectLists.Persons[ID].SetRole(RoleType.CommonUser);
+		//					Console.WriteLine("Success\n---\n");
+		//					break;
+		//				}
+		//			case ("clearConsole"):
+		//				{
+		//					Console.Clear();
+		//					break;
+		//				}
+		//			case ("0"):
+		//				{
+		//					cts.Cancel();
+		//					return;
+		//				}
+		//			default:
+		//				{
+		//					Console.WriteLine($"Unknown command {hostCommand}\n---\n");
+		//					break;
+		//				}
+		//		}
+		//	}
+		//	catch (Exception e)
+		//	{
+		//		Console.WriteLine($"{e}\n---\n");
+		//	}
+		//} while (true);
 
 		static string HtmlEscape(string? s) => (s ?? "-").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 
@@ -195,7 +204,7 @@ class Program
 
 						if (msg.From != null && !msg.From.IsBot)
 						{
-							await SecurityManager.SecurityCheck(foundUser.UserID, msg.Text);
+							SecurityManager.SecurityCheck<Message>(foundUser.UserID, msg);
 							if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
 							{
 								await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
@@ -312,7 +321,7 @@ class Program
 
 			if (foundUser != null)
 			{
-				await SecurityManager.SecurityCheck(foundUser.UserID, $"{command} {args ?? "!"}");
+				SecurityManager.SecurityCheck<Message>(foundUser.UserID, msg, $"{command} {args ?? "!"}");
 				if (SecurityManager.BlockedUsers.TryGetValue(foundUser!.UserID, out string? reason))
 				{
 					await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
@@ -1754,7 +1763,7 @@ class Program
 							break;
 						}
 
-						await SecurityManager.SecurityCheck(foundUser.UserID, callbackQuery.Data);
+						SecurityManager.SecurityCheck<CallbackQuery>(foundUser.UserID, callbackQuery);
 						if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
 						{
 							await bot.SendMessage(callbackQuery.From.Id, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");

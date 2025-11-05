@@ -71,12 +71,18 @@ class Program
 		bot.OnMessage += OnMessage;
 		bot.OnUpdate += OnUpdate;
 
-		var queueController = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
+		var queueController = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
 		while (await queueController.WaitForNextTickAsync())
 		{
-			foreach (var request in SecurityManager.RequestQueue.Where(x => x.time < DateTime.Now))
+			for (int i = 0; i < SecurityManager.RequestBag.Count; ++i)
 			{
-				
+				SecurityManager.RequestBag.TryTake(out var element);
+				if (element.deferredTime < DateTime.Now)
+				{
+
+				}
+				else
+					SecurityManager.RequestBag.Add(element);
 			}
 		}
 
@@ -319,17 +325,8 @@ class Program
 				return;
 			}
 
-			if (foundUser != null)
-			{
-				SecurityManager.SecurityCheck<Message>(foundUser.UserID, msg, $"{command} {args ?? "!"}");
-				if (SecurityManager.BlockedUsers.TryGetValue(foundUser!.UserID, out string? reason))
-				{
-					await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
-					return;
-				}
-				if (SecurityManager.RepeatCheck(foundUser.UserID, $"{command} {args ?? "!"}"))
+			if (foundUser != null && SecurityManager.RepeatCheck(foundUser.UserID, $"{command} {args ?? "!"}"))
 					await EditOrSendMessage(msg, "Если вы видите данное сообщение, то вы отправили повторяющийся запрос. Пожалуйста, подождите, пока мы безопасно обработаем ваш запрос...");
-			}
 
 			if (args == null)
 				Console.WriteLine($"NOW COMMAND {msg.Chat.Username ?? msg.Chat.FirstName + msg.Chat.LastName}: {command}");
@@ -1730,18 +1727,22 @@ class Program
 		{
 			ArgumentNullException.ThrowIfNull(callbackQuery.Data);
 			ArgumentNullException.ThrowIfNull(callbackQuery.Message);
+            ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
+            if (foundUser != null)
+            {
+				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+				{
+                    await bot.SendMessage(callbackQuery.From.Id, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
+                    return;
+                }
+                if (SecurityManager.RepeatCheck(foundUser.UserID, callbackQuery.Data))
+                    await EditOrSendMessage(callbackQuery.Message, "Если вы видите данное сообщение, то вы отправили повторяющийся запрос. Пожалуйста, подождите, пока мы безопасно обработаем ваш запрос...");
+            }
 
-			switch (callbackQuery.Data[0])
+            switch (callbackQuery.Data[0])
 			{
 				case ('/'):
 					{
-						ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
-						if (foundUser != null && SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
-						{
-							await bot.SendMessage(callbackQuery.From.Id, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
-							return;
-						}
-
 						await bot.AnswerCallbackQuery(callbackQuery.Id);
 
 						var splitStr = callbackQuery.Data.Split(' ');
@@ -1754,7 +1755,6 @@ class Program
 				case ('#'):
 					{
 						ArgumentNullException.ThrowIfNull(callbackQuery.Message);
-						ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
 
 						if (foundUser == null)
 						{
@@ -1762,15 +1762,6 @@ class Program
 								new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
 							break;
 						}
-
-						SecurityManager.SecurityCheck<CallbackQuery>(foundUser.UserID, callbackQuery);
-						if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
-						{
-							await bot.SendMessage(callbackQuery.From.Id, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
-							return;
-						}
-						if (SecurityManager.RepeatCheck(foundUser.UserID, callbackQuery.Data))
-							await EditOrSendMessage(callbackQuery.Message, "Если вы видите данное сообщение, то вы отправили повторяющийся запрос. Пожалуйста, подождите, пока мы безопасно обработаем ваш запрос...");
 
 						var splitStr = callbackQuery.Data.Split(' ');
 						if (splitStr.Length < 2)
@@ -2102,8 +2093,6 @@ class Program
 						if (callbackQuery.Data == "callback_resetAction")
 						{
 							await bot.AnswerCallbackQuery(callbackQuery.Id);
-
-							ObjectLists.Persons.TryGetValue(callbackQuery.Message!.Chat.Id, out Person? foundUser);
 
 							if (foundUser == null)
 								await OnCommand("/start", null, callbackQuery.Message!);

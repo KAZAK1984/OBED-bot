@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace OBED.Include
 {
@@ -9,44 +10,39 @@ namespace OBED.Include
 		Medium,
 		High
 	}
+	class MessageData(Message msg, UpdateType type)
+	{
+		public Message Msg { get; init; } = msg;
+		public UpdateType Type { get; init; } = type;
+	}
 	static class SecurityManager
 	{
 		public static ConcurrentDictionary<long, string> BlockedUsers { get; private set; } = [];
 		public static ConcurrentDictionary<long, (SuspiciousClass suspiciousClass, DateTime time)> SuspiciousUsers { get; private set; } = [];
-		public static ConcurrentQueue<(Message msg, string message, Chat chat, int msgID, DateTime time)> RequestQueue { get; private set; } = [];
+		public static ConcurrentBag<(object obj, DateTime deferredTime)> RequestBag { get; private set; } = [];
 		static ConcurrentDictionary<long, List<(DateTime date, string message)>> LastUsersRequests { get; set; } = [];
 
-		public static void SecurityCheck<T>(long userID, T type, string? priorityRecording = null)
+		public static void SecurityCheck<T>(long userID, T type)
 		{
-			string? message = null;
-			Chat? chat = null;
-			int messageId = 0;
-			Message? refMSG = null;
-			if (type is Message msg)
+			string message = "";
+			if (type is MessageData msgData)
 			{
-				ArgumentNullException.ThrowIfNullOrEmpty(msg.Text);
-				message = priorityRecording ?? msg.Text;
-				chat = msg.Chat;
-				messageId = msg.Id;
-				refMSG = msg;
+				ArgumentNullException.ThrowIfNullOrEmpty(msgData.Msg.Text);
+				message = msgData.Msg.Text;
 			}
 			else if (type is CallbackQuery callback)
 			{
 				ArgumentNullException.ThrowIfNullOrEmpty(callback.Data);
 				if (callback.Message == null)
 					throw new ArgumentNullException(callback.Data);
-
-				message = priorityRecording ?? callback.Data;
-				chat = callback.Message.Chat;
-				messageId = callback.Message.Id;
-				refMSG = callback.Message;
+				message = callback.Data;
 			}
 			else
 				throw new Exception($"{type} - uncorrect type");
 
 			if (BlockedUsers.ContainsKey(userID))
 			{
-				SlowDownUserAsync(userID, chat, message, messageId, refMSG);
+				SlowDownUserAsync(userID, type);
 				return;
 			}
 
@@ -71,7 +67,7 @@ namespace OBED.Include
 				_ => false
 			};
 
-			SlowDownUserAsync(userID, chat, message, messageId, refMSG);
+			SlowDownUserAsync(userID, type);
 		}
 		public static bool RepeatCheck(long userID, string? message)
 		{
@@ -101,7 +97,7 @@ namespace OBED.Include
 			}
 			return true;
 		}
-		private static void SlowDownUserAsync(long userID, Chat chat, string message, int messageId, Message msg)
+		private static void SlowDownUserAsync<T>(long userID, T type)
 		{
 			TimeSpan delay;
 			if (BlockedUsers.ContainsKey(userID))
@@ -124,8 +120,12 @@ namespace OBED.Include
 				TryReduceSuspicious(userID, suspiciousUser);
 			}
 
-			RequestQueue.Enqueue((msg, message, chat, messageId, DateTime.Now + delay));
-		}
+			ArgumentNullException.ThrowIfNull(type);
+			if (type is MessageData or CallbackQuery)
+				RequestBag.Add((type, DateTime.Now + delay));
+			else
+                throw new Exception($"{type} - uncorrect type");
+        }
 		private static void TryReduceSuspicious(long userID, (SuspiciousClass suspiciousClass, DateTime time) suspiciousUser)
 		{
 			var timePassed = DateTime.Now - suspiciousUser.time;

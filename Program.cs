@@ -1,5 +1,4 @@
 ﻿using OBED.Include;
-using System;
 using System.Collections.Concurrent;
 using Telegram.Bot;
 using Telegram.Bot.Extensions;
@@ -1043,7 +1042,6 @@ class Program
 							Доброго времени, адмеместратор {foundUser!.Username}
 							
 							Кол-во отзывов на проверку: {AdminControl.ReviewCollector.Count}
-							Оповещение: TODO
 							""", new InlineKeyboardButton[][]
 							{
 								[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
@@ -1071,7 +1069,6 @@ class Program
 									Дoбрoгo времени, адмеместратор {foundUser!.Username}
 							
 									Кол-во отзывов на проверку: {AdminControl.ReviewCollector.Count}
-									Оповещение: TODO
 									""", new InlineKeyboardButton[][]
 									{
 										[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
@@ -1104,7 +1101,7 @@ class Program
 												}, ParseMode.Html);
 										}
 										else
-											await EditOrSendMessage(msg, $"""
+											await EditOrSendMessage(msg, $"""	
 											Отзывов на проверку не осталось, отличная работа!
 											""", new InlineKeyboardButton[][]
 												{

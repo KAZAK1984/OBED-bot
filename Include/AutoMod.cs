@@ -19,8 +19,9 @@ namespace OBED.Include
 					continue;
 				if (regexStr.IsMatch(splitStr[i]))
 				{
-					var value = regexStr.Match(splitStr[i]).Value;
-					splitStr[i] = splitStr[i].Replace(value, $"<u><b>{value}</b></u>");
+					splitStr[i] = regexStr.Replace(
+						splitStr[i],
+						m => $"<u><b>{m.Value}</b></u>");
 				}
 			}
 

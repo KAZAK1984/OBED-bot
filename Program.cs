@@ -1701,7 +1701,7 @@ class Program
 			ArgumentNullException.ThrowIfNull(callbackQuery.Message);
 
             ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
-			if (foundUser == null)
+			if (foundUser == null && callbackQuery.Data != "/start")
 				return;
 
             switch (callbackQuery.Data[0])

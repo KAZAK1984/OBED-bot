@@ -27,8 +27,7 @@ namespace OBED.Include
 			string message = "";
 			if (type is MessageData msgData)
 			{
-				ArgumentNullException.ThrowIfNullOrEmpty(msgData.Msg.Text);
-				message = msgData.Msg.Text;
+				message = msgData.Msg.Text ?? msgData.Msg.Caption ?? msgData.Msg.Type.ToString();
 			}
 			else if (type is CallbackQuery callback)
 			{

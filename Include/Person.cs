@@ -1,4 +1,6 @@
-﻿namespace OBED.Include
+﻿using System.Data;
+
+namespace OBED.Include
 {
 	public enum RoleType
 	{
@@ -25,9 +27,14 @@
 			UserID = userID;
 			Role = role;
 		}
-		public void SetRole(RoleType role) => Role = role;
-		// TODO: ChangeUsername()
-	}
+		public void SetRole(RoleType role)
+		{
+			if (!Enum.IsDefined(typeof(RoleType), role))
+				throw new ArgumentException("Недопустимое значение роли.", nameof(role));
+			Role = role;
+		}
+	// TODO: ChangeUsername()
+}
 	/// <summary>
 	/// Текущий тип обработки сообщений в чате от юзера. Без данных тегов UserState у сообщения игнорируются
 	/// </summary>

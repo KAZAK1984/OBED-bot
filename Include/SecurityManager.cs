@@ -41,10 +41,7 @@ namespace OBED.Include
 				throw new Exception($"{type} - uncorrect type");
 
 			if (BlockedUsers.ContainsKey(userID))
-			{
-				SlowDownUserAsync(userID, type);
 				return false;
-			}
 
 			var userRequests = LastUsersRequests.GetOrAdd(userID, _ => []);
 
@@ -58,7 +55,7 @@ namespace OBED.Include
 				requestsPerSecond = userRequests.Count(x => (DateTime.Now - x.date).TotalSeconds <= 1);
 			}
 
-			bool checker = requestsPerSecond switch
+			_ = requestsPerSecond switch
 			{
 				> 6 => BlockedUsers.TryAdd(userID, "Попытка совершить спам атаку"),
 				> 5 => UpdateSuspiciousUser(userID, SuspiciousClass.High),
@@ -67,23 +64,7 @@ namespace OBED.Include
 				_ => false
 			};
 
-			SlowDownUserAsync(userID, type);
-			return checker;
-		}
-		public static bool RepeatCheck(long userID, string? message)
-		{
-			if (BlockedUsers.TryGetValue(userID, out string? reason) || message == null)
-				return false;
-
-			var userRequests = LastUsersRequests.GetOrAdd(userID, _ => []);
-
-			if (userRequests.Count < 3)
-				return false;
-
-			if (userRequests[^2].message == message && userRequests[^3].message != message)
-				return true;
-
-			return false;
+			return SlowDownUserAsync(userID, type);
 		}
 		public static bool UpdateSuspiciousUser(long userID, SuspiciousClass newLevel)
 		{
@@ -98,7 +79,7 @@ namespace OBED.Include
 			}
 			return true;
 		}
-		private static void SlowDownUserAsync<T>(long userID, T type)
+		private static bool SlowDownUserAsync<T>(long userID, T type)
 		{
 			TimeSpan delay;
 			if (BlockedUsers.ContainsKey(userID))
@@ -108,7 +89,7 @@ namespace OBED.Include
 			else
 			{
 				if (!SuspiciousUsers.TryGetValue(userID, out var suspiciousUser))
-					return;
+					return false;
 
 				delay = suspiciousUser.suspiciousClass switch
 				{
@@ -126,6 +107,8 @@ namespace OBED.Include
 				RequestQueue.Enqueue((type, DateTime.Now + delay));
 			else
 				throw new Exception($"{type} - uncorrect type");
+
+			return true;
         }
 		private static void TryReduceSuspicious(long userID, (SuspiciousClass suspiciousClass, DateTime time) suspiciousUser)
 		{

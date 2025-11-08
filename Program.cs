@@ -1,6 +1,8 @@
 ﻿using OBED.Include;
+using System;
 using System.Collections.Concurrent;
 using Telegram.Bot;
+using Telegram.Bot.Extensions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -74,27 +76,19 @@ class Program
 		var queueController = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
 		while (await queueController.WaitForNextTickAsync())
 		{
-			Console.WriteLine($"Tick: {DateTime.Now} - {SecurityManager.RequestQueue.Count}");
 			for (int i = 0; i < SecurityManager.RequestQueue.Count; ++i)
 			{
 				if (SecurityManager.RequestQueue.TryPeek(out var element) && element.deferredTime < DateTime.Now)
 				{
 					if (element.obj is MessageData messageData)
-					{
-						Console.WriteLine($"{i} - MSG | От {messageData.Msg.From!.Username} | Запрос: {messageData.Msg.Text}");
 						await OnDirectMessage(messageData.Msg, messageData.Type);
-					}
 					else if (element.obj is CallbackQuery callbackQuery)
-					{
-                        Console.WriteLine($"{i} - CQ | От {callbackQuery.From!.Username} | Запрос: {callbackQuery.Data}");
 						await OnDirectCallbackQuery(callbackQuery);
-					}
 
                     SecurityManager.RequestQueue.TryDequeue(out _);
                     --i;
                 }
 			}
-            Console.WriteLine($"END - {SecurityManager.RequestQueue.Count}");
         }
 
 		static string HtmlEscape(string? s) => (s ?? "-").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
@@ -109,7 +103,20 @@ class Program
 				return;
 			}
 			if (msg.From.IsBot)
-				await bot.EditMessageText(msg.Chat, msg.Id, text, parser, replyMarkup: markup);
+			{
+				try
+				{
+					await bot.EditMessageText(msg.Chat, msg.Id, text, parser, replyMarkup: markup);
+				}
+				catch (Exception ex)
+				{
+					if (ex is not Telegram.Bot.Exceptions.ApiRequestException)
+					{
+						Console.WriteLine(ex);
+						await Task.Delay(2000, cts.Token);
+					}	
+				}
+			}
 			else
 				await bot.SendMessage(msg.Chat, text, parser, replyMarkup: markup);
 		}
@@ -126,18 +133,18 @@ class Program
 			
 			if (foundUser != null)
 			{
-				if (SecurityManager.SecurityCheck<MessageData>(foundUser.UserID, new(msg, type)))
-					return;
-			
 				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
 				{
-					await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
+					await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Траблмейкинг"}.");
 					return;
 				}
+
+				if (SecurityManager.SecurityCheck<MessageData>(foundUser.UserID, new(msg, type)))
+					return;
 			}
 
 			await OnDirectMessage(msg, type);
-        }
+		}
 
         async Task OnDirectMessage(Message msg, UpdateType type)
 		{
@@ -164,11 +171,6 @@ class Program
 								new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
 							break;
 						}
-						else if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
-                        {
-                            await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
-                            return;
-                        }
 
                         switch (usersState[foundUser.UserID].Action)
 							{
@@ -276,9 +278,6 @@ class Program
 					new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
 				return;
 			}
-
-			if (foundUser != null && SecurityManager.RepeatCheck(foundUser.UserID, $"{command} {args ?? "!"}"))
-					await EditOrSendMessage(msg, "Если вы видите данное сообщение, то вы отправили повторяющийся запрос. Пожалуйста, подождите, пока мы безопасно обработаем ваш запрос...");
 
 			if (args == null)
 				Console.WriteLine($"NOW COMMAND {msg.Chat.Username ?? msg.Chat.FirstName + msg.Chat.LastName}: {command}");
@@ -1686,17 +1685,15 @@ class Program
             ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
             if (foundUser != null)
             {
-                if (SecurityManager.SecurityCheck<CallbackQuery>(foundUser.UserID, callbackQuery))
-                    return;
+				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+				{
+					await bot.SendMessage(callbackQuery.Message.Chat, $"Вы были заблокированы за: {reason ?? "Траблмейкинг"}.");
+					return;
+				}
 
-                if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
-                {
-                    await bot.SendMessage(callbackQuery.Message.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
+				if (SecurityManager.SecurityCheck<CallbackQuery>(foundUser.UserID, callbackQuery))
                     return;
-                }
-                if (SecurityManager.RepeatCheck(foundUser.UserID, callbackQuery.Data))
-                    await EditOrSendMessage(callbackQuery.Message, "Если вы видите данное сообщение, то вы отправили повторяющийся запрос. Пожалуйста, подождите, пока мы безопасно обработаем ваш запрос...");
-            }
+			}
 
 			await OnDirectCallbackQuery(callbackQuery);
         }
@@ -1720,7 +1717,12 @@ class Program
                         }
 						catch (Exception ex)
 						{
+							Console.WriteLine(ex);
+							await bot.SendHtml(callbackQuery.Message.Chat, $"""
+							Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
+							<code>Код необработанного запроса: {callbackQuery.Data}</code>
+							""");
 						}
 						var splitStr = callbackQuery.Data.Split(' ');
 						if (splitStr.Length > 1)
@@ -1763,21 +1765,63 @@ class Program
 											AdminControl.ReviewCollector[0].place.AddReview(AdminControl.ReviewCollector[0].review.UserID, AdminControl.ReviewCollector[0].review.Rating, null);
 											AdminControl.SetReviewStatus();
 										}
-										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
+
+										try
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
+										}
+										catch (Exception ex)
+										{
+											Console.WriteLine(ex);
+											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+											""");
+										}
+										
 										await OnCommand("/admin", "chk", callbackQuery.Message);
 										break;
 									}
 								case ("chkM"):
 									{
 										AdminControl.SetReviewStatus(AutoMod.AddCensor(AdminControl.ReviewCollector[0].review.Comment!));
-										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв после авто-мода успешно оставлен!");
+
+										try
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв после авто-мода успешно оставлен!");
+										}
+										catch (Exception ex)
+										{
+											Console.WriteLine(ex);
+											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+											""");
+										}
+										
 										await OnCommand("/admin", "chk", callbackQuery.Message);
 										break;
 									}
 								case ("chkO"):
 									{
 										AdminControl.SetReviewStatus(true);
-										await bot.AnswerCallbackQuery(callbackQuery.Id, "Оригинальный отзыв успешно оставлен!");
+
+										try
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, "Оригинальный отзыв успешно оставлен!");
+										}
+										catch (Exception ex)
+										{
+											Console.WriteLine(ex);
+											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+											""");
+										}
+										
 										await OnCommand("/admin", "chk", callbackQuery.Message);
 										break;
 									}
@@ -1822,7 +1866,20 @@ class Program
 
 										if (placeOfReview.DeleteReview(placeOfReview.Reviews[reviewIndex].UserID))
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Отзыв пользователя успешно удалён!");
+											try
+											{
+												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Отзыв пользователя успешно удалён!");
+											}
+											catch (Exception ex)
+											{
+												Console.WriteLine(ex);
+												await bot.SendHtml(callbackQuery.Message.Chat, $"""
+												Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+												<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+												""");
+											}
+
 											await OnCommand("/admin", $"delN-{splitStr[1][4..splitStr[1].IndexOf('_')]}_0", callbackQuery.Message);
 											break;
 										}
@@ -1853,7 +1910,20 @@ class Program
 
 										if (SecurityManager.UpdateSuspiciousUser(userID, selectedClass))
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Пользователь успешно замедлен!");
+											try
+											{
+												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Пользователь успешно замедлен!");
+											}
+											catch (Exception ex)
+											{
+												Console.WriteLine(ex);
+												await bot.SendHtml(callbackQuery.Message.Chat, $"""
+												Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+												<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+												""");
+											}
+
 											await OnCommand("/admin", $"banS--_0", callbackQuery.Message);
 											break;
 										}
@@ -1877,7 +1947,20 @@ class Program
 
 										if (SecurityManager.SuspiciousUsers.TryRemove(userID, out _))
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Замедление успешно снято!");
+											try
+											{
+												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Замедление успешно снято!");
+											}
+											catch (Exception ex)
+											{
+												Console.WriteLine(ex);
+												await bot.SendHtml(callbackQuery.Message.Chat, $"""
+												Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+												<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+												""");
+											}
+
 											await OnCommand("/admin", $"banSR_0", callbackQuery.Message);
 											break;
 										}
@@ -1908,7 +1991,20 @@ class Program
 
 										if (SecurityManager.BlockedUsers.TryAdd(userID, selectedReason))
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Пользователь успешно заблокирован!");
+											try
+											{
+												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Пользователь успешно заблокирован!");
+											}
+											catch (Exception ex)
+											{
+												Console.WriteLine(ex);
+												await bot.SendHtml(callbackQuery.Message.Chat, $"""
+												Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+												<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+												""");
+											}
+
 											await OnCommand("/admin", $"banB--_0", callbackQuery.Message);
 											break;
 										}
@@ -1932,7 +2028,20 @@ class Program
 
 										if (SecurityManager.BlockedUsers.TryRemove(userID, out _))
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, $"Блокировка успешно снята!");
+											try
+											{
+												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Блокировка успешно снята!");
+											}
+											catch (Exception ex)
+											{
+												Console.WriteLine(ex);
+												await bot.SendHtml(callbackQuery.Message.Chat, $"""
+												Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+												<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+												""");
+											}
+
 											await OnCommand("/admin", $"banBR_0", callbackQuery.Message);
 											break;
 										}
@@ -1995,7 +2104,21 @@ class Program
 									if (AdminControl.AddReviewOnMod(place, foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment) && usersState[foundUser.UserID].Action == UserAction.NoActiveRequest)
 									{
 										usersState[foundUser.UserID].Action = null;
-										await bot.AnswerCallbackQuery(callbackQuery.Id, (usersState[foundUser.UserID].Comment == null) ? "Отзыв успешно оставлен!" : "Отзыв успешно оставлен! В течение суток он будет опубликован.");
+
+										try
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, (usersState[foundUser.UserID].Comment == null) ? "Отзыв успешно оставлен!" : "Отзыв успешно оставлен! В течение суток он будет опубликован.");
+										}
+										catch (Exception ex)
+										{
+											Console.WriteLine(ex);
+											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+											""");
+										}
+										
 										await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
 									}
 									else
@@ -2026,14 +2149,41 @@ class Program
 
 									if (place.DeleteReview(foundUser.UserID))	
 									{
-										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно удалён!");
+										try
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно удалён!");
+										}
+										catch (Exception ex)
+										{
+											Console.WriteLine(ex);
+											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+											""");
+										}
+										
 										await OnCommand("/info", splitStr[1], callbackQuery.Message);
 										break;
 									}
 									else if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
 									{
 										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
-										await bot.AnswerCallbackQuery(callbackQuery.Id, "Непроверенный отзыв успешно удалён!");
+
+										try
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, "Непроверенный отзыв успешно удалён!");
+										}
+										catch (Exception ex)
+										{
+											Console.WriteLine(ex);
+											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+											""");
+										}
+
 										await OnCommand("/info", splitStr[1], callbackQuery.Message);
 										break;
 									}
@@ -2054,7 +2204,21 @@ class Program
 										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
 
 									AdminControl.AddReviewOnMod(place, foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment);
-									await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно изменён!");
+
+									try
+									{
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно изменён!");
+									}
+									catch (Exception ex)
+									{
+										Console.WriteLine(ex);
+										await bot.SendHtml(callbackQuery.Message.Chat, $"""
+										Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+										<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+										""");
+									}
+
 									await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
 									break;
 								}
@@ -2069,7 +2233,19 @@ class Program
 					{
 						if (callbackQuery.Data == "callback_resetAction")
 						{
-							await bot.AnswerCallbackQuery(callbackQuery.Id);
+							try
+							{
+								await bot.AnswerCallbackQuery(callbackQuery.Id);
+							}
+							catch (Exception ex)
+							{
+								Console.WriteLine(ex);
+								await bot.SendHtml(callbackQuery.Message.Chat, $"""
+								Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+								<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+								""");
+							}
 
 							if (foundUser == null)
 								await OnCommand("/start", null, callbackQuery.Message!);

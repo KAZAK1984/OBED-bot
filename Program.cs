@@ -68,96 +68,34 @@ class Program
 		ConcurrentDictionary<long, UserState> usersState = [];
 
 		bot.OnError += OnError;
-		bot.OnMessage += OnMessage;
+		bot.OnMessage += OnStandarMessage;
 		bot.OnUpdate += OnUpdate;
 
 		var queueController = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
 		while (await queueController.WaitForNextTickAsync())
 		{
-			for (int i = 0; i < SecurityManager.RequestBag.Count; ++i)
+			Console.WriteLine($"Tick: {DateTime.Now} - {SecurityManager.RequestQueue.Count}");
+			for (int i = 0; i < SecurityManager.RequestQueue.Count; ++i)
 			{
-				SecurityManager.RequestBag.TryTake(out var element);
-				if (element.deferredTime < DateTime.Now)
+				if (SecurityManager.RequestQueue.TryPeek(out var element) && element.deferredTime < DateTime.Now)
 				{
+					if (element.obj is MessageData messageData)
+					{
+						Console.WriteLine($"{i} - MSG | От {messageData.Msg.From!.Username} | Запрос: {messageData.Msg.Text}");
+						await OnDirectMessage(messageData.Msg, messageData.Type);
+					}
+					else if (element.obj is CallbackQuery callbackQuery)
+					{
+                        Console.WriteLine($"{i} - CQ | От {callbackQuery.From!.Username} | Запрос: {callbackQuery.Data}");
+						await OnDirectCallbackQuery(callbackQuery);
+					}
 
-				}
-				else
-					SecurityManager.RequestBag.Add(element);
+                    SecurityManager.RequestQueue.TryDequeue(out _);
+                    --i;
+                }
 			}
-		}
-
-		//string? hostCommand = null;
-		//do
-		//{
-		//	Console.WriteLine($"@{meBot.Username} is running... Write host-command or 0 for terminate\n");
-		//	Console.WriteLine($"Host-command:");
-		//	Console.WriteLine($"- addAdmin <USER ID>");
-		//	Console.WriteLine($"- removeAdmin <USER ID>");
-		//	Console.WriteLine($"- clearConsole");
-
-		//	hostCommand = Console.ReadLine();
-		//	try
-		//	{
-		//		ArgumentNullException.ThrowIfNullOrWhiteSpace(hostCommand);
-
-		//		var splitCommand = hostCommand.Split(' ');
-
-		//		switch (splitCommand[0])
-		//		{
-		//			case ("addAdmin"):
-		//				{
-		//					if (splitCommand.Length < 2)
-		//						throw new InvalidDataException("Need 2 args");
-		//					if (!long.TryParse(splitCommand[1], out long ID))
-		//						throw new InvalidDataException("Can't parse ID");
-		//					ObjectLists.Persons.TryGetValue(ID, out Person? foundUser);
-
-		//					if (foundUser == null)
-		//						throw new InvalidDataException($"User {splitCommand[1]} not found");
-
-		//					ObjectLists.Persons[ID].SetRole(RoleType.Administrator);
-		//					Console.WriteLine("Success\n---\n");
-		//					break;
-		//				}
-		//			case ("removeAdmin"):
-		//				{
-		//					if (splitCommand.Length < 2)
-		//						throw new InvalidDataException("Need 2 args");
-		//					if (!long.TryParse(splitCommand[1], out long ID))
-		//						throw new InvalidDataException("Can't parse ID");
-		//					ObjectLists.Persons.TryGetValue(ID, out Person? foundUser);
-
-		//					if (foundUser == null)
-		//						throw new InvalidDataException($"User {splitCommand[1]} not found");
-		//					if (ObjectLists.Persons[ID].Role != RoleType.Administrator)
-		//						throw new InvalidDataException($"User {splitCommand[1]} is not an administrator");
-
-		//					ObjectLists.Persons[ID].SetRole(RoleType.CommonUser);
-		//					Console.WriteLine("Success\n---\n");
-		//					break;
-		//				}
-		//			case ("clearConsole"):
-		//				{
-		//					Console.Clear();
-		//					break;
-		//				}
-		//			case ("0"):
-		//				{
-		//					cts.Cancel();
-		//					return;
-		//				}
-		//			default:
-		//				{
-		//					Console.WriteLine($"Unknown command {hostCommand}\n---\n");
-		//					break;
-		//				}
-		//		}
-		//	}
-		//	catch (Exception e)
-		//	{
-		//		Console.WriteLine($"{e}\n---\n");
-		//	}
-		//} while (true);
+            Console.WriteLine($"END - {SecurityManager.RequestQueue.Count}");
+        }
 
 		static string HtmlEscape(string? s) => (s ?? "-").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 
@@ -182,7 +120,26 @@ class Program
 			await Task.Delay(2000, cts.Token);
 		}
 
-		async Task OnMessage(Message msg, UpdateType type)
+        async Task OnStandarMessage(Message msg, UpdateType type)
+		{
+			ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
+			
+			if (foundUser != null)
+			{
+				if (SecurityManager.SecurityCheck<MessageData>(foundUser.UserID, new(msg, type)))
+					return;
+			
+				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+				{
+					await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
+					return;
+				}
+			}
+
+			await OnDirectMessage(msg, type);
+        }
+
+        async Task OnDirectMessage(Message msg, UpdateType type)
 		{
 			switch (msg)
 			{
@@ -207,68 +164,63 @@ class Program
 								new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
 							break;
 						}
+						else if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+                        {
+                            await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
+                            return;
+                        }
 
-						if (msg.From != null && !msg.From.IsBot)
-						{
-							SecurityManager.SecurityCheck<Message>(foundUser.UserID, msg);
-							if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+                        switch (usersState[foundUser.UserID].Action)
 							{
-								await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
-								return;
-							}
-						}
-
-						switch (usersState[foundUser.UserID].Action)
-						{
-							case (UserAction.RatingRequest):
-								{
-									if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
+								case (UserAction.RatingRequest):
 									{
-										usersState[foundUser.UserID].Rating = rating;
-										usersState[foundUser.UserID].Action = UserAction.CommentRequest;
-										await EditOrSendMessage(msg, $"Введите текст отзыва или откажитесь от сообщения отправив -", null, ParseMode.None, true);
+										if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
+										{
+											usersState[foundUser.UserID].Rating = rating;
+											usersState[foundUser.UserID].Action = UserAction.CommentRequest;
+											await EditOrSendMessage(msg, $"Введите текст отзыва или откажитесь от сообщения отправив -", null, ParseMode.None, true);
+											break;
+										}
+
+										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
 										break;
 									}
-
-									await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
-									break;
-								}
-							case (UserAction.RatingChange):
-								{
-									if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
+								case (UserAction.RatingChange):
 									{
-										usersState[foundUser.UserID].Rating = rating;
-										usersState[foundUser.UserID].Comment = "saved_mark";
-										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
+										if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
+										{
+											usersState[foundUser.UserID].Rating = rating;
+											usersState[foundUser.UserID].Comment = "saved_mark";
+											usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
+											await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
+											break;
+										}
+
+										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
 										break;
 									}
-
-									await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
-									break;
-								}
-							case (UserAction.CommentRequest):
-								{
-									if (string.IsNullOrWhiteSpace(msg.Text))
+								case (UserAction.CommentRequest):
 									{
-										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
-										break;
-									}
+										if (string.IsNullOrWhiteSpace(msg.Text))
+										{
+											await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
+											break;
+										}
 
-									if (msg.Text.Length > 720)
-									{
-										await EditOrSendMessage(msg, $"""
+										if (msg.Text.Length > 720)
+										{
+											await EditOrSendMessage(msg, $"""
 											Ошибка при обработке! Комментарий не может быть больше 720 символов. Текущая длина сообщения: {msg.Text.Length}.
 											Убедитесь, что ваше новое сообщение содержит текст или откажитесь от сообщения отправив -
 											""", null, ParseMode.Html, true);
-										break;
-									}
-									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-									if (usersState[foundUser.UserID].Comment == "-")
-										usersState[foundUser.UserID].Comment = null;
+											break;
+										}
+										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+										if (usersState[foundUser.UserID].Comment == "-")
+											usersState[foundUser.UserID].Comment = null;
 
-									usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
-									await EditOrSendMessage(msg, $"""
+										usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
+										await EditOrSendMessage(msg, $"""
 									Ваш отзыв:
 									
 										• Оценка: {usersState[foundUser.UserID].Rating}
@@ -276,39 +228,39 @@ class Program
 									
 									Всё верно?
 									""", new InlineKeyboardButton[][]
-									{
+										{
 										[("Да", $"#sendReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"callback_resetAction")],
-									}, ParseMode.Html);
-									break;
-								}
-							case (UserAction.CommentChange):
-								{
-									if (string.IsNullOrWhiteSpace(msg.Text))
-									{
-										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
+										}, ParseMode.Html);
 										break;
 									}
-
-									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-									usersState[foundUser.UserID].Rating = 0;
-									usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-									await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
-									break;
-								}
-							case (UserAction.Moderation):
-								{
-									if (string.IsNullOrWhiteSpace(msg.Text))
+								case (UserAction.CommentChange):
 									{
-										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или удалите сообщение отправив -", null, ParseMode.None, true);
+										if (string.IsNullOrWhiteSpace(msg.Text))
+										{
+											await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
+											break;
+										}
+
+										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+										usersState[foundUser.UserID].Rating = 0;
+										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
+										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
 										break;
 									}
+								case (UserAction.Moderation):
+									{
+										if (string.IsNullOrWhiteSpace(msg.Text))
+										{
+											await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или удалите сообщение отправив -", null, ParseMode.None, true);
+											break;
+										}
 
-									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-									usersState[foundUser.UserID].Action = UserAction.NoActiveModeration;
-									await OnCommand("/admin", "chkA", msg);
-									break;
-								}
-						}
+										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+										usersState[foundUser.UserID].Action = UserAction.NoActiveModeration;
+										await OnCommand("/admin", "chkA", msg);
+										break;
+									}
+							}
 						break;
 					}
 			}
@@ -342,6 +294,9 @@ class Program
 							ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
 							usersState.TryAdd(msg.Chat.Id, new());
 							ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
+
+							if (foundUser!.UserID == 1204402944)
+								foundUser.SetRole(RoleType.Administrator);
 						}
 
 						await EditOrSendMessage(msg, "Старт", new InlineKeyboardButton[][]
@@ -1712,7 +1667,7 @@ class Program
 			{
 				case { CallbackQuery: { } query }:
 					{
-						await OnCallbackQuery(query);
+						await OnStandartCallbackQuery(query);
 						break;
 					}
 				default:
@@ -1723,28 +1678,50 @@ class Program
 			}
 		}
 
-		async Task OnCallbackQuery(CallbackQuery callbackQuery)
+        async Task OnStandartCallbackQuery(CallbackQuery callbackQuery)
 		{
-			ArgumentNullException.ThrowIfNull(callbackQuery.Data);
-			ArgumentNullException.ThrowIfNull(callbackQuery.Message);
+            ArgumentNullException.ThrowIfNull(callbackQuery.Data);
+            ArgumentNullException.ThrowIfNull(callbackQuery.Message);
+
             ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
             if (foundUser != null)
             {
-				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
-				{
-                    await bot.SendMessage(callbackQuery.From.Id, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
+                if (SecurityManager.SecurityCheck<CallbackQuery>(foundUser.UserID, callbackQuery))
+                    return;
+
+                if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+                {
+                    await bot.SendMessage(callbackQuery.Message.Chat, $"Вы были заблокированы за: {reason ?? "Недопустимые действия"}.");
                     return;
                 }
                 if (SecurityManager.RepeatCheck(foundUser.UserID, callbackQuery.Data))
                     await EditOrSendMessage(callbackQuery.Message, "Если вы видите данное сообщение, то вы отправили повторяющийся запрос. Пожалуйста, подождите, пока мы безопасно обработаем ваш запрос...");
             }
 
+			await OnDirectCallbackQuery(callbackQuery);
+        }
+
+        async Task OnDirectCallbackQuery(CallbackQuery callbackQuery)
+		{
+			ArgumentNullException.ThrowIfNull(callbackQuery.Data);
+			ArgumentNullException.ThrowIfNull(callbackQuery.Message);
+
+            ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
+			if (foundUser == null)
+				return;
+
             switch (callbackQuery.Data[0])
 			{
 				case ('/'):
 					{
-						await bot.AnswerCallbackQuery(callbackQuery.Id);
+						try
+						{
+                            await bot.AnswerCallbackQuery(callbackQuery.Id);
+                        }
+						catch (Exception ex)
+						{
 
+						}
 						var splitStr = callbackQuery.Data.Split(' ');
 						if (splitStr.Length > 1)
 							await OnCommand(splitStr[0], splitStr[1], callbackQuery.Message);

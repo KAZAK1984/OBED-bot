@@ -19,10 +19,10 @@ namespace OBED.Include
 	{
 		public static ConcurrentDictionary<long, string> BlockedUsers { get; private set; } = [];
 		public static ConcurrentDictionary<long, (SuspiciousClass suspiciousClass, DateTime time)> SuspiciousUsers { get; private set; } = [];
-		public static ConcurrentBag<(object obj, DateTime deferredTime)> RequestBag { get; private set; } = [];
+		public static ConcurrentQueue<(object obj, DateTime deferredTime)> RequestQueue { get; private set; } = [];
 		static ConcurrentDictionary<long, List<(DateTime date, string message)>> LastUsersRequests { get; set; } = [];
 
-		public static void SecurityCheck<T>(long userID, T type)
+		public static bool SecurityCheck<T>(long userID, T type)
 		{
 			string message = "";
 			if (type is MessageData msgData)
@@ -43,7 +43,7 @@ namespace OBED.Include
 			if (BlockedUsers.ContainsKey(userID))
 			{
 				SlowDownUserAsync(userID, type);
-				return;
+				return false;
 			}
 
 			var userRequests = LastUsersRequests.GetOrAdd(userID, _ => []);
@@ -58,7 +58,7 @@ namespace OBED.Include
 				requestsPerSecond = userRequests.Count(x => (DateTime.Now - x.date).TotalSeconds <= 1);
 			}
 
-			_ = requestsPerSecond switch
+			bool checker = requestsPerSecond switch
 			{
 				> 6 => BlockedUsers.TryAdd(userID, "Попытка совершить спам атаку"),
 				> 5 => UpdateSuspiciousUser(userID, SuspiciousClass.High),
@@ -68,6 +68,7 @@ namespace OBED.Include
 			};
 
 			SlowDownUserAsync(userID, type);
+			return checker;
 		}
 		public static bool RepeatCheck(long userID, string? message)
 		{
@@ -121,10 +122,10 @@ namespace OBED.Include
 			}
 
 			ArgumentNullException.ThrowIfNull(type);
-			if (type is MessageData or CallbackQuery)
-				RequestBag.Add((type, DateTime.Now + delay));
+			if (type is MessageData || type is CallbackQuery)
+				RequestQueue.Enqueue((type, DateTime.Now + delay));
 			else
-                throw new Exception($"{type} - uncorrect type");
+				throw new Exception($"{type} - uncorrect type");
         }
 		private static void TryReduceSuspicious(long userID, (SuspiciousClass suspiciousClass, DateTime time) suspiciousUser)
 		{

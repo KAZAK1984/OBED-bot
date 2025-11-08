@@ -203,38 +203,8 @@ class Program
                                     }
 
                                     usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-                                    if (usersState[foundUser.UserID].Comment == "-")
-                                        usersState[foundUser.UserID].Comment = null;
-
                                     usersState[foundUser.UserID].Action = UserAction.NoActiveReport;
-
-									string message = "";
-
-									switch (usersState[foundUser.UserID].ActionArguments[1])
-									{
-										case ('B'):
-											{
-												message = "Сообщение об ошибке:";
-												break;
-											}
-										case ('R'):
-											{
-												message = "Ваш отзыв на бота:";
-												break;
-											}
-									}
-
-                                    await EditOrSendMessage(msg, $"""
-										{message}
-										
-											{usersState[foundUser.UserID].Comment}
-									
-									Всё верно?
-									""", new InlineKeyboardButton[][]
-                                    {
-                                        [("Да", $"#sendReport {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"callback_resetAction")],
-                                    }, ParseMode.Html);
-
+                                    await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ActionArguments}", msg);
                                     break;
 								}
 						}
@@ -349,6 +319,39 @@ class Program
                                                 break;
 											}
                                     }
+                                    break;
+                                }
+                            case (UserAction.NoActiveReport):
+                                {
+                                    usersState[foundUser.UserID].Action = null;
+
+                                    string message = "";
+                                    switch (usersState[foundUser.UserID].ActionArguments[1])
+                                    {
+                                        case ('B'):
+                                            {
+                                                message = "Сообщение об ошибке:";
+                                                break;
+                                            }
+                                        case ('R'):
+                                            {
+                                                message = "Ваш отзыв на бота:";
+                                                break;
+                                            }
+                                    }
+
+                                    await EditOrSendMessage(msg, $"""
+										{message}
+										
+											{usersState[foundUser.UserID].Comment}
+									
+									Всё верно?
+									""", new InlineKeyboardButton[][]
+                                    {
+                                        [("Да", $"#sendReport {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"/sendReport -{usersState[foundUser.UserID].ActionArguments}")],
+                                        [("Назад", $"/start {args[1..]}")]
+                                    }, ParseMode.Html);
+
                                     break;
                                 }
                             default:

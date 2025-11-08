@@ -217,11 +217,6 @@ class Program
 												message = "Сообщение об ошибке:";
 												break;
 											}
-										case ('C'):
-											{
-												message = "Ваша жалоба";
-												break;
-											}
 										case ('R'):
 											{
 												message = "Ваш отзыв на бота:";
@@ -298,9 +293,8 @@ class Program
 						// TODO: Сообщать нам только о тех ошибках, которые реально мешают юзерам, а не о фантомных стикерах
 						await EditOrSendMessage(msg, $"Что вы хотите сделать?", new InlineKeyboardButton[][]
 							{
-                                [("Сообщить об ошибке","/sendReport -B")],
-                                [("Пожаловаться","/sendReport -C")],
-                                [("Оставить отзыв о боте","/sendReport -R")],
+                                [("Сообщить об ошибке","/sendReport B")],
+                                [("Оставить отзыв о боте","/sendReport R")],
                                 [("Назад","/start")]
 							});
 						break;
@@ -309,20 +303,11 @@ class Program
 					{
                         if (args == null)
                         {
-                            await EditOrSendMessage(msg, "Ошибка при запросе: /reportSelector не применяется без аргументов.", new InlineKeyboardButton[]
+                            await EditOrSendMessage(msg, "Ошибка при запросе: /sendreport не применяется без аргументов.", new InlineKeyboardButton[]
                             {
                                 ("Назад", "/report")
                             });
                             throw new Exception($"No command args: {msg.Text}");
-                        }
-
-                        if (!char.IsLetter(args[1]) || args.Length > 2)
-                        {
-                            await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /reportSelector.", new InlineKeyboardButton[]
-                            {
-                                ("Назад", "/report")
-                            });
-                            throw new Exception($"Invalid command agrs: {msg.Text}");
                         }
 
                         ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
@@ -341,23 +326,28 @@ class Program
                                     usersState[foundUser.UserID].Action = UserAction.ReportRequest;
                                     usersState[foundUser.UserID].ActionArguments = args;
 
-									switch(args[1])
+									switch(args)
 									{
-										case ('B'):
+										case ("B"):
 											{
-                                                await EditOrSendMessage(msg, $"Опишите подробно, в чем была проблема, условия возникновения бага, и ожидаемое поведение", null, ParseMode.None, true);
+                                                await EditOrSendMessage(msg, $"Введите сообщение об ошибке, укзав в чем была проблема, условия возникновения бага, и ожидаемое поведение", null, ParseMode.None, true);
                                                 break;
 											}
-                                        case ('С'):
+                                        case ("R"):
                                             {
-                                                await EditOrSendMessage(msg, $"Укажите, кто и на какую точку питания оставил недопустимый отзыв. Объясните причину жалобы", null, ParseMode.None, true);
+                                                await EditOrSendMessage(msg, $"Напишите, что вы думаете об этом боте, или какие у вас есть предложения по его улучшению", null, ParseMode.None, true);
                                                 break;
                                             }
-                                        case ('R'):
-                                            {
-                                                await EditOrSendMessage(msg, $"Что вы думаете об этом боте, или какие у вас есть предложения по его улучшению?", null, ParseMode.None, true);
+										default:
+											{
+                                                await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /sendReport.", new InlineKeyboardButton[]
+												{
+													("Назад", "/report")
+												});
+                                                throw new Exception($"Invalid command agrs: {msg.Text}");
+
                                                 break;
-                                            }
+											}
                                     }
                                     break;
                                 }
@@ -1240,11 +1230,6 @@ class Program
                                         case ('B'):
                                             {
                                                 ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment, [])); // TODO
-                                                break;
-                                            }
-                                        case ('C'):
-                                            {
-                                                ObjectLists.FeedbackReports.Add(new ComplaintReport(foundUser.UserID, usersState[foundUser.UserID].Comment, [], -1)); // TODO
                                                 break;
                                             }
                                     }

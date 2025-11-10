@@ -15,7 +15,7 @@ class Program
     static async Task Main()
     {
         using var cts = new CancellationTokenSource();
-        var token = Environment.GetEnvironmentVariable("TOKEN");
+        var token = "8343345535:AAFo4dhmrQ9eAe90IjryQak4xEfCiYvvr4U";
         var bot = new TelegramBotClient(token!, cancellationToken: cts.Token);
         var meBot = await bot.GetMe();
 

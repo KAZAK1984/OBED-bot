@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.Collections.Concurrent;
+using System.Data;
 
 namespace OBED.Include
 {
@@ -34,7 +35,7 @@ namespace OBED.Include
 			Role = role;
 		}
 	// TODO: ChangeUsername()
-}
+	}
 	/// <summary>
 	/// Текущий тип обработки сообщений в чате от юзера. Без данных тегов UserState у сообщения игнорируются
 	/// </summary>

@@ -1,4 +1,6 @@
 ﻿using OBED.Include;
+using OBED.TelegramBot;
+
 using System.Collections.Concurrent;
 using Telegram.Bot;
 using Telegram.Bot.Extensions;
@@ -11,10 +13,7 @@ class Program
 {
 	static async Task Main()
 	{
-		using var cts = new CancellationTokenSource();
-		var token = Environment.GetEnvironmentVariable("TOKEN");
-		var bot = new TelegramBotClient(token!, cancellationToken: cts.Token);
-		var meBot = await bot.GetMe();
+		TelegramBot.BotInit();
 
 		// TODO: переход на SQL
 		List<Product> products1 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
@@ -68,9 +67,9 @@ class Program
 		// TODO: переход на noSQL
 		ConcurrentDictionary<long, UserState> usersState = [];
 
-		bot.OnError += OnError;
-		bot.OnMessage += OnStandarMessage;
-		bot.OnUpdate += OnUpdate;
+		TelegramBot.Bot!.OnError += OnError;
+		TelegramBot.Bot!.OnMessage += OnStandarMessage;
+		TelegramBot.Bot!.OnUpdate += OnUpdate;
 
 		var queueController = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
 		while (await queueController.WaitForNextTickAsync())
@@ -98,32 +97,32 @@ class Program
 
 			if (isForceReply)
 			{
-				await bot.SendMessage(msg.Chat, text, parser, replyMarkup: new ForceReplyMarkup());
+				await TelegramBot.Bot!.SendMessage(msg.Chat, text, parser, replyMarkup: new ForceReplyMarkup());
 				return;
 			}
 			if (msg.From.IsBot)
 			{
 				try
 				{
-					await bot.EditMessageText(msg.Chat, msg.Id, text, parser, replyMarkup: markup);
+					await TelegramBot.Bot!.EditMessageText(msg.Chat, msg.Id, text, parser, replyMarkup: markup);
 				}
 				catch (Exception ex)
 				{
 					if (ex is not Telegram.Bot.Exceptions.ApiRequestException)
 					{
 						Console.WriteLine(ex);
-						await Task.Delay(2000, cts.Token);
+						await Task.Delay(2000, TelegramBot.Cts!.Token);
 					}	
 				}
 			}
 			else
-				await bot.SendMessage(msg.Chat, text, parser, replyMarkup: markup);
+				await TelegramBot.Bot!.SendMessage(msg.Chat, text, parser, replyMarkup: markup);
 		}
 
 		async Task OnError(Exception exception, HandleErrorSource source)
 		{
 			Console.WriteLine(exception);
-			await Task.Delay(2000, cts.Token);
+			await Task.Delay(2000, TelegramBot.Cts!.Token);
 		}
 
         async Task OnStandarMessage(Message msg, UpdateType type)
@@ -134,7 +133,7 @@ class Program
 			{
 				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
 				{
-					await bot.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Траблмейкинг"}.");
+					await TelegramBot.Bot!.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Траблмейкинг"}.");
 					return;
 				}
 
@@ -297,13 +296,14 @@ class Program
 								foundUser.SetRole(RoleType.Administrator);
 						}
 
-						await EditOrSendMessage(msg, "Старт", new InlineKeyboardButton[][]
+						await Sender.EditOrSend(new(msg, "Старт", new InlineKeyboardButton[][]
 						{
 							[("Места", "/places")],
 							[("Профиль", "/person")],
 							[("Помощь", "/help"), ("Поддержка", "/report")],
 							[(foundUser!.Role == RoleType.Administrator ? "Админ панель" : "", "/admin")]
-						});
+						}));
+
 						break;
 					}
 				case ("/person"):
@@ -1684,7 +1684,7 @@ class Program
             {
 				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
 				{
-					await bot.SendMessage(callbackQuery.Message.Chat, $"Вы были заблокированы за: {reason ?? "Траблмейкинг"}.");
+					await TelegramBot.Bot!.SendMessage(callbackQuery.Message.Chat, $"Вы были заблокированы за: {reason ?? "Траблмейкинг"}.");
 					return;
 				}
 
@@ -1710,12 +1710,12 @@ class Program
 					{
 						try
 						{
-                            await bot.AnswerCallbackQuery(callbackQuery.Id);
+                            await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id);
                         }
 						catch (Exception ex)
 						{
 							Console.WriteLine(ex);
-							await bot.SendHtml(callbackQuery.Message.Chat, $"""
+							await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 							Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 							<code>Код необработанного запроса: {callbackQuery.Data}</code>
@@ -1765,12 +1765,12 @@ class Program
 
 										try
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
+											await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
 										}
 										catch (Exception ex)
 										{
 											Console.WriteLine(ex);
-											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -1786,12 +1786,12 @@ class Program
 
 										try
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв после авто-мода успешно оставлен!");
+											await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, "Отзыв после авто-мода успешно оставлен!");
 										}
 										catch (Exception ex)
 										{
 											Console.WriteLine(ex);
-											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -1807,12 +1807,12 @@ class Program
 
 										try
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, "Оригинальный отзыв успешно оставлен!");
+											await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, "Оригинальный отзыв успешно оставлен!");
 										}
 										catch (Exception ex)
 										{
 											Console.WriteLine(ex);
-											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -1865,12 +1865,12 @@ class Program
 										{
 											try
 											{
-												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Отзыв пользователя успешно удалён!");
+												await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, $"Отзыв пользователя успешно удалён!");
 											}
 											catch (Exception ex)
 											{
 												Console.WriteLine(ex);
-												await bot.SendHtml(callbackQuery.Message.Chat, $"""
+												await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 												Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 												<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -1909,12 +1909,12 @@ class Program
 										{
 											try
 											{
-												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Пользователь успешно замедлен!");
+												await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, $"Пользователь успешно замедлен!");
 											}
 											catch (Exception ex)
 											{
 												Console.WriteLine(ex);
-												await bot.SendHtml(callbackQuery.Message.Chat, $"""
+												await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 												Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 												<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -1946,12 +1946,12 @@ class Program
 										{
 											try
 											{
-												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Замедление успешно снято!");
+												await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, $"Замедление успешно снято!");
 											}
 											catch (Exception ex)
 											{
 												Console.WriteLine(ex);
-												await bot.SendHtml(callbackQuery.Message.Chat, $"""
+												await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 												Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 												<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -1990,12 +1990,12 @@ class Program
 										{
 											try
 											{
-												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Пользователь успешно заблокирован!");
+												await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, $"Пользователь успешно заблокирован!");
 											}
 											catch (Exception ex)
 											{
 												Console.WriteLine(ex);
-												await bot.SendHtml(callbackQuery.Message.Chat, $"""
+												await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 												Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 												<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -2027,12 +2027,12 @@ class Program
 										{
 											try
 											{
-												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Блокировка успешно снята!");
+												await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, $"Блокировка успешно снята!");
 											}
 											catch (Exception ex)
 											{
 												Console.WriteLine(ex);
-												await bot.SendHtml(callbackQuery.Message.Chat, $"""
+												await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 												Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 												<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -2104,12 +2104,12 @@ class Program
 
 										try
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, (usersState[foundUser.UserID].Comment == null) ? "Отзыв успешно оставлен!" : "Отзыв успешно оставлен! В течение суток он будет опубликован.");
+											await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, (usersState[foundUser.UserID].Comment == null) ? "Отзыв успешно оставлен!" : "Отзыв успешно оставлен! В течение суток он будет опубликован.");
 										}
 										catch (Exception ex)
 										{
 											Console.WriteLine(ex);
-											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -2148,12 +2148,12 @@ class Program
 									{
 										try
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно удалён!");
+											await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно удалён!");
 										}
 										catch (Exception ex)
 										{
 											Console.WriteLine(ex);
-											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -2169,12 +2169,12 @@ class Program
 
 										try
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, "Непроверенный отзыв успешно удалён!");
+											await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, "Непроверенный отзыв успешно удалён!");
 										}
 										catch (Exception ex)
 										{
 											Console.WriteLine(ex);
-											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+											await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 											Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -2204,12 +2204,12 @@ class Program
 
 									try
 									{
-										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно изменён!");
+										await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, "Отзыв успешно изменён!");
 									}
 									catch (Exception ex)
 									{
 										Console.WriteLine(ex);
-										await bot.SendHtml(callbackQuery.Message.Chat, $"""
+										await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 										Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 										<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
@@ -2232,12 +2232,12 @@ class Program
 						{
 							try
 							{
-								await bot.AnswerCallbackQuery(callbackQuery.Id);
+								await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id);
 							}
 							catch (Exception ex)
 							{
 								Console.WriteLine(ex);
-								await bot.SendHtml(callbackQuery.Message.Chat, $"""
+								await TelegramBot.Bot!.SendHtml(callbackQuery.Message.Chat, $"""
 								Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
 
 								<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>

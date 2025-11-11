@@ -60,7 +60,8 @@ namespace OBED.Include
 	}
 	class UserState
 	{
-		public UserAction? Action { get; set; }
+        public static ConcurrentDictionary<long, UserState> dictionary = [];
+        public UserAction? Action { get; set; }
 		public string? ReferenceToPlace { get; set; }
 		public string? Comment { get; set; }
 		public int Rating { get; set; }

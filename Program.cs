@@ -1,7 +1,6 @@
 ﻿using OBED.Include;
 using OBED.TelegramBot;
 
-using System.Collections.Concurrent;
 using Telegram.Bot;
 using Telegram.Bot.Extensions;
 using Telegram.Bot.Polling;
@@ -63,9 +62,6 @@ class Program
 			new("Grocery3", null, reviews3, products4, null)]);
 
 		reviews3.Add(new(611614145, 3, "SuperNew"));
-
-		// TODO: переход на noSQL
-		ConcurrentDictionary<long, UserState> usersState = [];
 
 		TelegramBot.Bot!.OnError += OnError;
 		TelegramBot.Bot!.OnMessage += OnStandarMessage;
@@ -170,14 +166,14 @@ class Program
 							break;
 						}
 
-                        switch (usersState[foundUser.UserID].Action)
+                        switch (UserState.dictionary[foundUser.UserID].Action)
 							{
 								case (UserAction.RatingRequest):
 									{
 										if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
 										{
-											usersState[foundUser.UserID].Rating = rating;
-											usersState[foundUser.UserID].Action = UserAction.CommentRequest;
+											UserState.dictionary[foundUser.UserID].Rating = rating;
+											UserState.dictionary[foundUser.UserID].Action = UserAction.CommentRequest;
 											await EditOrSendMessage(msg, $"Введите текст отзыва или откажитесь от сообщения отправив -", null, ParseMode.None, true);
 											break;
 										}
@@ -189,10 +185,10 @@ class Program
 									{
 										if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
 										{
-											usersState[foundUser.UserID].Rating = rating;
-											usersState[foundUser.UserID].Comment = "saved_mark";
-											usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-											await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
+											UserState.dictionary[foundUser.UserID].Rating = rating;
+											UserState.dictionary[foundUser.UserID].Comment = "saved_mark";
+											UserState.dictionary[foundUser.UserID].Action = UserAction.NoActiveChange;
+											await OnCommand("/changeReview", $"-{UserState.dictionary[foundUser.UserID].ReferenceToPlace}", msg);
 											break;
 										}
 
@@ -215,21 +211,21 @@ class Program
 											""", null, ParseMode.Html, true);
 											break;
 										}
-										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-										if (usersState[foundUser.UserID].Comment == "-")
-											usersState[foundUser.UserID].Comment = null;
+										UserState.dictionary[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+										if (UserState.dictionary[foundUser.UserID].Comment == "-")
+											UserState.dictionary[foundUser.UserID].Comment = null;
 
-										usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
+										UserState.dictionary[foundUser.UserID].Action = UserAction.NoActiveRequest;
 										await EditOrSendMessage(msg, $"""
 									Ваш отзыв:
 									
-										• Оценка: {usersState[foundUser.UserID].Rating}
-										• Комментарий: {usersState[foundUser.UserID].Comment ?? "Отсутствует"}
+										• Оценка: {UserState.dictionary[foundUser.UserID].Rating}
+										• Комментарий: {UserState.dictionary[foundUser.UserID].Comment ?? "Отсутствует"}
 									
 									Всё верно?
 									""", new InlineKeyboardButton[][]
 										{
-										[("Да", $"#sendReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"callback_resetAction")],
+										[("Да", $"#sendReview {UserState.dictionary[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"callback_resetAction")],
 										}, ParseMode.Html);
 										break;
 									}
@@ -241,10 +237,10 @@ class Program
 											break;
 										}
 
-										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-										usersState[foundUser.UserID].Rating = 0;
-										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
+										UserState.dictionary[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+										UserState.dictionary[foundUser.UserID].Rating = 0;
+										UserState.dictionary[foundUser.UserID].Action = UserAction.NoActiveChange;
+										await OnCommand("/changeReview", $"-{UserState.dictionary[foundUser.UserID].ReferenceToPlace}", msg);
 										break;
 									}
 								case (UserAction.Moderation):
@@ -255,8 +251,8 @@ class Program
 											break;
 										}
 
-										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-										usersState[foundUser.UserID].Action = UserAction.NoActiveModeration;
+										UserState.dictionary[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+										UserState.dictionary[foundUser.UserID].Action = UserAction.NoActiveModeration;
 										await OnCommand("/admin", "chkA", msg);
 										break;
 									}
@@ -289,7 +285,7 @@ class Program
 						{
 							Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
 							ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
-							usersState.TryAdd(msg.Chat.Id, new());
+							UserState.dictionary.TryAdd(msg.Chat.Id, new());
 							ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
 
 							if (foundUser!.UserID == 1204402944)
@@ -861,12 +857,12 @@ class Program
 							break;
 						}
 
-						switch (usersState[foundUser!.UserID].Action)
+						switch (UserState.dictionary[foundUser!.UserID].Action)
 						{
 							case (null):
 								{
-									usersState[foundUser!.UserID].Action = UserAction.RatingRequest;
-									usersState[foundUser!.UserID].ReferenceToPlace = args;
+									UserState.dictionary[foundUser!.UserID].Action = UserAction.RatingRequest;
+									UserState.dictionary[foundUser!.UserID].ReferenceToPlace = args;
 
 									await EditOrSendMessage(msg, $"Введите оценку от 1⭐️ до 10⭐️", null, ParseMode.None, true);
 									break;
@@ -874,7 +870,7 @@ class Program
 							default:
 								{
 									await EditOrSendMessage(msg, $"Зафиксирована попытка оставить отзыв на другую точку. Сброс ранее введённой информации...");
-									usersState[foundUser!.UserID].Action = null;
+									UserState.dictionary[foundUser!.UserID].Action = null;
 									await OnCommand("/sendReview", args, msg);
 									break;
 								}
@@ -958,23 +954,23 @@ class Program
 						{
 							case ('R'):
 								{
-									usersState[foundUser!.UserID].Action = UserAction.RatingChange;
-									usersState[foundUser!.UserID].ReferenceToPlace = args[1..];
+									UserState.dictionary[foundUser!.UserID].Action = UserAction.RatingChange;
+									UserState.dictionary[foundUser!.UserID].ReferenceToPlace = args[1..];
 
 									await EditOrSendMessage(msg, $"Введите НОВУЮ оценку от 1⭐️ до 10⭐️", null, ParseMode.None, true);
 									break;
 								}
 							case ('C'):
 								{
-									usersState[foundUser!.UserID].Action = UserAction.CommentChange;
-									usersState[foundUser!.UserID].ReferenceToPlace = args[1..];
+									UserState.dictionary[foundUser!.UserID].Action = UserAction.CommentChange;
+									UserState.dictionary[foundUser!.UserID].ReferenceToPlace = args[1..];
 
 									await EditOrSendMessage(msg, $"Введите НОВЫЙ текст отзыва или удалите его отправив -", null, ParseMode.None, true);
 									break;
 								}
 						}
 
-						switch (usersState[foundUser!.UserID].Action)
+						switch (UserState.dictionary[foundUser!.UserID].Action)
 						{
 							case (null):
 								{
@@ -991,33 +987,33 @@ class Program
 								{
 									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
 									{
-										if (usersState[foundUser!.UserID].Rating == 0)
-											usersState[foundUser!.UserID].Rating = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Rating;
-										if (usersState[foundUser!.UserID].Comment == "saved_mark")
-											usersState[foundUser!.UserID].Comment = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Comment;
+										if (UserState.dictionary[foundUser!.UserID].Rating == 0)
+											UserState.dictionary[foundUser!.UserID].Rating = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Rating;
+										if (UserState.dictionary[foundUser!.UserID].Comment == "saved_mark")
+											UserState.dictionary[foundUser!.UserID].Comment = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Comment;
 									}
 									else
 									{
-										if (usersState[foundUser!.UserID].Rating == 0)
-											usersState[foundUser!.UserID].Rating = place.Reviews.First(x => x.UserID == foundUser!.UserID).Rating;
-										if (usersState[foundUser!.UserID].Comment == "saved_mark")
-											usersState[foundUser!.UserID].Comment = null;    // Если есть сохранённый коммент - его бы нашли в админ контроле
+										if (UserState.dictionary[foundUser!.UserID].Rating == 0)
+											UserState.dictionary[foundUser!.UserID].Rating = place.Reviews.First(x => x.UserID == foundUser!.UserID).Rating;
+										if (UserState.dictionary[foundUser!.UserID].Comment == "saved_mark")
+											UserState.dictionary[foundUser!.UserID].Comment = null;    // Если есть сохранённый коммент - его бы нашли в админ контроле
 									}
 
-									if (usersState[foundUser!.UserID].Comment == "-")
-										usersState[foundUser!.UserID].Comment = null;
+									if (UserState.dictionary[foundUser!.UserID].Comment == "-")
+										UserState.dictionary[foundUser!.UserID].Comment = null;
 
-									usersState[foundUser!.UserID].Action = null;
+									UserState.dictionary[foundUser!.UserID].Action = null;
 									await EditOrSendMessage(msg, $"""
 									Ваш НОВЫЙ отзыв:
 									
-										• Оценка: {usersState[foundUser!.UserID].Rating}
-										• Комментарий: {usersState[foundUser!.UserID].Comment ?? "Отсутствует"}
+										• Оценка: {UserState.dictionary[foundUser!.UserID].Rating}
+										• Комментарий: {UserState.dictionary[foundUser!.UserID].Comment ?? "Отсутствует"}
 									
 									Всё верно?
 									""", new InlineKeyboardButton[][]
 									{
-										[("Да", $"#changeReview {usersState[foundUser!.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{usersState[foundUser!.UserID].ReferenceToPlace}")],
+										[("Да", $"#changeReview {UserState.dictionary[foundUser!.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{UserState.dictionary[foundUser!.UserID].ReferenceToPlace}")],
 										[("Назад", $"/info {args[1..]}")]
 									}, ParseMode.Html);
 									break;
@@ -1114,25 +1110,25 @@ class Program
 									{
 										case ('A'):
 											{
-												switch (usersState[foundUser!.UserID].Action)
+												switch (UserState.dictionary[foundUser!.UserID].Action)
 												{
 													case (null):
 														{
-															usersState[foundUser!.UserID].Action = UserAction.Moderation;
+															UserState.dictionary[foundUser!.UserID].Action = UserAction.Moderation;
 															await EditOrSendMessage(msg, $"Введите ОТРЕДАКТИРОВАННЫЙ текст отзыва или удалите его отправив -", null, ParseMode.None, true);
 															break;
 														}
 													case (UserAction.NoActiveModeration):
 														{
-															if (usersState[foundUser!.UserID].Comment == "-")
-																usersState[foundUser!.UserID].Comment = null;
+															if (UserState.dictionary[foundUser!.UserID].Comment == "-")
+																UserState.dictionary[foundUser!.UserID].Comment = null;
 
-															usersState[foundUser!.UserID].Action = null;
+															UserState.dictionary[foundUser!.UserID].Action = null;
 															await EditOrSendMessage(msg, $"""
 															ОТРЕДАКТИРОВАННЫЙ отзыв:
 									
 																• Оценка: {AdminControl.ReviewCollector[0].review.Rating}
-																• Комментарий: {usersState[foundUser!.UserID].Comment ?? "Удалён"}
+																• Комментарий: {UserState.dictionary[foundUser!.UserID].Comment ?? "Удалён"}
 									
 															Всё верно?
 															""", new InlineKeyboardButton[][]
@@ -1145,7 +1141,7 @@ class Program
 													default:
 														{
 															await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к модерации в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
-															usersState[foundUser!.UserID].Action = null;
+															UserState.dictionary[foundUser!.UserID].Action = null;
 															await OnCommand("/admin", args, msg);
 															break;
 														}
@@ -1755,8 +1751,8 @@ class Program
 							{
 								case ("chkA"):
 									{
-										if (usersState[foundUser.UserID].Comment != null)
-											AdminControl.SetReviewStatus(usersState[foundUser.UserID].Comment!);
+										if (UserState.dictionary[foundUser.UserID].Comment != null)
+											AdminControl.SetReviewStatus(UserState.dictionary[foundUser.UserID].Comment!);
 										else
 										{
 											AdminControl.ReviewCollector[0].place.AddReview(AdminControl.ReviewCollector[0].review.UserID, AdminControl.ReviewCollector[0].review.Rating, null);
@@ -2098,13 +2094,13 @@ class Program
 						{
 							case ("sendReview"):
 								{
-									if (AdminControl.AddReviewOnMod(place, foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment) && usersState[foundUser.UserID].Action == UserAction.NoActiveRequest)
+									if (AdminControl.AddReviewOnMod(place, foundUser.UserID, UserState.dictionary[foundUser.UserID].Rating, UserState.dictionary[foundUser.UserID].Comment) && UserState.dictionary[foundUser.UserID].Action == UserAction.NoActiveRequest)
 									{
-										usersState[foundUser.UserID].Action = null;
+										UserState.dictionary[foundUser.UserID].Action = null;
 
 										try
 										{
-											await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, (usersState[foundUser.UserID].Comment == null) ? "Отзыв успешно оставлен!" : "Отзыв успешно оставлен! В течение суток он будет опубликован.");
+											await TelegramBot.Bot!.AnswerCallbackQuery(callbackQuery.Id, (UserState.dictionary[foundUser.UserID].Comment == null) ? "Отзыв успешно оставлен!" : "Отзыв успешно оставлен! В течение суток он будет опубликован.");
 										}
 										catch (Exception ex)
 										{
@@ -2116,15 +2112,15 @@ class Program
 											""");
 										}
 										
-										await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
+										await OnCommand("/info", UserState.dictionary[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
 									}
 									else
 									{
-										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].Rating}⭐️| {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}", new InlineKeyboardButton[]
+										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке оставить отзыв: {UserState.dictionary[foundUser.UserID].Rating}⭐️| {UserState.dictionary[foundUser.UserID].Comment ?? "Комментарий отсутствует"}", new InlineKeyboardButton[]
 										{
-											("Назад", $"/info {usersState[foundUser.UserID].ReferenceToPlace}")
+											("Назад", $"/info {UserState.dictionary[foundUser.UserID].ReferenceToPlace}")
 										});
-										throw new Exception($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].ReferenceToPlace} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
+										throw new Exception($"Ошибка при попытке оставить отзыв: {UserState.dictionary[foundUser.UserID].ReferenceToPlace} - {UserState.dictionary[foundUser.UserID].Rating} | {UserState.dictionary[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
 									}
 
 									break;
@@ -2193,14 +2189,14 @@ class Program
 								}
 							case ("changeReview"):
 								{
-									if (usersState[foundUser.UserID].Action != null)
+									if (UserState.dictionary[foundUser.UserID].Action != null)
 										break;
 
 									place.DeleteReview(foundUser.UserID);
 									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
 										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
 
-									AdminControl.AddReviewOnMod(place, foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment);
+									AdminControl.AddReviewOnMod(place, foundUser.UserID, UserState.dictionary[foundUser.UserID].Rating, UserState.dictionary[foundUser.UserID].Comment);
 
 									try
 									{
@@ -2216,7 +2212,7 @@ class Program
 										""");
 									}
 
-									await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
+									await OnCommand("/info", UserState.dictionary[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
 									break;
 								}
 							default:
@@ -2248,8 +2244,8 @@ class Program
 								await OnCommand("/start", null, callbackQuery.Message!);
 							else
 							{
-								usersState[foundUser.UserID].Action = null;
-								await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message!);
+								UserState.dictionary[foundUser.UserID].Action = null;
+								await OnCommand("/info", UserState.dictionary[foundUser.UserID].ReferenceToPlace, callbackQuery.Message!);
 							}
 						}
 						else

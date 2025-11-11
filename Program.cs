@@ -315,8 +315,6 @@ class Program
 													("Назад", "/report")
 												});
                                                 throw new Exception($"Invalid command agrs: {msg.Text}");
-
-                                                break;
 											}
                                     }
                                     break;
@@ -338,11 +336,19 @@ class Program
                                                 message = "Ваш отзыв на бота:";
                                                 break;
                                             }
+										default:
+											{
+                                                await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /sendReport.", new InlineKeyboardButton[]
+												{
+													("Назад", "/places")
+												});
+												throw new Exception($"Invalid command agrs: {msg.Text}");
+											}
                                     }
 
                                     await EditOrSendMessage(msg, $"""
 										{message}
-										
+
 											{usersState[foundUser.UserID].Comment}
 									
 									Всё верно?
@@ -356,7 +362,7 @@ class Program
                                 }
                             default:
                                 {
-                                    await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к модерации в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
+                                    await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к редактированию другого репорта или отзыва на точку. Сброс ранее введённой информации...");
                                     usersState[foundUser.UserID].Action = null;
                                     await OnCommand("/sendReport", args, msg);
                                     break;
@@ -1123,7 +1129,7 @@ class Program
 
 						if (!char.IsLetter(splitStr[1][1]) || !int.TryParse(splitStr[1][2..splitStr[1].IndexOf('_')], out int index))
 						{
-							await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректные аргументо.", new InlineKeyboardButton[]
+							await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректные аргументы.", new InlineKeyboardButton[]
 							{
 											("Назад", "/places")
 							});
@@ -1223,23 +1229,41 @@ class Program
 								}
 							case ("sendReport"):
 								{
+                                    if (usersState[foundUser.UserID].Action != null)
+									{
+                                        usersState[foundUser.UserID].Action = null;
+                                        await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
+                                        {
+                                            ("Назад", $"/report")
+                                        });
+                                        throw new Exception($"Error while user {foundUser.UserID} trying to send report");
+                                    }
+									
                                     switch (splitStr[1][1])
 									{
 										case ('R'):
 											{
 												ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment, []));
+                                                await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет о баге успешно добавлен!");
                                                 break;
 											}
                                         case ('B'):
                                             {
                                                 ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment, [])); // TODO
+                                                await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв о боте успешно добавлен!");
                                                 break;
+                                            }
+										default:
+											{
+                                                await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
+												{
+													("Назад", $"/report")
+												});
+                                                throw new Exception($"Error while user {foundUser.UserID} trying to send report");
                                             }
                                     }
 
-                                    await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет успешно добавлен!");
-                                    await OnCommand("/report", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message);
-
+                                    await OnCommand("/report", null, callbackQuery.Message);
                                     break;
 								}
 							default:

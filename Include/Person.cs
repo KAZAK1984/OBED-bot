@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.Contracts;
-
-namespace OBED.Include
+﻿namespace OBED.Include
 {
 	public enum RoleType
 	{
@@ -57,7 +55,6 @@ namespace OBED.Include
 	{
 		public UserAction? Action { get; set; }
 		public string? ActionArguments { get; set; }
-		//public string? ReportType;
 		public string? Comment { get; set; }
 		public int Rating { get; set; }
 	}

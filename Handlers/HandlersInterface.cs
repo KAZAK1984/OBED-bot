@@ -2,15 +2,13 @@
 
 namespace OBED.Handlers
 {
-	public record HandlerResult(bool Result, string Info);
-
 	public interface ICommandHandler
 	{
 		bool CanHandle(string messageText);
-		Task<HandlerResult> HandleAsync(Message message);
+		Task HandleAsync(Message message);
 	}
-	public interface IMessageSender
+	public interface IResponseSender
 	{
-		Task SendResponseAsync(long userId, string text);
+		Task SendResponseAsync(DateTime date, long userId, string text);
 	}
 }

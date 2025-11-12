@@ -1,26 +1,55 @@
-﻿using OBED.Include;
+﻿using OBED.Services;
+using OBED.Include;
+using OBED.TelegramBot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace OBED.Handlers
 {
-	public class StartHandler : ICommandHandler
-	{
+	public class StartHandler : ICommandHandler, IResponseSender
+    {
 		public bool CanHandle(string command) => command.StartsWith("/start");
-
-		public async Task<HandlerResult> HandleAsync(Message msg)
+		public async Task HandleAsync(Message msg)
 		{
-			ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
-			if (foundUser == null)
+			ArgumentNullException.ThrowIfNullOrWhiteSpace(msg.Text);
+
+            var user = await RegistrationService.TryGetOrRegisterUser(msg);
+
+            await Sender.EditOrSend(new(msg, "Старт", new InlineKeyboardButton[][]
 			{
-				ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
-				UserState.dictionary.TryAdd(msg.Chat.Id, new());
-				ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
+			    [("Места", "/places")],
+			    [("Профиль", "/person")],
+			    [("Помощь", "/help"), ("Поддержка", "/report")],
+			    [(user.Role == RoleType.Administrator ? "Админ панель" : "", "/admin")]
+			}));
 
-				if (foundUser!.UserID == 1204402944)
-					foundUser.SetRole(RoleType.Administrator);
-			}
-
-            return new (true, "Lol");
+            await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
         }
-	}
+#pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
+        public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл
+#pragma warning restore CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
+    }
+    public class HelpHandler : ICommandHandler, IResponseSender
+    {
+        public bool CanHandle(string command) => command.StartsWith("/help");
+        public async Task HandleAsync(Message msg)
+        {
+            ArgumentNullException.ThrowIfNullOrWhiteSpace(msg.Text);
+
+            var user = await RegistrationService.TryGetOrRegisterUser(msg);
+
+            await Sender.EditOrSend(new(msg, "Старт", new InlineKeyboardButton[][]
+            {
+                [("Места", "/places")],
+                [("Профиль", "/person")],
+                [("Помощь", "/help"), ("Поддержка", "/report")],
+                [(user.Role == RoleType.Administrator ? "Админ панель" : "", "/admin")]
+            }));
+
+            await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
+        }
+#pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
+        public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл
+#pragma warning restore CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
+    }
 }

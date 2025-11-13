@@ -1,79 +1,90 @@
 ﻿using OBED.Include;
-using System.IO;
 
 namespace OBED.Services
 {
 	class ParserService
 	{
-		//public static void ParseCommand(string command, out List<BasePlace>? places, out int? index, out int? page, 
-		//    out int? sortedPage, out ReviewSort? reviewSortType, out ProductType? productSortType)
-		//{
+		public sealed record ParsedArgs
+		(
+			List<string> Raw,
+			List<BasePlace> Places,
+			int? Page = null,
+			int? Index = null,
+			int? SortedPage = null,
+			ReviewSort? ReviewSortType = null,
+			ProductType? ProductSortType = null
+		);
 
-		//}
-		public static void ParseCommand(string command, out List<BasePlace>? places, out int? page)
+		public static ParsedArgs ParseCommand(string command)
 		{
-			places = null;
-			page = null;
+			var parsedArgs = new ParsedArgs(Places: [], Raw: []);
+			var args = command.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1);
+			if (!args.Any())
+				return parsedArgs;
 
-			foreach(var arg in command.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+			foreach(var arg in args)
 			{
-				switch (arg[0])
+				switch (arg[..2].ToUpper())
 				{
-					case 'L':
+					case "BP":	// List<BasePlace>
 						{
-							places = GetPlaces(arg[1..]);
+							if (parsedArgs.Places!.Count != 0)
+								throw new InvalidDataException($"Обнаружена попытка повторного заполения <BasePlace> в запросе: {command}");
+							parsedArgs.Places.AddRange(GetPlaces(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка запроса к несуществующему типу {arg[2..]} в запросе: {command}"));
 							break;
 						}
-					case 'P':
+					case "PG":	// Page
 						{
-							page = GetNum(arg[1..]);
+							if (parsedArgs.Page != null)
+								throw new InvalidDataException($"Обнаружена попытка повторного заполения <Page> в запросе: {command}");
+							var pageNum = GetNum(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <Page> {arg[2..]} в запросе: {command}");
+							parsedArgs = parsedArgs with { Page = pageNum };
 							break;
 						}
-					default:
+					case "IN":	// Index
 						{
-							continue;
+							if (parsedArgs.Index != null)
+								throw new InvalidDataException($"Обнаружена попытка повторного заполения <Index> в запросе: {command}");
+							var indexNum = GetNum(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <Index> {arg[2..]} в запросе: {command}");
+							parsedArgs = parsedArgs with { Index = indexNum };
+							break;
+						}
+					case "SP":	// SortedPage
+						{
+							if (parsedArgs.SortedPage != null)
+								throw new InvalidDataException($"Обнаружена попытка повторного заполения <SortedPage> в запросе: {command}");
+							var sPageNum = GetNum(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <SortedPage> {arg[2..]} в запросе: {command}");
+							parsedArgs = parsedArgs with { SortedPage = sPageNum };
+							break;
+						}
+					case "RT":   // ReviewSortType
+						{
+							if (parsedArgs.ReviewSortType != null)
+								throw new InvalidDataException($"Обнаружена попытка повторного заполения <ReviewSortType> в запросе: {command}");
+							var sortType = GetReviewSortType(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка запроса к несуществующему типу {arg[2..]} в запросе: {command}");
+							parsedArgs = parsedArgs with { ReviewSortType = sortType };
+							break;
+						}
+					case "PT":   // ProductSortType
+						{
+							if (parsedArgs.ProductSortType != null)
+								throw new InvalidDataException($"Обнаружена попытка повторного заполения <ProductType> в запросе: {command}");
+							var sortType = GetProductSortType(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка запроса к несуществующему типу {arg[2..]} в запросе: {command}");
+							parsedArgs = parsedArgs with { ProductSortType = sortType };
+							break;
+						}
+					default:	// Raw
+						{
+							if (arg.Length > 1)
+								parsedArgs.Raw!.Add(arg);   // Передаём аргумент как есть, т.к. он может быть чем угодно и мы будем обрабатывать его в конкретном методе
+							break;
 						}
 				}
 			}
-		}
-		public static void ParseCommand(string command, out List<BasePlace>? places, out int? index, out int? page, out int? sortedPage)
-		{
-			places = null;
-			index = null;
-			page = null;
-			sortedPage = null;
 
-			foreach (var arg in command.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-			{
-				switch (arg[0])
-				{
-					case 'L':
-						{
-							places = GetPlaces(arg[1..]);
-							break;
-						}
-					case 'I':
-						{
-							index = GetNum(arg[1..]);
-							break;
-						}
-					case 'P':
-						{
-							page = GetNum(arg[1..]);
-							break;
-						}
-					case 'S':
-						{
-							sortedPage = GetNum(arg[1..]);
-							break;
-						}
-					default:
-						{
-							continue;
-						}
-				}
-			}
+			return parsedArgs;
 		}
+
 		public static List<BasePlace>? GetPlaces(string type)
 		{
 			return type.Trim().ToLower() switch
@@ -106,12 +117,12 @@ namespace OBED.Services
 		{
 			return sortStr.ToLower().Trim() switch
 			{
-				"MainDish" => ProductType.MainDish,
-				"SideDish" => ProductType.SideDish,
-				"Drink" => ProductType.Drink,
-				"Appetizer" => ProductType.Appetizer,
+				"mainDish" => ProductType.MainDish,
+				"sideDish" => ProductType.SideDish,
+				"drink" => ProductType.Drink,
+				"appetizer" => ProductType.Appetizer,
 				_ => null
 			};
-		}
+		}	
 	}
 }

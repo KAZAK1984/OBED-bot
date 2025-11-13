@@ -1090,11 +1090,11 @@ class Program
 											
 											Авто-мод: {AutoMod.AddCensor(AdminControl.ReviewCollector[0].review.Comment!)}
 											""", new InlineKeyboardButton[][]
-												{
+											{
 												[("Изменить вручную", $"/admin chkA")],
 												[("Принять авто-мод", $"#admin chkM"), ("Принять оригинал", $"#admin chkO")],
 												[("Назад", $"/admin")]
-												}, ParseMode.Html);
+											}, ParseMode.Html);
 										}
 										else
 											await EditOrSendMessage(msg, $"""	

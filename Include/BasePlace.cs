@@ -54,12 +54,15 @@
 		{
 			ArgumentNullException.ThrowIfNull(review);
 
-			if (!Reviews.Any(x => x.UserID == review.UserID))
+			lock (reviewLock)
 			{
-				Reviews.Add(review);
-				return true;
+				if (!Reviews.Any(x => x.UserID == review.UserID))
+				{
+					Reviews.Add(review);
+					return true;
+				}
+				return false;
 			}
-			return false;
 		}
 		public virtual bool AddReview(long userID, int rating, string? comment)
 		{

@@ -1,4 +1,6 @@
-﻿namespace OBED.Include
+﻿using System.Data;
+
+namespace OBED.Include
 {
 	public enum RoleType
 	{
@@ -25,9 +27,14 @@
 			UserID = userID;
 			Role = role;
 		}
-		// TODO: ChangeUsername()
-		// TODO: SetRole()
-	}
+		public void SetRole(RoleType role)
+		{
+			if (!Enum.IsDefined(typeof(RoleType), role))
+				throw new ArgumentException("Недопустимое значение роли.", nameof(role));
+			Role = role;
+		}
+	// TODO: ChangeUsername()
+}
 	/// <summary>
 	/// Текущий тип обработки сообщений в чате от юзера. Без данных тегов UserState у сообщения игнорируются
 	/// </summary>
@@ -45,17 +52,21 @@
         NoActiveRequest,
 		/// <summary> Для ОБНОВЛЕНИЯ отзывов. Отметка, позволяющая перейти к финальному этапу обновления отзыва</summary>
 		NoActiveChange,
-        /// <summary> Для НОВЫХ отчетов (репортов). Запрос нового комментария</summary>
+		/// <summary> Для МОДЕРАЦИИ отзывов. Отметка, позволяющая перейти к отправки отредактированного сообщения</summary>
+		Moderation,
+		/// <summary> Для МОДЕРАЦИИ отзывов. Отметка, позволяющая перейти к финальному этапу отправки отредактированного сообщения</summary>
+		NoActiveModeration
+		/// <summary> Для НОВЫХ отчетов (репортов). Запрос нового комментария</summary>
 		ReportRequest,
         /// <summary> Для НОВЫХ отчетов (репортов). Отметка, позволяющая перейти к финальному этапу отправки репорта</summary>
         NoActiveReport
-
     }
+
     class UserState
 	{
 		public UserAction? Action { get; set; }
 		public string? ActionArguments { get; set; }
 		public string? Comment { get; set; }
 		public int Rating { get; set; }
-	}
+    }
 }

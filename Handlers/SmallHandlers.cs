@@ -17,7 +17,7 @@ namespace OBED.Handlers
 
             await Sender.EditOrSend(new(msg, "Старт", new InlineKeyboardButton[][]
 			{
-			    [("Места", "/type")],
+			    [("Места", "/places")],
 			    [("Профиль", "/person")],
 			    [("Помощь", "/help"), ("Поддержка", "/report")],
 			    [(user.Role == RoleType.Administrator ? "Админ панель" : "", "/admin")]
@@ -51,7 +51,7 @@ namespace OBED.Handlers
 #pragma warning restore CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
     }
 
-    public class TypeHandler : ICommandHandler, IResponseSender
+    public class PlacesHandler : ICommandHandler, IResponseSender
     {
         public bool CanHandle(string command) => command.StartsWith("/type");
         public async Task HandleAsync(Message msg)
@@ -62,9 +62,9 @@ namespace OBED.Handlers
 
             await Sender.EditOrSend(new(msg, "Выберите тип точки", new InlineKeyboardButton[][]
             {
-                [("Столовые", "/placeSelector -C")],
-                [("Буфеты", "/placeSelector -B")],
-                [("Внешние магазины", "/placeSelector -G")],
+                [("Столовые", "/selector BPcanteens")],
+                [("Буфеты", "/selector BPbuffets")],
+                [("Внешние магазины", "/selector BPgroceries")],
                 [("Назад", "/start")]
             }));
 

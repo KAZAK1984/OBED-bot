@@ -22,22 +22,31 @@ namespace OBED.Services
 			if (!args.Any())
 				return parsedArgs;
 
-			foreach(var arg in args)
+			foreach (var arg in args)
 			{
-				switch (arg[..2].ToUpper())
-				{
+				var token = arg;
+				if (token.Length > 2 && token[2] == ':')
+					token = token.Remove(2, 1); // Убираем двоеточие после кода аргумента, если есть, нужно для повышения читаемости кода при записи команды
+
+				if (token.Length < 3)
+					throw new InvalidDataException($"Обнаружен некорректный аргумент {token} в запросе: {command}");
+				var prefix = token[..2];
+				var payload = token[2..];
+
+				switch (prefix)
+				{		
 					case "BP":	// List<BasePlace>
 						{
 							if (parsedArgs.Places!.Count != 0)
 								throw new InvalidDataException($"Обнаружена попытка повторного заполения <BasePlace> в запросе: {command}");
-							parsedArgs.Places.AddRange(GetPlaces(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка запроса к несуществующему типу {arg[2..]} в запросе: {command}"));
+							parsedArgs.Places.AddRange(GetPlaces(payload) ?? throw new InvalidDataException($"Обнаружена попытка запроса к несуществующему типу {payload} в запросе: {command}"));
 							break;
 						}
 					case "PG":	// Page
 						{
 							if (parsedArgs.Page != null)
 								throw new InvalidDataException($"Обнаружена попытка повторного заполения <Page> в запросе: {command}");
-							var pageNum = GetNum(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <Page> {arg[2..]} в запросе: {command}");
+							var pageNum = GetNum(payload) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <Page> {payload} в запросе: {command}");
 							parsedArgs = parsedArgs with { Page = pageNum };
 							break;
 						}
@@ -45,7 +54,7 @@ namespace OBED.Services
 						{
 							if (parsedArgs.Index != null)
 								throw new InvalidDataException($"Обнаружена попытка повторного заполения <Index> в запросе: {command}");
-							var indexNum = GetNum(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <Index> {arg[2..]} в запросе: {command}");
+							var indexNum = GetNum(payload) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <Index> {payload} в запросе: {command}");
 							parsedArgs = parsedArgs with { Index = indexNum };
 							break;
 						}
@@ -53,30 +62,30 @@ namespace OBED.Services
 						{
 							if (parsedArgs.SortedPage != null)
 								throw new InvalidDataException($"Обнаружена попытка повторного заполения <SortedPage> в запросе: {command}");
-							var sPageNum = GetNum(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <SortedPage> {arg[2..]} в запросе: {command}");
+							var sPageNum = GetNum(payload) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <SortedPage> {payload} в запросе: {command}");
 							parsedArgs = parsedArgs with { SortedPage = sPageNum };
 							break;
 						}
-					case "RT":   // ReviewSortType
+					case "RT":	// ReviewSortType
 						{
 							if (parsedArgs.ReviewSortType != null)
 								throw new InvalidDataException($"Обнаружена попытка повторного заполения <ReviewSortType> в запросе: {command}");
-							var sortType = GetReviewSortType(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка запроса к несуществующему типу {arg[2..]} в запросе: {command}");
+							var sortType = GetReviewSortType(payload) ?? throw new InvalidDataException($"Обнаружена попытка запроса к несуществующему типу {payload} в запросе: {command}");
 							parsedArgs = parsedArgs with { ReviewSortType = sortType };
 							break;
 						}
-					case "PT":   // ProductSortType
+					case "PT":	// ProductSortType
 						{
 							if (parsedArgs.ProductSortType != null)
 								throw new InvalidDataException($"Обнаружена попытка повторного заполения <ProductType> в запросе: {command}");
-							var sortType = GetProductSortType(arg[2..]) ?? throw new InvalidDataException($"Обнаружена попытка запроса к несуществующему типу {arg[2..]} в запросе: {command}");
+							var sortType = GetProductSortType(payload) ?? throw new InvalidDataException($"Обнаружена попытка запроса к несуществующему типу {payload} в запросе: {command}");
 							parsedArgs = parsedArgs with { ProductSortType = sortType };
 							break;
 						}
-					default:	// Raw
-						{
-							if (arg.Length > 1)
-								parsedArgs.Raw!.Add(arg);   // Передаём аргумент как есть, т.к. он может быть чем угодно и мы будем обрабатывать его в конкретном методе
+					default:    // Raw
+						{       // Обозначайте кастомные передаваемые типы строго маленькими буквами, чтобы не возникало конфликтов с основными типами
+							if (token.Length > 1)
+								parsedArgs.Raw!.Add(token); // Передаём аргумент как есть
 							break;
 						}
 				}

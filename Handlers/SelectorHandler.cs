@@ -22,12 +22,13 @@ namespace OBED.Handlers
 			catch (Exception ex)
 			{
 				await Sender.EditOrSend(new(msg, $"""
-				Ошибка при обработке команды:
-				{ex.Message}
-				""", new InlineKeyboardButton[][]
-				{
-					[("Назад", "/start")]
-				}));
+					Ошибка при обработке команды:
+					{ex.Message}
+					""", new InlineKeyboardButton[][]
+					{
+						[("Назад", "/start")]
+					}));
+
 				await SendResponseAsync(DateTime.Now, user.UserID, $"{ex.Message}\n{msg.Text}");
 				return;
 			}
@@ -35,12 +36,12 @@ namespace OBED.Handlers
 			if (parsedArgs.Places.Count == 0)
 			{
 				await Sender.EditOrSend(new(msg, "Выберите тип точки", new InlineKeyboardButton[][]
-				{
-					[("Столовые", "/selector BP:canteens")],
-					[("Буфеты", "/selector BP:buffets")],
-					[("Внешние магазины", "/selector BP:groceries")],
-					[("Назад", "/start")]
-				}));
+					{
+						[("Столовые", "/selector BP:canteens")],
+						[("Буфеты", "/selector BP:buffets")],
+						[("Внешние магазины", "/selector BP:groceries")],
+						[("Назад", "/start")]
+					}));
 
 				await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
 				return;
@@ -72,15 +73,15 @@ namespace OBED.Handlers
 
 			int placesCounter = sortedPlaces.Count;
 			await Sender.EditOrSend(new(msg, "Выбор точки", new InlineKeyboardButton[][]
-			{
-				[($"{(canBeSorted ? (nowSorted ? "Отключить сортировку по корпусу" : "Включить сортировку по корпусу") : "")}", nowSorted ? $"/selector BP:{nameof(parsedArgs.Places)}" : $"/buildingSelector {nameof(parsedArgs.Places)}")],
-				[($"{((placesCounter != 0)            ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
-				[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
-				[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
-				[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
-				[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
-				[($"{((page != 0) ? "◀️" : "")}", $"/placeSelector BP:{nameof(parsedArgs.Places)} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}"), ("Назад","/selector"), ($"{(placesCounter > pageElement ? "▶️" : "")}", $"/placeSelector BP:{nameof(parsedArgs.Places)} PG:{page + 1}{(nowSorted ? $" st:{requestedNum}" : "")}")]
-			}));
+				{
+					[($"{(canBeSorted ? (nowSorted ? "Отключить сортировку по корпусу" : "Включить сортировку по корпусу") : "")}", nowSorted ? $"/selector BP:{nameof(parsedArgs.Places)}" : $"/buildingSelector {nameof(parsedArgs.Places)}")],
+					[($"{((placesCounter != 0)            ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
+					[($"{((page != 0) ? "◀️" : "")}", $"/placeSelector BP:{nameof(parsedArgs.Places)} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}"), ("Назад","/selector"), ($"{(placesCounter > pageElement ? "▶️" : "")}", $"/placeSelector BP:{nameof(parsedArgs.Places)} PG:{page + 1}{(nowSorted ? $" st:{requestedNum}" : "")}")]
+				}));
 
 			await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
 		}
@@ -105,23 +106,23 @@ namespace OBED.Handlers
 			catch (Exception ex)
 			{
 				await Sender.EditOrSend(new(msg, $"""
-				Ошибка при обработке команды:
-				{ex.Message}
-				""", new InlineKeyboardButton[][]
-				{
-					[("Назад", "/start")]
-				}));
-				await SendResponseAsync(DateTime.Now, user.UserID, $"{ex.Message}\n{msg.Text}");
+					Ошибка при обработке команды:
+					{ex.Message}
+					""", new InlineKeyboardButton[][]
+					{
+						[("Назад", "/start")]
+					}));
+					await SendResponseAsync(DateTime.Now, user.UserID, $"{ex.Message}\n{msg.Text}");
 				return;
 			}
 
 			await Sender.EditOrSend(new(msg, "Выбор точки", new InlineKeyboardButton[][]
-			{
-				[("1", $"/selector BP:{parsedArgs.Places} st:1"), ("2", $"/selector BP:{parsedArgs.Places} st:2"), ("3", $"/selector BP:{parsedArgs.Places} st:3")],
-				[("4", $"/selector BP:{parsedArgs.Places} st:4"), ("5", $"/selector BP:{parsedArgs.Places} st:5"), ("6", $"/selector BP:{parsedArgs.Places} st:6")],
-				[("ИАТУ", $"/selector BP:{parsedArgs.Places} st:0"), ("На территории кампуса", $"/selector BP:{parsedArgs.Places} st:7")],
-				[("Назад", "/selector")]
-			}));
+				{
+					[("1", $"/selector BP:{parsedArgs.Places} st:1"), ("2", $"/selector BP:{parsedArgs.Places} st:2"), ("3", $"/selector BP:{parsedArgs.Places} st:3")],
+					[("4", $"/selector BP:{parsedArgs.Places} st:4"), ("5", $"/selector BP:{parsedArgs.Places} st:5"), ("6", $"/selector BP:{parsedArgs.Places} st:6")],
+					[("ИАТУ", $"/selector BP:{parsedArgs.Places} st:0"), ("На территории кампуса", $"/selector BP:{parsedArgs.Places} st:7")],
+					[("Назад", "/selector")]
+				}));
 
 			await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
 		}

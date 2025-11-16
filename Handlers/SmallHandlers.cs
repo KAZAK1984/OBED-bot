@@ -66,7 +66,7 @@ namespace OBED.Handlers
 				""", new InlineKeyboardButton[][]
 				{
 					[("Назад","/start")]
-				}));
+				}, Telegram.Bot.Types.Enums.ParseMode.Html));
 
 			await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
 		}

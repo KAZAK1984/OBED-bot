@@ -1035,7 +1035,7 @@ class Program
                     }
                 case ("/admin"):
                     {
-                        if (foundUser!.Role != RoleType.Administrator)
+                        if (checkUserRole(foundUser.UserID) != "Administrator")
                         {
                             await EditOrSendMessage(msg, "Ошибка при запросе: неизвестная команда.", new InlineKeyboardButton[]
                             {

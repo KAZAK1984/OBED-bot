@@ -2476,7 +2476,7 @@ class Program
             var command = new SqliteCommand();
             command.Connection = connection;
             command.CommandText =
-                @"CREATE TABLE ""Places"" (
+                @"CREATE TABLE IF NOT EXISTS ""Places"" (
                 	""Place_id""	INTEGER,
                 	""Name""	TEXT NOT NULL DEFAULT 'UnknownPlace',
                 	""Type""	INTEGER,

@@ -287,15 +287,6 @@ class Program
                 Console.WriteLine($"NOW COMMAND {msg.Chat.Username ?? msg.Chat.FirstName + msg.Chat.LastName}: {command} {args}");
             switch (command)
             {
-                case ("/registration"):
-                    {
-                        AddUserToDatabase(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, "CommonUser");
-                        await EditOrSendMessage(msg, "Регистрация", new InlineKeyboardButton[][]
-                        {
-                            [("Назад","/start")]
-                        });
-                        break;
-                    }
                 case ("/start"):
                     {
                         if (foundUser == null)
@@ -308,6 +299,10 @@ class Program
                             if (foundUser!.UserID == 1204402944)
                                 foundUser.SetRole(RoleType.Administrator);
                         }
+                        if (AddUserToDatabase(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, "CommonUser"))
+                        {
+                            Console.WriteLine("Добавлен новый пользователь");
+                        }
 
                         await EditOrSendMessage(msg, "Старт", new InlineKeyboardButton[][]
                         {
@@ -315,7 +310,7 @@ class Program
                             [("Профиль", "/person")],
                             [("Помощь", "/help"), ("Поддержка", "/report")],
                             [("Регистрация","/registration")],
-                            [(foundUser!.Role == RoleType.Administrator ? "Админ панель" : "", "/admin")]
+                            [(checkUserRole(msg.Chat.Id) == "Administrator" ? "Админ панель" : "", "/admin")]
                         });
                         break;
                     }
@@ -2292,7 +2287,7 @@ class Program
             }
         }
     }
-    private static void AddUserToDatabase(string username, long TG_id, string role)
+    private static bool AddUserToDatabase(string username, long TG_id, string role)
     {
         using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
         {
@@ -2314,7 +2309,7 @@ class Program
 
                 if (ifUserExists(TG_id))
                 {
-                    Console.WriteLine("Пользователь уже существует");
+                    return false;
                 }
                 else
                 {
@@ -2323,47 +2318,8 @@ class Program
                     command.Parameters.Add(new SqliteParameter("@username", username));
                     command.Parameters.Add(new SqliteParameter("@TG_id", TG_id));
                     command.Parameters.Add(new SqliteParameter("@role", role));
-                    int number = command.ExecuteNonQuery();
-                    Console.WriteLine("Добавлен пользователь");
-                }
-            }
-        }
-    }
-    private static void AddUserToDatabase(long user_id, string username, long TG_id, string role)
-    {
-        using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
-        {
-            connection.Open();
-
-            using (SqliteCommand command = new SqliteCommand())
-            {
-                command.Connection = connection;
-                // проверка на наличие таблицы
-                command.CommandText =
-                    @"CREATE TABLE IF NOT EXISTS TG_Users (
-									List_id	INTEGER,
-								    Name	TEXT DEFAULT 'Unknown',
-									TG_id	INTEGER NOT NULL,
-									Role	TEXT NOT NULL DEFAULT 'CommonUser',
-									PRIMARY KEY(""List_id"")
-									);";
-                command.ExecuteNonQuery();
-
-                if (ifUserExists(TG_id))
-                {
-                    Console.WriteLine("Пользователь существует");
-                }
-                else
-                {
-                    //добавление юзера
-                    command.CommandText = @"INSERT INTO TG_Users(List_id,Name,TG_id,Role) VALUES (@user_id,@username,@TG_id,@role)";
-                    command.Parameters.Add(new SqliteParameter("@user_id", user_id));
-                    command.Parameters.Add(new SqliteParameter("@username", username));
-                    command.Parameters.Add(new SqliteParameter("@TG_id", TG_id));
-                    command.Parameters.Add(new SqliteParameter("@role", role));
-                    int number = command.ExecuteNonQuery();
-                    Console.WriteLine("Добавлен 1 пользователь");
-
+                    command.ExecuteNonQuery();
+                    return true;
                 }
             }
         }
@@ -2375,8 +2331,173 @@ class Program
             connection.Open();
             var command = new SqliteCommand();
             command.Connection = connection;
-            command.CommandText = $"SELECT 1 FROM TG_Users WHERE TG_id LIKE {TG_id}"; ;
+            command.CommandText = $"SELECT 1 FROM TG_Users WHERE TG_id LIKE {TG_id}";
             return command.ExecuteScalar() != null;
         }
     }
+
+    private static bool AddReview(long UserID,int Rating,string comment,string Place)
+    {
+        if (UserID <= 0)
+            throw new ArgumentException("UserID должно быть больше 0", nameof(UserID));
+        if(Rating < 1 || Rating > 10)
+            throw new ArgumentException("Рейтинг должен быть от 1 до 10",nameof(Rating));
+        using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
+        {
+            connection.Open();
+            var command = new SqliteCommand();
+            command.Connection = connection;
+            //Создание таблицы если её нету
+            command.CommandText =
+                @"CREATE TABLE IF NOT EXISTS ""Reviews"" (
+                	""Users_id""	INTEGER,
+                    ""Place_id"" INTEGER PRIMARY KEY AUTOINCREMENT,
+                	""Comment""	TEXT,
+                	""Rating""	INTEGER NOT NULL,
+                    ""Date"" TEXT,
+                	FOREIGN KEY(""Users_id"") REFERENCES ""TG_Users""(""List_id"") ON UPDATE CASCADE,
+                    FOREIGN KEY(""Place_id"") REFERENCES ""Places""(Place_id) ON UPDATE CASCADE
+                );";
+            command.ExecuteNonQuery();
+
+            if (IfUserHaveReviewOnPlace(UserID, Place))
+            {
+                return false;
+            }
+            command.CommandText = 
+                @"INSERT INTO Reviews(User_id,Place,Comment,Rating,Date) VALUES (@UserID,@Rating,@comment,@Place,date(now));";
+            command.Parameters.Add(new SqliteParameter("@UserID", UserID));
+            command.Parameters.Add(new SqliteParameter("@Rating", Rating));
+            command.Parameters.Add(new SqliteParameter("@comment", comment));
+            command.Parameters.Add(new SqliteParameter("@Place", Place));
+            command.ExecuteNonQuery();
+            return true;
+        }
+    }
+
+    private static bool IfUserHaveReviewOnPlace(long UserID,string Place)
+    {
+        using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
+        {
+            connection.Open();
+            var command = new SqliteCommand();
+            command.Connection = connection;
+            command.CommandText =
+                $@"SELECT 1 FROM Reviews WHERE
+                    ""Users_id"" LIKE {UserID} AND ""Place"" LIKE '{Place}'";
+            return command.ExecuteScalar() != null;
+        }
+    }
+
+    private static bool deleteReview()
+    {
+        return true;
+    }
+
+    private static string checkUserRole(long UserID)
+    {
+        using(var connection = new SqliteConnection(dbConnectionString))
+        {
+            connection.Open();
+            var command = new SqliteCommand();
+            command.Connection = connection;
+            command.CommandText = $@"SELECT Role FROM TG_Users WHERE TG_id LIKE {UserID}";
+            using (SqliteDataReader reader = command.ExecuteReader())
+            {
+                if (reader.HasRows)
+                {
+                    reader.Read();
+                    var role = reader.GetString(0);
+                    return role;
+                }
+            }
+        }
+        return "Unknown";
+    }
+
+    private static bool AddNewPlace(string name,int corpus,int floor,string description)
+    {
+        using(var connection = new SqliteConnection(dbConnectionString))
+        {
+            connection.Open();
+            var command = new SqliteCommand();
+            command.Connection = connection;
+            command.CommandText =
+                @"CREATE TABLE IF NOT EXISTS Places(
+                    Place_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Name TEXT NOT NULL,
+                    Corpus INTEGER,
+                    Floor INTEGER,
+                    Description TEXT NOT NULL DEFAULT 'Description',
+                    );";
+            command.ExecuteNonQuery();
+            if (ifPlaceExists(corpus,floor,name))
+            {
+                return false;
+            }
+            command.CommandText =
+                @"INSERT INTO Places(Name,Corpus,Floor,Description) VALUES (@name,@corpus,@floor,@description);";
+            command.Parameters.Add(new SqliteParameter("@name", name));
+            command.Parameters.Add(new SqliteParameter("@corpus", corpus));
+            command.Parameters.Add(new SqliteParameter("@floor", floor));
+            command.Parameters.Add(new SqliteParameter("@description", description));
+            return true;
+        }
+    }
+
+    private static bool ifPlaceExists(int corpus,int floor,string name)
+    {
+        using(var connection = new SqliteConnection(dbConnectionString))
+        {
+            connection.Open();
+            var command = new SqliteCommand();
+            command.Connection = connection;
+            command.CommandText = $@"SELECT 1 FROM Places WHERE ""Corpus"" LIKE '{corpus}' AND ""Floor"" LIKE {floor} AND ""Name"" LIKE {name}";
+            return command.ExecuteScalar() != null;
+        }
+    }
+
+    private static bool AddNewProduct(string name, int price, int pergrams, string productType, long stolovayaId)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("название продукта не может быть пустым", nameof(name));
+        if (price <= 0)
+            throw new ArgumentException("цена должна быть больше 0", nameof(price));
+        if (pergrams != 0 || pergrams != 1)
+            throw new ArgumentException("вес - да или нет, то есть 1 или 0", nameof(pergrams));
+        if (string.IsNullOrWhiteSpace(productType))
+            throw new ArgumentException("тип продукта не может быть пустым", nameof(productType));
+        if (stolovayaId <= 0)
+            throw new ArgumentException("id столовой должен быть больше 0", nameof(stolovayaId));
+
+        using (var connection = new SqliteConnection(dbConnectionString))
+        {
+            connection.Open();
+            var command = new SqliteCommand();
+            command.Connection = connection;
+            command.CommandText =
+                @"CREATE TABLE IF NOT EXISTS Products (
+                Product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT NOT NULL,
+                Price INTEGER NOT NULL,
+                perGrams INTEGER NOT NULL,
+                ProductType TEXT NOT NULL,
+                Place_id INTEGER NOT NULL,
+                FOREIGN KEY(Place_id) REFERENCES Places(Place_id) ON UPDATE CASCADE
+            );";
+            command.ExecuteNonQuery();
+
+            command.CommandText =
+                @"INSERT INTO Products (Name, Price, perGrams, ProductType, Place_id) 
+              VALUES (@Name, @Price, @Grams, @ProductType, @StolovayaId)";
+            command.Parameters.Add(new SqliteParameter("@Name", name));
+            command.Parameters.Add(new SqliteParameter("@Price", price));
+            command.Parameters.Add(new SqliteParameter("@Grams", pergrams));
+            command.Parameters.Add(new SqliteParameter("@ProductType", productType));
+            command.Parameters.Add(new SqliteParameter("@StolovayaId", stolovayaId));
+            command.ExecuteNonQuery();
+            return true;
+        }
+    }
+
 }

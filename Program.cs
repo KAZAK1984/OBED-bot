@@ -2469,14 +2469,15 @@ class Program
             var command = new SqliteCommand();
             command.Connection = connection;
             command.CommandText =
-                @"CREATE TABLE IF NOT EXISTS Places(
-                    Place_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    Name TEXT NOT NULL,
-                    Corpus INTEGER,
-                    Floor INTEGER,
-                    Type INTEGER,
-                    Description TEXT NOT NULL DEFAULT 'Description',
-                    );";
+                @"CREATE TABLE ""Places"" (
+                	""Place_id""	INTEGER,
+                	""Name""	TEXT NOT NULL DEFAULT 'UnknownPlace',
+                	""Type""	INTEGER,
+                	""Corpus""	INTEGER,
+                	""Description""	TEXT NOT NULL DEFAULT 'Description',
+                	""Floor""	INTEGER,
+                	PRIMARY KEY(""Place_id"" AUTOINCREMENT)
+                );";
             command.ExecuteNonQuery();
             if (ifPlaceExists(corpus,floor,name))
             {

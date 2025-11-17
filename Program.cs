@@ -2508,7 +2508,7 @@ class Program
             connection.Open();
             var command = new SqliteCommand();
             command.Connection = connection;
-            command.CommandText = $@"SELECT 1 FROM Places WHERE ""Corpus"" LIKE '{corpus}' AND ""Floor"" LIKE {floor} AND ""Name"" LIKE {name}";
+            command.CommandText = $@"SELECT 1 FROM Places WHERE ""Corpus"" LIKE {corpus} AND ""Floor"" LIKE {floor} AND ""Name"" LIKE '{name}'";
             return command.ExecuteScalar() != null;
         }
     }

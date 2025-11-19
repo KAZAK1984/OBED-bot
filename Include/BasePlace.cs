@@ -129,6 +129,78 @@ namespace OBED.Include
 			}
 			return review;
 		}
+
+		public static void LoadAllPlaces(int type)
+		{
+            string dbConnectionString = "Data Source=OBED_DB.db";
+			using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
+			{
+				connection.Open();
+				var command = new SqliteCommand();
+				command.Connection = connection;
+				command.CommandText = $@"SELECT * FROM Places WHERE Type = {type}";
+				using(SqliteDataReader reader = command.ExecuteReader())
+				{
+					switch (type)
+					{
+						case 1:
+							{
+								List<Buffet> list = [];
+                                if (reader.HasRows)
+                                {
+                                    while (reader.Read())
+                                    {
+                                        int placeid = reader.GetInt32(0);
+                                        string name = reader.GetString(1);
+                                        int corpus = reader.GetInt32(3);
+                                        string description = reader.GetString(4);
+                                        int floor = reader.GetInt32(5);
+										list.Add(new Buffet(placeid,name,corpus,floor,description));
+                                    }
+                                }
+								ObjectLists.AddRangeList<Buffet>(list);
+                                break;
+							}
+						case 2:
+							{
+								List<Canteen> list = [];
+                                if (reader.HasRows)
+                                {
+                                    while (reader.Read())
+                                    {
+                                        int placeid = reader.GetInt32(0);
+                                        string name = reader.GetString(1);
+                                        int corpus = reader.GetInt32(3);
+                                        string description = reader.GetString(4);
+                                        int floor = reader.GetInt32(5);
+                                        list.Add(new Canteen(placeid, name, corpus, floor, description));
+                                    }
+                                }
+								ObjectLists.AddRangeList<Canteen>(list);
+								break;
+                            }
+						case 3:
+							{
+								List<Grocery> list = [];
+                                if (reader.HasRows)
+                                {
+                                    while (reader.Read())
+                                    {
+                                        int placeid = reader.GetInt32(0);
+                                        string name = reader.GetString(1);
+                                        string description = reader.GetString(4);
+                                        list.Add(new Grocery(placeid, name, description));
+                                    }
+                                }
+								ObjectLists.AddRangeList<Grocery>(list);
+								break;
+                            }
+					}
+					
+				}
+			}
+        }
+
 		public virtual bool AddReview(Review review)
 		{
 			ArgumentNullException.ThrowIfNull(review);

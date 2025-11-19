@@ -2356,9 +2356,9 @@ class Program
                     @"CREATE TABLE IF NOT EXISTS TG_Users (
 										List_id	INTEGER,
 									    Name	TEXT DEFAULT 'Unknown',
-										TG_id	INTEGER NOT NULL,
+										TG_id	INTEGER NOT NULL UNIQUE,
 										Role	TEXT NOT NULL DEFAULT 'CommonUser',
-										PRIMARY KEY(""List_id"",""TG_id"")
+										PRIMARY KEY(""List_id"" AUTOINCREMENT)
 										);";
                 command.ExecuteNonQuery();
 

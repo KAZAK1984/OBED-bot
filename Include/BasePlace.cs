@@ -81,7 +81,7 @@ namespace OBED.Include
                 	""Comment""	TEXT,
                 	""Rating""	INTEGER NOT NULL,
                     ""Date"" TEXT,
-                	FOREIGN KEY(""Users_id"") REFERENCES ""TG_Users""(""Users_id"") ON UPDATE CASCADE,
+                	FOREIGN KEY(""Users_id"") REFERENCES ""TG_Users""(""TG_id"") ON UPDATE CASCADE,
                     FOREIGN KEY(""Place_id"") REFERENCES ""Places""(Place_id) ON UPDATE CASCADE,
                     PRIMARY KEY(""Review_id"" AUTOINCREMENT)
                 );";
@@ -91,7 +91,7 @@ namespace OBED.Include
 					return false;
 				}
 				command.CommandText =
-					@"INSERT INTO Reviews(Users_id,Place_id,Comment,Rating,Date) VALUES (@UserID,@Place,@comment,@Rating,@date)";
+					@"INSERT INTO Reviews(TG_id,Place_id,Comment,Rating,Date) VALUES (@UserID,@Place,@comment,@Rating,@date)";
 				command.Parameters.Add(new SqliteParameter("@UserID", review.UserID));
 				command.Parameters.Add(new SqliteParameter("@Rating", review.Rating));
 				command.Parameters.Add(new SqliteParameter("@comment", review.Comment));

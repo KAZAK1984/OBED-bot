@@ -91,7 +91,7 @@ namespace OBED.Include
 					return false;
 				}
 				command.CommandText =
-					@"INSERT INTO Reviews(TG_id,Place_id,Comment,Rating,Date) VALUES (@UserID,@Place,@comment,@Rating,@date)";
+					@"INSERT INTO Reviews(Users_id,Place_id,Comment,Rating,Date) VALUES (@UserID,@Place,@comment,@Rating,@date)";
 				command.Parameters.Add(new SqliteParameter("@UserID", review.UserID));
 				command.Parameters.Add(new SqliteParameter("@Rating", review.Rating));
 				command.Parameters.Add(new SqliteParameter("@comment", review.Comment));

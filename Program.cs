@@ -1284,17 +1284,17 @@ class Program
                                                     {
                                                         case 1:
                                                             {
-                                                                ObjectLists.AddRangeList<Buffet>([new(ObjectLists.Buffets[-1].Place_id + 1, placeData.Name, placeData.Corpus, placeData.Floor,placeData.Description)]);
+                                                                ObjectLists.AddRangeList<Buffet>([new(ObjectLists.Buffets[ObjectLists.Buffets.Count].Place_id + 1, placeData.Name, placeData.Corpus, placeData.Floor,placeData.Description)]);
                                                                 break;
                                                             }
                                                         case 2:
                                                             {
-                                                                ObjectLists.AddRangeList<Canteen>([new(ObjectLists.Canteens[-1].Place_id + 1, placeData.Name, placeData.Corpus, placeData.Floor,placeData.Description)]);
+                                                                ObjectLists.AddRangeList<Canteen>([new(ObjectLists.Buffets[ObjectLists.Buffets.Count].Place_id + 1, placeData.Name, placeData.Corpus, placeData.Floor,placeData.Description)]);
                                                                 break;
                                                             }
                                                         case 3:
                                                             {
-                                                                ObjectLists.AddRangeList<Grocery>([new(ObjectLists.Groceries[-1].Place_id + 1, placeData.Name,placeData.Description)]);
+                                                                ObjectLists.AddRangeList<Grocery>([new(ObjectLists.Buffets[ObjectLists.Buffets.Count].Place_id + 1, placeData.Name,placeData.Description)]);
                                                                 break;
                                                             }
                                                     }

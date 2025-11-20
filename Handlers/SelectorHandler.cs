@@ -29,7 +29,7 @@ namespace OBED.Handlers
 						[("Назад", "/start")]
 					}, Telegram.Bot.Types.Enums.ParseMode.Html));
 
-				await SendResponseAsync(DateTime.Now, user.UserID, $"{ex.Message}\n{msg.Text}");
+				await SendResponseAsync(DateTime.Now, user.UserID, $"ERR: {ex.Message}\n{msg.Text}");
 				return;
 			}
 
@@ -43,25 +43,24 @@ namespace OBED.Handlers
 						[("Назад", "/start")]
 					}));
 
-				await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
+				await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
 				return;
 			}
 
-			int page = parsedArgs.Page ?? 0;
+			int page = parsedArgs.SelectorPage ?? 0;
 			int pageElement = page * 5;
 			List<BasePlace> sortedPlaces = [.. parsedArgs.Places.OrderByDescending(p => p.Reviews.Average(r => r.Rating))];
 
-			int requestedNum = 0;
 			bool canBeSorted = false, nowSorted = false;
 			if (parsedArgs.Places.First() is ILocatedUni)
 			{
 				canBeSorted = true;
-				if (parsedArgs.Raw.Where(s => s.StartsWith("st")).Count() == 1 && int.TryParse(parsedArgs.Raw.Where(s => s.StartsWith("st")).First(), out requestedNum))
-				{
+				if (parsedArgs.BildingNumber != null)
+				{ 
 					nowSorted = true;
 					foreach (var place in sortedPlaces)
 					{
-						if (((ILocatedUni)place).BuildingNumber != requestedNum)
+						if (((ILocatedUni)place).BuildingNumber != parsedArgs.BildingNumber)
 							sortedPlaces.Remove(place);
 					}
 				}
@@ -75,15 +74,30 @@ namespace OBED.Handlers
 			await Sender.EditOrSend(new(msg, "Выбор точки", new InlineKeyboardButton[][]
 				{
 					[($"{(canBeSorted ? (nowSorted ? "Отключить сортировку по корпусу" : "Включить сортировку по корпусу") : "")}", nowSorted ? $"/selector BP:{nameof(parsedArgs.Places)}" : $"/buildingSelector {nameof(parsedArgs.Places)}")],
-					[($"{((placesCounter != 0)            ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
-					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
-					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
-					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
-					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", $"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}" : "/selector")}")],
-					[($"{((page != 0) ? "◀️" : "")}", $"/placeSelector BP:{nameof(parsedArgs.Places)} PG:{page}{(nowSorted ? $" st:{requestedNum}" : "")}"), ("Назад","/selector"), ($"{(placesCounter > pageElement ? "▶️" : "")}", $"/placeSelector BP:{nameof(parsedArgs.Places)} PG:{page + 1}{(nowSorted ? $" st:{requestedNum}" : "")}")]
-				}, Telegram.Bot.Types.Enums.ParseMode.Html));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
+					[($"{((placesCounter != 0)            ? sortedPlaces[pageElement].Name : "")}", 
+					$"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} SP:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}" : "/selector")}")],
+
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", 
+					$"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} SP:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}" : "/selector")}")],
+
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", 
+					$"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} SP:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}" : "/selector")}")],
+
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", 
+					$"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} SP:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}" : "/selector")}")],
+
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", 
+					$"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} SP:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}" : "/selector")}")],
+
+					[
+						($"{((page != 0) ? "◀️" : "")}", $"/placeSelector BP:{nameof(parsedArgs.Places)} PG:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"), 
+						("Назад","/selector"), 
+						($"{(placesCounter > pageElement ? "▶️" : "")}", $"/placeSelector BP:{nameof(parsedArgs.Places)} PG:{page + 1} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")
+					]
+				}));
+
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл
@@ -118,13 +132,13 @@ namespace OBED.Handlers
 
 			await Sender.EditOrSend(new(msg, "Выбор точки", new InlineKeyboardButton[][]
 				{
-					[("1", $"/selector BP:{parsedArgs.Places} st:1"), ("2", $"/selector BP:{parsedArgs.Places} st:2"), ("3", $"/selector BP:{parsedArgs.Places} st:3")],
-					[("4", $"/selector BP:{parsedArgs.Places} st:4"), ("5", $"/selector BP:{parsedArgs.Places} st:5"), ("6", $"/selector BP:{parsedArgs.Places} st:6")],
-					[("ИАТУ", $"/selector BP:{parsedArgs.Places} st:0"), ("На территории кампуса", $"/selector BP:{parsedArgs.Places} st:7")],
+					[("1", $"/selector BP:{parsedArgs.Places} BN:1"), ("2", $"/selector BP:{parsedArgs.Places} BN:2"), ("3", $"/selector BP:{parsedArgs.Places} BN:3")],
+					[("4", $"/selector BP:{parsedArgs.Places} BN:4"), ("5", $"/selector BP:{parsedArgs.Places} BN:5"), ("6", $"/selector BP:{parsedArgs.Places} BN:6")],
+					[("ИАТУ", $"/selector BP:{parsedArgs.Places} BN:0"), ("На территории кампуса", $"/selector BP:{parsedArgs.Places} BN:7")],
 					[("Назад", "/selector")]
 				}));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл

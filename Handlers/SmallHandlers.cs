@@ -23,7 +23,7 @@ namespace OBED.Handlers
 					[(user.Role == RoleType.Administrator ? "Админ панель" : "", "/admin")]
 				}));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл
@@ -44,7 +44,7 @@ namespace OBED.Handlers
 					[("Назад","/start")]
 				}));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл
@@ -68,7 +68,7 @@ namespace OBED.Handlers
 					[("Назад","/start")]
 				}, Telegram.Bot.Types.Enums.ParseMode.Html));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл
@@ -89,7 +89,7 @@ namespace OBED.Handlers
 					[("Назад","/start")]
 				}));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл

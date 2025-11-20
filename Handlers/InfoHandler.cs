@@ -18,8 +18,8 @@ namespace OBED.Handlers
 			try
 			{
 				parsedArgs = ParserService.ParseCommand(msg.Text);
-				if (parsedArgs.Places.Count == 0 || parsedArgs.Index == null)
-					throw new Exception($"Не удалось обработать запрос \"{msg.Text}\": не удалось обработать тип и/или айди точки питания");
+				if (parsedArgs.Places.Count == 0 || parsedArgs.Index == null || parsedArgs.SelectorPage == null)
+					throw new Exception($"Не удалось обработать запрос \"{msg.Text}\": не удалось обнаружить тип и/или айди точки питания и/или параметры прошлых меню");
 			}
 			catch (Exception ex)
 			{
@@ -31,13 +31,9 @@ namespace OBED.Handlers
 						[("Назад", "/start")]
 					}, Telegram.Bot.Types.Enums.ParseMode.Html));
 
-				await SendResponseAsync(DateTime.Now, user.UserID, $"{ex.Message}\n{msg.Text}");
+				await SendResponseAsync(DateTime.Now, user.UserID, $"ERR: {ex.Message} - {msg.Text}");
 				return;
 			}
-
-			int? sortNum = null;
-			if (parsedArgs.Raw.Where(s => s.StartsWith("st")).Count() == 1 && int.TryParse(parsedArgs.Raw.Where(s => s.StartsWith("st")).First(), out var requestedNum))
-				sortNum = requestedNum;
 
 			BasePlace place = parsedArgs.Places[parsedArgs.Index.Value];
 			await Sender.EditOrSend(new(msg, $"""
@@ -47,13 +43,19 @@ namespace OBED.Handlers
 				Последний текстовый отзыв: {(place.Reviews.Where(x => x.Comment != null).Any() ? $"{place.Reviews.Where(x => x.Comment != null).Last().Rating}⭐️| {place.Reviews.Where(x => x.Comment != null).Last().Comment}" : "Отзывы с комментариями не найдены")}
 				""", new InlineKeyboardButton[][]
 				{
-					[("Меню", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} mp:{parsedArgs.Page}{(sortNum != null ? $" st:{sortNum}" : "")}")],
-					[("Оставить отзыв", $"/sendReview BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} mp:{parsedArgs.Page}{(sortNum != null ? $" st:{sortNum}" : "")}"), ("Отзывы", $"/reviews BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} mp:{parsedArgs.Page}{(sortNum != null ? $" st:{sortNum}" : "")}")],
-					[((user.Role == RoleType.Administrator && place.Reviews.Count != 0) ? "Панель удаления" : "", $"/admin BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} mp:{parsedArgs.Page}{(sortNum != null ? $" st:{sortNum}" : "")}")],
-					[("Назад", $"/selector BP:{nameof(parsedArgs.Places)} PG:{parsedArgs.Page}{(sortNum != null ? $" st:{sortNum}" : "")}")]
+					[("Меню", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")],
+
+					[
+						("Оставить отзыв", $"/sendReview BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber}"), 
+						("Отзывы", $"/reviews BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")
+					],
+
+					[((user.Role == RoleType.Administrator && place.Reviews.Count != 0) ? "Панель удаления" : "", $"/admin BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")],
+
+					[("Назад", $"/selector BP:{nameof(parsedArgs.Places)} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")]
 				}, Telegram.Bot.Types.Enums.ParseMode.Html));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, msg.Text);
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл

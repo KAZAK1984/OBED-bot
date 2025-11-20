@@ -10,7 +10,8 @@ namespace OBED.Services
 			List<BasePlace> Places,
 			int? Page = null,
 			int? Index = null,
-			int? SortedPage = null,
+			int? SelectorPage = null,
+			int? BildingNumber = null,
 			ReviewSort? ReviewSortType = null,
 			ProductType? ProductSortType = null
 		);
@@ -58,12 +59,20 @@ namespace OBED.Services
 							parsedArgs = parsedArgs with { Index = indexNum };
 							break;
 						}
-					case "SP":	// SortedPage
+					case "SP":  // SelectorPage
 						{
-							if (parsedArgs.SortedPage != null)
-								throw new InvalidDataException($"Обнаружена попытка повторного заполения <SortedPage> в запросе: {command}");
-							var sPageNum = GetNum(payload) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <SortedPage> {payload} в запросе: {command}");
-							parsedArgs = parsedArgs with { SortedPage = sPageNum };
+							if (parsedArgs.SelectorPage != null)
+								throw new InvalidDataException($"Обнаружена попытка повторного заполения <MenuPage> в запросе: {command}");
+							var sPageNum = GetNum(payload) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <MenuPage> {payload} в запросе: {command}");
+							parsedArgs = parsedArgs with { SelectorPage = sPageNum };
+							break;
+						}
+					case "BN":  // BildingNumber
+						{
+							if (parsedArgs.BildingNumber != null)
+								throw new InvalidDataException($"Обнаружена попытка повторного заполения <BildingNumber> в запросе: {command}");
+							var sPageNum = GetNum(payload) ?? throw new InvalidDataException($"Обнаружена попытка при обработке <BildingNumber> {payload} в запросе: {command}");
+							parsedArgs = parsedArgs with { BildingNumber = sPageNum };
 							break;
 						}
 					case "RT":	// ReviewSortType

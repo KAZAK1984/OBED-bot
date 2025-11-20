@@ -155,11 +155,14 @@ namespace OBED.Include
                     if (reader.HasRows)
                     {
 						placeid = reader.GetInt32(0);
+						Console.WriteLine($"!!!!!!!  {placeid} !!!!!!!!!!!!!!!");
 						return placeid;
+						
                     }
                 }
             }
-			return placeid;
+            Console.WriteLine($"!!!!!!!  {placeid} !!!!!!!!!!!!!!!");
+            return placeid;
         }
 
 		public static void LoadAllPlaces(int type)

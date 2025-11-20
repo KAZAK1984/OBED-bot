@@ -49,18 +49,23 @@ namespace OBED.Include
 		/// <summary> Для ОБНОВЛЕНИЯ отзывов. Запрос новой не-пустой строки</summary>
 		CommentChange,
 		/// <summary> Для НОВЫХ отзывов. Отметка, позволяющая перейти к финальному этапу отправки отзыва</summary>
-		NoActiveRequest,
+        NoActiveRequest,
 		/// <summary> Для ОБНОВЛЕНИЯ отзывов. Отметка, позволяющая перейти к финальному этапу обновления отзыва</summary>
 		NoActiveChange,
 		/// <summary> Для МОДЕРАЦИИ отзывов. Отметка, позволяющая перейти к отправки отредактированного сообщения</summary>
 		Moderation,
 		/// <summary> Для МОДЕРАЦИИ отзывов. Отметка, позволяющая перейти к финальному этапу отправки отредактированного сообщения</summary>
 		NoActiveModeration
-	}
-	class UserState
+		/// <summary> Для НОВЫХ отчетов (репортов). Запрос нового комментария</summary>
+		ReportRequest,
+        /// <summary> Для НОВЫХ отчетов (репортов). Отметка, позволяющая перейти к финальному этапу отправки репорта</summary>
+        NoActiveReport
+    }
+
+    class UserState
 	{
 		public UserAction? Action { get; set; }
-		public string? ReferenceToPlace { get; set; }
+		public string? ActionArguments { get; set; }
 		public string? Comment { get; set; }
 		public int Rating { get; set; }
     }

@@ -8,14 +8,16 @@ namespace OBED.Include
         public static List<Canteen> Canteens { get; private set; } = [];
         public static List<Grocery> Groceries { get; private set; } = [];
 		public static ConcurrentDictionary<long, Person> Persons { get; private set; } = [];
+		public static List<FeedbackReport> FeedbackReports { get; private set; } = [];
+        public static List<ComplaintReport> ComplaintReports { get; private set; } = [];
 
-		/// <summary>
-		/// Добавляет к общей базе новый лист точек или учёток.
-		/// Для Person: дубликаты UserID игнорируются без ошибки.
-		/// </summary>
-		/// <param name="values">Лист с новыми точками/учётками.</param>
-		/// <exception cref="ArgumentException">Ошибки.</exception>
-		public static void AddRangeList<T>(List<T> values)
+        /// <summary>
+        /// Добавляет к общей базе новый лист точек или учёток.
+        /// Для Person: дубликаты UserID игнорируются без ошибки.
+        /// </summary>
+        /// <param name="values">Лист с новыми точками/учётками.</param>
+        /// <exception cref="ArgumentException">Ошибки.</exception>
+        public static void AddRangeList<T>(List<T> values)
         {
 			ArgumentNullException.ThrowIfNull(values);
 
@@ -45,7 +47,19 @@ namespace OBED.Include
 							Persons.TryAdd(person.UserID, person);
 						break;
 					}
-				default:
+				case (List<FeedbackReport> feedbackReports):
+					{
+                        foreach (var feedbackReport in feedbackReports.AsEnumerable().Reverse())
+                            FeedbackReports.Add(feedbackReport);
+                        break;
+                    }
+                case (List<ComplaintReport> complaintReports):
+                    {
+                        foreach (var complaintReport in complaintReports.AsEnumerable().Reverse())
+                            ComplaintReports.Add(complaintReport);
+                        break;
+                    }
+                default:
 					throw new ArgumentException($"Тип списка не поддерживается: {typeof(T).Name}", nameof(values));
 			}
 		}

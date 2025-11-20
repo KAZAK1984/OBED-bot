@@ -231,7 +231,7 @@ class Program
 									Всё верно?
 									""", new InlineKeyboardButton[][]
 									{
-										[("Да", $"#sendReview {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"callback_resetAction")],
+										[("Да", $"#sendReview {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"{((foundUser != null) ? ("/info") : ("/start"))}")],
 									}, ParseMode.Html);
 									break;
 								}
@@ -360,15 +360,6 @@ class Program
                                 ("Назад", "/report")
                             });
                             throw new Exception($"No command args: {msg.Text}");
-                        }
-
-                        ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
-
-                        if (foundUser == null)
-                        {
-                            await EditOrSendMessage(msg, "Вы не прошли регистрацию путём ввода /start, большая часть функций бота недоступна",
-                                new InlineKeyboardButton[] { ("Зарегистрироваться", "/start") });
-                            break;
                         }
 
                         switch (usersState[foundUser.UserID].Action)
@@ -1135,7 +1126,7 @@ class Program
 									Всё верно?
 									""", new InlineKeyboardButton[][]
 									{
-										[("Да", $"#changeReview {usersState[foundUser!.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{usersState[foundUser!.UserID].ReferenceToPlace}")],
+										[("Да", $"#changeReview {usersState[foundUser!.UserID].ActionArguments}"), ("Нет", $"/changeReview -{usersState[foundUser!.UserID].ActionArguments}")],
 										[("Назад", $"/info {args[1..]}")]
 									}, ParseMode.Html);
 									break;
@@ -2234,7 +2225,7 @@ class Program
 											""");
 										}
 										
-										await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
+										await OnCommand("/info", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message);
 									}
 									else
 									{
@@ -2334,7 +2325,7 @@ class Program
 										""");
 									}
 
-									await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
+									await OnCommand("/info", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message);
 									break;
 								}
 							case ("sendReport"):
@@ -2384,33 +2375,8 @@ class Program
 						break;
 					}
 				default:
-					{
-						if (callbackQuery.Data == "callback_resetAction")
-						{
-							try
-							{
-								await bot.AnswerCallbackQuery(callbackQuery.Id);
-							}
-							catch (Exception ex)
-							{
-								Console.WriteLine(ex);
-								await bot.SendHtml(callbackQuery.Message.Chat, $"""
-								Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
-
-								<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
-								""");
-							}
-
-							if (foundUser == null)
-								await OnCommand("/start", null, callbackQuery.Message!);
-							else
-							{
-								usersState[foundUser.UserID].Action = null;
-								await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message!);
-							}
-						}
-						else
-							Console.WriteLine($"Зафиксирован необработанный callbackQuery {callbackQuery.Data}");
+					{	
+						Console.WriteLine($"Зафиксирован необработанный callbackQuery {callbackQuery.Data}");
 						break;
 					}
 			}

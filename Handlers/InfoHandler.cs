@@ -19,9 +19,9 @@ namespace OBED.Handlers
 			{
 				parsedArgs = ParserService.ParseCommand(msg.Text);
 				if (parsedArgs.Places.Count == 0 || parsedArgs.Index == null || parsedArgs.SelectorPage == null)
-					throw new Exception($"Не удалось обработать запрос \"{msg.Text}\": не удалось обнаружить тип и/или айди точки питания и/или параметры прошлых меню");
+					throw new InvalidDataException($"Не удалось обработать запрос \"{msg.Text}\": не удалось обнаружить тип и/или айди точки питания и/или параметры прошлых меню");
 			}
-			catch (Exception ex)
+			catch (InvalidDataException ex)
 			{
 				await Sender.EditOrSend(new(msg, $"""
 					Ошибка при обработке команды:
@@ -46,7 +46,7 @@ namespace OBED.Handlers
 					[("Меню", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")],
 
 					[
-						("Оставить отзыв", $"/sendReview BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber}"), 
+						("Оставить отзыв", $"/sendReview BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber}"),
 						("Отзывы", $"/reviews BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")
 					],
 

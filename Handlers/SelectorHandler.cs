@@ -19,7 +19,7 @@ namespace OBED.Handlers
 			{
 				parsedArgs = ParserService.ParseCommand(msg.Text);
 			}
-			catch (Exception ex)
+			catch (InvalidDataException ex)
 			{
 				await Sender.EditOrSend(new(msg, $"""
 					Ошибка при обработке команды:
@@ -56,7 +56,7 @@ namespace OBED.Handlers
 			{
 				canBeSorted = true;
 				if (parsedArgs.BildingNumber != null)
-				{ 
+				{
 					nowSorted = true;
 					foreach (var place in sortedPlaces)
 					{
@@ -75,24 +75,24 @@ namespace OBED.Handlers
 				{
 					[($"{(canBeSorted ? (nowSorted ? "Отключить сортировку по корпусу" : "Включить сортировку по корпусу") : "")}", nowSorted ? $"/selector BP:{nameof(parsedArgs.Places)}" : $"/buildingSelector {nameof(parsedArgs.Places)}")],
 
-					[($"{((placesCounter != 0)            ? sortedPlaces[pageElement].Name : "")}", 
+					[($"{((placesCounter != 0)            ? sortedPlaces[pageElement].Name : "")}",
 					$"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} SP:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}" : "/selector")}")],
 
-					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", 
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}",
 					$"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} SP:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}" : "/selector")}")],
 
-					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", 
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}",
 					$"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} SP:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}" : "/selector")}")],
 
-					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", 
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}",
 					$"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} SP:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}" : "/selector")}")],
 
-					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}", 
+					[($"{((placesCounter > ++pageElement) ? sortedPlaces[pageElement].Name : "")}",
 					$"{((indexPairs.Count - 1) >= pageElement ? $"/info BP:{nameof(parsedArgs.Places)} IN:{indexPairs[pageElement]} SP:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}" : "/selector")}")],
 
 					[
-						($"{((page != 0) ? "◀️" : "")}", $"/placeSelector BP:{nameof(parsedArgs.Places)} PG:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"), 
-						("Назад","/selector"), 
+						($"{((page != 0) ? "◀️" : "")}", $"/placeSelector BP:{nameof(parsedArgs.Places)} PG:{page} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
+						("Назад","/selector"),
 						($"{(placesCounter > pageElement ? "▶️" : "")}", $"/placeSelector BP:{nameof(parsedArgs.Places)} PG:{page + 1} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")
 					]
 				}));
@@ -117,7 +117,7 @@ namespace OBED.Handlers
 			{
 				parsedArgs = ParserService.ParseCommand(msg.Text);
 			}
-			catch (Exception ex)
+			catch (InvalidDataException ex)
 			{
 				await Sender.EditOrSend(new(msg, $"""
 					Ошибка при обработке команды:
@@ -126,7 +126,7 @@ namespace OBED.Handlers
 					{
 						[("Назад", "/start")]
 					}, Telegram.Bot.Types.Enums.ParseMode.Html));
-					await SendResponseAsync(DateTime.Now, user.UserID, $"{ex.Message}\n{msg.Text}");
+				await SendResponseAsync(DateTime.Now, user.UserID, $"{ex.Message}\n{msg.Text}");
 				return;
 			}
 

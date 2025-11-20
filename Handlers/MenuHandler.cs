@@ -8,22 +8,25 @@ namespace OBED.Handlers
 {
 	public class MenuHandler : ICommandHandler, IResponseSender
 	{
-		public bool CanHandle(string command) => command.StartsWith("/menu");
-		public async Task HandleAsync(Message msg)
+		private static readonly string byGramTag = "100 грамм";
+		private static readonly string byPortionTag = "порцию";
+
+		public bool CanHandle(string messageText) => messageText.StartsWith("/menu");
+		public async Task HandleAsync(Message message)
 		{
-			ArgumentNullException.ThrowIfNullOrWhiteSpace(msg.Text);
-			var user = await RegistrationService.TryGetOrRegisterUser(msg);
+			ArgumentNullException.ThrowIfNullOrWhiteSpace(message.Text);
+			var user = await RegistrationService.TryGetOrRegisterUser(message);
 
 			ParserService.ParsedArgs parsedArgs;
 			try
 			{
-				parsedArgs = ParserService.ParseCommand(msg.Text);
+				parsedArgs = ParserService.ParseCommand(message.Text);
 				if (parsedArgs.Places.Count == 0 || parsedArgs.Index == null || parsedArgs.SelectorPage == null)
-					throw new InvalidDataException($"Не удалось обработать запрос \"{msg.Text}\": не удалось обнаружить тип и/или айди точки питания и/или параметры прошлых меню");
+					throw new InvalidDataException($"Не удалось обработать запрос \"{message.Text}\": не удалось обнаружить тип и/или айди точки питания и/или параметры прошлых меню");
 			}
 			catch (InvalidDataException ex)
 			{
-				await Sender.EditOrSend(new(msg, $"""
+				await Sender.EditOrSend(new(message, $"""
 					Ошибка при обработке команды:
 					{ex.Message}
 					""", new InlineKeyboardButton[][]
@@ -31,7 +34,7 @@ namespace OBED.Handlers
 						[("Назад", "/start")]
 					}, Telegram.Bot.Types.Enums.ParseMode.Html));
 
-				await SendResponseAsync(DateTime.Now, user.UserID, $"ERR: {ex.Message}\n{msg.Text}");
+				await SendResponseAsync(DateTime.Now, user.UserID, $"ERR: {ex.Message}\n{message.Text}");
 				return;
 			}
 
@@ -45,20 +48,20 @@ namespace OBED.Handlers
 				sortedProduct = [.. place.Menu.Where(p => p.Type == productType)];
 			int productCounter = sortedProduct != null ? sortedProduct.Count : 0;
 
-			await Sender.EditOrSend(new(msg, $"""
+			await Sender.EditOrSend(new(message, $"""
 				Название: {place.Name}
 				Всего позиций в меню: {productCounter}
 				{(productType != null ? $"Режим сортировки: {productType}\n" : "")}
-				{(productCounter > pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? "100 грамм" : "порцию")}" : $"{(productType == null ? $"Меню \"{place.Name}\" не обнаружено" : $"Позиций по тегу \"{productType}\" не обнаружено")}")}
-				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? "100 грамм" : "порцию")}" : "")}
-				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? "100 грамм" : "порцию")}" : "")}
+				{(productCounter > pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : $"{(productType == null ? $"Меню \"{place.Name}\" не обнаружено" : $"Позиций по тегу \"{productType}\" не обнаружено")}")}
+				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
+				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
+				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
+				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
+				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
+				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
+				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
+				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
+				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
 				""", new InlineKeyboardButton[][]
 				{
 					[(productType == null ? "" : "Без сортировки", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{parsedArgs.Page} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")],
@@ -73,11 +76,11 @@ namespace OBED.Handlers
 					[
 						((page != 0) ? "◀️" : "", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{parsedArgs.Page} PT:{ProductType.MainDish} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
 						("Назад", $"/info BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
-						(productCounter > ++pageElement ? "▶️" : "", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{parsedArgs.Page + 1} PT:{ProductType.MainDish} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")
+						(productCounter > (pageElement + 1) ? "▶️" : "", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{parsedArgs.Page + 1} PT:{ProductType.MainDish} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")
 					]
 				}, Telegram.Bot.Types.Enums.ParseMode.Html));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {message.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл

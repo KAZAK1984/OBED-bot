@@ -3,7 +3,7 @@ using Telegram.Bot.Types;
 
 namespace OBED.Services
 {
-    class RegistrationService
+    static class RegistrationService
     {
         public static async Task<Person> TryGetOrRegisterUser(Message msg)
         {

@@ -8,14 +8,14 @@ namespace OBED.Handlers
 {
 	public class StartHandler : ICommandHandler, IResponseSender
 	{
-		public bool CanHandle(string command) => command.StartsWith("/start");
-		public async Task HandleAsync(Message msg)
+		public bool CanHandle(string messageText) => messageText.StartsWith("/start");
+		public async Task HandleAsync(Message message)
 		{
-			ArgumentNullException.ThrowIfNullOrWhiteSpace(msg.Text);
+			ArgumentNullException.ThrowIfNullOrWhiteSpace(message.Text);
 
-			var user = await RegistrationService.TryGetOrRegisterUser(msg);
+			var user = await RegistrationService.TryGetOrRegisterUser(message);
 
-			await Sender.EditOrSend(new(msg, "Старт", new InlineKeyboardButton[][]
+			await Sender.EditOrSend(new(message, "Старт", new InlineKeyboardButton[][]
 				{
 					[("Места", "/selector")],
 					[("Профиль", "/person")],
@@ -23,7 +23,7 @@ namespace OBED.Handlers
 					[(user.Role == RoleType.Administrator ? "Админ панель" : "", "/admin")]
 				}));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {message.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл
@@ -32,19 +32,19 @@ namespace OBED.Handlers
 
 	public class HelpHandler : ICommandHandler, IResponseSender
 	{
-		public bool CanHandle(string command) => command.StartsWith("/help");
-		public async Task HandleAsync(Message msg)
+		public bool CanHandle(string messageText) => messageText.StartsWith("/help");
+		public async Task HandleAsync(Message message)
 		{
-			ArgumentNullException.ThrowIfNullOrWhiteSpace(msg.Text);
+			ArgumentNullException.ThrowIfNullOrWhiteSpace(message.Text);
 
-			var user = await RegistrationService.TryGetOrRegisterUser(msg);
+			var user = await RegistrationService.TryGetOrRegisterUser(message);
 
-			await Sender.EditOrSend(new(msg, "Помощь", new InlineKeyboardButton[][]
+			await Sender.EditOrSend(new(message, "Помощь", new InlineKeyboardButton[][]
 				{
 					[("Назад","/start")]
 				}));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {message.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл
@@ -53,14 +53,14 @@ namespace OBED.Handlers
 
 	public class PersonHandler : ICommandHandler, IResponseSender
 	{
-		public bool CanHandle(string command) => command.StartsWith("/person");
-		public async Task HandleAsync(Message msg)
+		public bool CanHandle(string messageText) => messageText.StartsWith("/person");
+		public async Task HandleAsync(Message message)
 		{
-			ArgumentNullException.ThrowIfNullOrWhiteSpace(msg.Text);
+			ArgumentNullException.ThrowIfNullOrWhiteSpace(message.Text);
 
-			var user = await RegistrationService.TryGetOrRegisterUser(msg);
+			var user = await RegistrationService.TryGetOrRegisterUser(message);
 
-			await Sender.EditOrSend(new(msg, $"""
+			await Sender.EditOrSend(new(message, $"""
 				Ваше имя: {user.Username} ({user.UserID})
 				Ваш статус: {user.Role}
 				""", new InlineKeyboardButton[][]
@@ -68,7 +68,7 @@ namespace OBED.Handlers
 					[("Назад","/start")]
 				}, Telegram.Bot.Types.Enums.ParseMode.Html));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {message.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл
@@ -77,19 +77,19 @@ namespace OBED.Handlers
 
 	public class ReportHandler : ICommandHandler, IResponseSender   // Placeholder - Перенести код Олега в новый файл, а этот хендлер удалить
 	{
-		public bool CanHandle(string command) => command.StartsWith("/report");
-		public async Task HandleAsync(Message msg)
+		public bool CanHandle(string messageText) => messageText.StartsWith("/report");
+		public async Task HandleAsync(Message message)
 		{
-			ArgumentNullException.ThrowIfNullOrWhiteSpace(msg.Text);
+			ArgumentNullException.ThrowIfNullOrWhiteSpace(message.Text);
 
-			var user = await RegistrationService.TryGetOrRegisterUser(msg);
+			var user = await RegistrationService.TryGetOrRegisterUser(message);
 
-			await Sender.EditOrSend(new(msg, "Обратная связь", new InlineKeyboardButton[][]
+			await Sender.EditOrSend(new(message, "Обратная связь", new InlineKeyboardButton[][]
 				{
 					[("Назад","/start")]
 				}));
 
-			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {msg.Text}");
+			await SendResponseAsync(DateTime.Now, user.UserID, $"SUC: {message.Text}");
 		}
 #pragma warning disable CS1998 // В асинхронном методе отсутствуют операторы await, будет выполнен синхронный метод
 		public async Task SendResponseAsync(DateTime date, long userId, string text) => Console.WriteLine($"{date} | {userId} | {text}"); // TODO: Реализовать логирование сообщений в бд или файл

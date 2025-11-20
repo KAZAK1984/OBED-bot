@@ -11,9 +11,9 @@ namespace OBED.TelegramBot
 		public static void BotInit()
 		{
 			if (Bot != null)
-				throw new Exception("Invalid request, bot already created.");
+				throw new ArgumentException("Invalid request, bot already created.");
 			if (Token == null)
-				throw new Exception("Invalid token, check environment setting.");
+				throw new ArgumentException("Invalid token, check environment setting.");
 
 			using var cts = new CancellationTokenSource();
 			Cts = cts;

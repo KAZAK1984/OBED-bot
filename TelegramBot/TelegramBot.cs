@@ -18,6 +18,7 @@ namespace OBED.TelegramBot
 			using var cts = new CancellationTokenSource();
 			Cts = cts;
 			Bot = new TelegramBotClient(Token!, cancellationToken: cts.Token);
+			Console.WriteLine("The bot has been launched.\n");
 		}
 	}
 }

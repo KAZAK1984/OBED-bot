@@ -1,4 +1,4 @@
-﻿namespace OBED.Include
+﻿namespace OBED.Common
 {
     public enum ProductType
     {

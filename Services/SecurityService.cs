@@ -2,7 +2,7 @@
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace OBED.Include
+namespace OBED.Services
 {
 	public enum SuspiciousClass
 	{
@@ -15,7 +15,7 @@ namespace OBED.Include
 		public Message Msg { get; init; } = msg;
 		public UpdateType Type { get; init; } = type;
 	}
-	static class SecurityManager
+	static class SecurityService
 	{
 		public static ConcurrentDictionary<long, string> BlockedUsers { get; private set; } = [];
 		public static ConcurrentDictionary<long, (SuspiciousClass suspiciousClass, DateTime time)> SuspiciousUsers { get; private set; } = [];
@@ -31,7 +31,7 @@ namespace OBED.Include
 			}
 			else if (type is CallbackQuery callback)
 			{
-				ArgumentNullException.ThrowIfNullOrEmpty(callback.Data);
+				ArgumentException.ThrowIfNullOrEmpty(callback.Data);
 				if (callback.Message == null)
 					throw new ArgumentNullException(callback.Data);
 				message = callback.Data;

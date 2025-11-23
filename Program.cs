@@ -1,4 +1,6 @@
-﻿using OBED.Include;
+﻿using OBED.Common;
+using OBED.Include;
+using OBED.Services;
 using OBED.TelegramBot;
 
 using Telegram.Bot;
@@ -38,28 +40,28 @@ class Program
 		List<Review> reviews3 = [new(123456789, 7, "Old"), new(123456789, 9, "Old"), new(123456789, 5, "Old"), new(123456789, 10, "Old"), new(123456789, 6, "Old"), new(123456789, 8, "Old"), new(123456789, 4, "Old")];
 		reviews3.Add(new(987654321, 3, "New"));
 
-		ObjectLists.AddRangeList<Canteen>([new("Canteen1", 1, 1, null, reviews3, products1, null),
-			new("Canteen2", 2, 2, null, reviews2, products2, null),
-			new("Canteen3", 2, 2, null, reviews1, products3, null),
-			new("Canteen4", 2, 2, null, null, null, null),
-			new("Canteen5", 2, 2, null, null, null, null),
-			new("Canteen6", 2, 2, null, null, null, null),
-			new("Canteen7", 2, 2, null, null, null, null),
-			new("Canteen8", 2, 2, null, null, null, null),
-			new("Canteen9", 2, 2, null, null, null, null),
-			new("Canteen10", 2, 2, null, null, null, null),
-			new("Canteen11", 2, 2, null, null, null, null),
-			new("Canteen12", 2, 2, null, null, null, null),
-			new("Canteen13", 2, 2, null, null, null, null),
-			new("Canteen14", 2, 2, null, null, null, null),
-			new("Canteen15", 2, 2, null, reviews1, products5, null),
-			new("Canteen16", 3, 3, null, reviews1, products4, null)]);
-		ObjectLists.AddRangeList<Buffet>([new("Buffet1", 1, 1, null, reviews1, products1, null),
-			new("Buffet2", 2, 2, null, reviews2, products2, null),
-			new("Buffet3", 3, 3, null, reviews3, products4, null)]);
-		ObjectLists.AddRangeList<Grocery>([new("Grocery1", null, reviews1, products1, null),
-			new("Grocery2", null, reviews2, products2, null),
-			new("Grocery3", null, reviews3, products4, null)]);
+		ObjectLists.AddRangeList<Canteen>([new("Canteen1", 1, 1, null, reviews3, products1),
+			new("Canteen2", 2, 2, null, reviews2, products2),
+			new("Canteen3", 2, 2, null, reviews1, products3),
+			new("Canteen4", 2, 2, null, null, null),
+			new("Canteen5", 2, 2, null, null, null),
+			new("Canteen6", 2, 2, null, null, null),
+			new("Canteen7", 2, 2, null, null, null),
+			new("Canteen8", 2, 2, null, null, null),
+			new("Canteen9", 2, 2, null, null, null),
+			new("Canteen10", 2, 2, null, null, null),
+			new("Canteen11", 2, 2, null, null, null),
+			new("Canteen12", 2, 2, null, null, null),
+			new("Canteen13", 2, 2, null, null, null),
+			new("Canteen14", 2, 2, null, null, null),
+			new("Canteen15", 2, 2, null, reviews1, products5),
+			new("Canteen16", 3, 3, null, reviews1, products4)]);
+		ObjectLists.AddRangeList<Buffet>([new("Buffet1", 1, 1, null, reviews1, products1),
+			new("Buffet2", 2, 2, null, reviews2, products2),
+			new("Buffet3", 3, 3, null, reviews3, products4)]);
+		ObjectLists.AddRangeList<Grocery>([new("Grocery1", null, reviews1, products1),
+			new("Grocery2", null, reviews2, products2),
+			new("Grocery3", null, reviews3, products4)]);
 
 		reviews3.Add(new(611614145, 3, "SuperNew"));
 
@@ -70,16 +72,16 @@ class Program
 		var queueController = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
 		while (await queueController.WaitForNextTickAsync())
 		{
-			for (int i = 0; i < SecurityManager.RequestQueue.Count; ++i)
+			for (int i = 0; i < SecurityService.RequestQueue.Count; ++i)
 			{
-				if (SecurityManager.RequestQueue.TryPeek(out var element) && element.deferredTime < DateTime.Now)
+				if (SecurityService.RequestQueue.TryPeek(out var element) && element.deferredTime < DateTime.Now)
 				{
 					if (element.obj is MessageData messageData)
 						await OnDirectMessage(messageData.Msg, messageData.Type);
 					else if (element.obj is CallbackQuery callbackQuery)
 						await OnDirectCallbackQuery(callbackQuery);
 
-                    SecurityManager.RequestQueue.TryDequeue(out _);
+                    SecurityService.RequestQueue.TryDequeue(out _);
                     --i;
                 }
 			}
@@ -127,13 +129,13 @@ class Program
 			
 			if (foundUser != null)
 			{
-				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+				if (SecurityService.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
 				{
 					await TelegramBot.Bot!.SendMessage(msg.Chat, $"Вы были заблокированы за: {reason ?? "Траблмейкинг"}.");
 					return;
 				}
 
-				if (SecurityManager.SecurityCheck<MessageData>(foundUser.UserID, new(msg, type)))
+				if (SecurityService.SecurityCheck<MessageData>(foundUser.UserID, new(msg, type)))
 					return;
 			}
 
@@ -830,7 +832,7 @@ class Program
 								}
 						}
 
-						if (place.Reviews.Any(x => x.UserID == foundUser!.UserID) || AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
+						if (place.Reviews.Any(x => x.UserID == foundUser!.UserID) || ReviewModerationService.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
 						{
 							if (place.Reviews.Any(x => x.UserID == foundUser!.UserID))
 								await EditOrSendMessage(msg, $"""
@@ -847,8 +849,8 @@ class Program
 								await EditOrSendMessage(msg, $"""
 									Вы уже оставили отзыв на {place.Name}
 
-									• Оценка: {AdminControl.ReviewCollector.Where(x => x.place == place && x.review.UserID == foundUser!.UserID).First().review.Rating}
-									• Комментарий: {AdminControl.ReviewCollector.Where(x => x.place == place && x.review.UserID == foundUser!.UserID).First().review.Comment}
+									• Оценка: {ReviewModerationService.ReviewCollector.Where(x => x.place == place && x.review.UserID == foundUser!.UserID).First().review.Rating}
+									• Комментарий: {ReviewModerationService.ReviewCollector.Where(x => x.place == place && x.review.UserID == foundUser!.UserID).First().review.Comment}
 									""", new InlineKeyboardButton[][]
 									{
 										[("Изменить", $"/changeReview -{args}"), ("Удалить", $"#deleteReview {args}")],
@@ -937,7 +939,7 @@ class Program
 								}
 						}
 
-						if (!place.Reviews.Where(x => x.UserID == foundUser!.UserID).Any() && !AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
+						if (!place.Reviews.Where(x => x.UserID == foundUser!.UserID).Any() && !ReviewModerationService.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
 						{
 							await EditOrSendMessage(msg, $"""
 							Вы не можете изменить отзыв на {place.Name}
@@ -985,12 +987,12 @@ class Program
 								}
 							case (UserAction.NoActiveChange):
 								{
-									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
+									if (ReviewModerationService.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
 									{
 										if (UserState.dictionary[foundUser!.UserID].Rating == 0)
-											UserState.dictionary[foundUser!.UserID].Rating = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Rating;
+											UserState.dictionary[foundUser!.UserID].Rating = ReviewModerationService.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Rating;
 										if (UserState.dictionary[foundUser!.UserID].Comment == "saved_mark")
-											UserState.dictionary[foundUser!.UserID].Comment = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Comment;
+											UserState.dictionary[foundUser!.UserID].Comment = ReviewModerationService.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Comment;
 									}
 									else
 									{
@@ -1037,10 +1039,10 @@ class Program
 							await EditOrSendMessage(msg, $"""
 							Доброго времени, адмеместратор {foundUser!.Username}
 							
-							Кол-во отзывов на проверку: {AdminControl.ReviewCollector.Count}
+							Кол-во отзывов на проверку: {ReviewModerationService.ReviewCollector.Count}
 							""", new InlineKeyboardButton[][]
 							{
-								[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
+								[(ReviewModerationService.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
 								[("Меню блокировок", "/admin ban")],
 								[("Обновить админ-меню", "/admin ref"), ("Назад", $"/start")]
 							}, ParseMode.Html);
@@ -1064,10 +1066,10 @@ class Program
 									await EditOrSendMessage(msg, $"""	
 									Дoбрoгo времени, адмеместратор {foundUser!.Username}
 							
-									Кол-во отзывов на проверку: {AdminControl.ReviewCollector.Count}
+									Кол-во отзывов на проверку: {ReviewModerationService.ReviewCollector.Count}
 									""", new InlineKeyboardButton[][]
 									{
-										[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
+										[(ReviewModerationService.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
 										[("Меню блокировок", "/admin ban")],
 										[("Обновить админ-меню", "/admin"), ("Назад", $"/start")]
 									}, ParseMode.Html);
@@ -1077,18 +1079,18 @@ class Program
 								{
 									if (args.Length < 4)
 									{
-										if (AdminControl.ReviewCollector.Count > 0)
+										if (ReviewModerationService.ReviewCollector.Count > 0)
 										{
-											ObjectLists.Persons.TryGetValue(AdminControl.ReviewCollector[0].review.UserID, out Person? writer);
+											ObjectLists.Persons.TryGetValue(ReviewModerationService.ReviewCollector[0].review.UserID, out Person? writer);
 											ArgumentNullException.ThrowIfNull(writer);
 
 											await EditOrSendMessage(msg, $"""
-											Отзыв ({AdminControl.ReviewCollector[0].review.Rating}⭐) от @{writer.Username}, {writer.Role} на {AdminControl.ReviewCollector[0].place.Name}.
-											Дата отправки на модерацию: {AdminControl.ReviewCollector[0].review.Date}
+											Отзыв ({ReviewModerationService.ReviewCollector[0].review.Rating}⭐) от @{writer.Username}, {writer.Role} на {ReviewModerationService.ReviewCollector[0].place.Name}.
+											Дата отправки на модерацию: {ReviewModerationService.ReviewCollector[0].review.Date}
 											
-											Оригинал: {AutoMod.BoldCandidateCensor(AdminControl.ReviewCollector[0].review.Comment!)}
+											Оригинал: {AutoModService.BoldCandidateCensor(ReviewModerationService.ReviewCollector[0].review.Comment!)}
 											
-											Авто-мод: {AutoMod.AddCensor(AdminControl.ReviewCollector[0].review.Comment!)}
+											Авто-мод: {AutoModService.AddCensor(ReviewModerationService.ReviewCollector[0].review.Comment!)}
 											""", new InlineKeyboardButton[][]
 											{
 												[("Изменить вручную", $"/admin chkA")],
@@ -1127,7 +1129,7 @@ class Program
 															await EditOrSendMessage(msg, $"""
 															ОТРЕДАКТИРОВАННЫЙ отзыв:
 									
-																• Оценка: {AdminControl.ReviewCollector[0].review.Rating}
+																• Оценка: {ReviewModerationService.ReviewCollector[0].review.Rating}
 																• Комментарий: {UserState.dictionary[foundUser!.UserID].Comment ?? "Удалён"}
 									
 															Всё верно?
@@ -1385,14 +1387,14 @@ class Program
 									if (args.Length == 3)
 									{
 										await EditOrSendMessage(msg, $"""
-										Количесвто <b>активных</b> пользователей: {ObjectLists.Persons.Count - SecurityManager.BlockedUsers.Count}
+										Количесвто <b>активных</b> пользователей: {ObjectLists.Persons.Count - SecurityService.BlockedUsers.Count}
 
-										Количество заблокированных пользователей: {SecurityManager.BlockedUsers.Count}
+										Количество заблокированных пользователей: {SecurityService.BlockedUsers.Count}
 
 										Пользователей с замедлением:
-										- Лёгким: {SecurityManager.SuspiciousUsers.Where(x => x.Value.suspiciousClass == SuspiciousClass.Light).Count()}
-										- Средним: {SecurityManager.SuspiciousUsers.Where(x => x.Value.suspiciousClass == SuspiciousClass.Medium).Count()}
-										- Серьёзным: {SecurityManager.SuspiciousUsers.Where(x => x.Value.suspiciousClass == SuspiciousClass.High).Count()}
+										- Лёгким: {SecurityService.SuspiciousUsers.Where(x => x.Value.suspiciousClass == SuspiciousClass.Light).Count()}
+										- Средним: {SecurityService.SuspiciousUsers.Where(x => x.Value.suspiciousClass == SuspiciousClass.Medium).Count()}
+										- Серьёзным: {SecurityService.SuspiciousUsers.Where(x => x.Value.suspiciousClass == SuspiciousClass.High).Count()}
 										""", new InlineKeyboardButton[][]
 										{
 											[("Выдать замедление", "/admin banS--_0"), ("Выдать блокировку", "/admin banB--_0")],
@@ -1428,7 +1430,7 @@ class Program
 									{
 										case 'S' when args[4] == 'R':
 											{
-												var activePersons = SecurityManager.SuspiciousUsers.Where(x => !SecurityManager.BlockedUsers.ContainsKey(x.Key)).Select(x => new
+												var activePersons = SecurityService.SuspiciousUsers.Where(x => !SecurityService.BlockedUsers.ContainsKey(x.Key)).Select(x => new
 												{
 													userID = x.Key,
 													x.Value.suspiciousClass,
@@ -1461,7 +1463,7 @@ class Program
 											}
 										case 'B' when args[4] == 'R':
 											{
-												var activePersons = SecurityManager.BlockedUsers.Select(x => new
+												var activePersons = SecurityService.BlockedUsers.Select(x => new
 												{
 													userID = x.Key,
 													reason = x.Value
@@ -1528,7 +1530,7 @@ class Program
 												}
 
 
-												List<Person> activePersons = [.. ObjectLists.Persons.Where(x => !SecurityManager.BlockedUsers.ContainsKey(x.Key)).Select(x => x.Value)];
+												List<Person> activePersons = [.. ObjectLists.Persons.Where(x => !SecurityService.BlockedUsers.ContainsKey(x.Key)).Select(x => x.Value)];
 												await EditOrSendMessage(msg, $"""
 												Кому выдать замедление {selectedType} типа?
 
@@ -1594,7 +1596,7 @@ class Program
 												}
 
 
-												List<Person> activePersons = [.. ObjectLists.Persons.Where(x => !SecurityManager.BlockedUsers.ContainsKey(x.Key)).Select(x => x.Value)];
+												List<Person> activePersons = [.. ObjectLists.Persons.Where(x => !SecurityService.BlockedUsers.ContainsKey(x.Key)).Select(x => x.Value)];
 												await EditOrSendMessage(msg, $"""
 												Кому выдать блокировку по причине: {selectedType}
 
@@ -1678,13 +1680,13 @@ class Program
             ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
             if (foundUser != null)
             {
-				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+				if (SecurityService.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
 				{
 					await TelegramBot.Bot!.SendMessage(callbackQuery.Message.Chat, $"Вы были заблокированы за: {reason ?? "Траблмейкинг"}.");
 					return;
 				}
 
-				if (SecurityManager.SecurityCheck<CallbackQuery>(foundUser.UserID, callbackQuery))
+				if (SecurityService.SecurityCheck<CallbackQuery>(foundUser.UserID, callbackQuery))
                     return;
 			}
 
@@ -1752,11 +1754,11 @@ class Program
 								case ("chkA"):
 									{
 										if (UserState.dictionary[foundUser.UserID].Comment != null)
-											AdminControl.SetReviewStatus(UserState.dictionary[foundUser.UserID].Comment!);
+											ReviewModerationService.SetReviewStatus(UserState.dictionary[foundUser.UserID].Comment!);
 										else
 										{
-											AdminControl.ReviewCollector[0].place.AddReview(AdminControl.ReviewCollector[0].review.UserID, AdminControl.ReviewCollector[0].review.Rating, null);
-											AdminControl.SetReviewStatus();
+											ReviewModerationService.ReviewCollector[0].place.AddReview(ReviewModerationService.ReviewCollector[0].review.UserID, ReviewModerationService.ReviewCollector[0].review.Rating, null);
+											ReviewModerationService.SetReviewStatus();
 										}
 
 										try
@@ -1778,7 +1780,7 @@ class Program
 									}
 								case ("chkM"):
 									{
-										AdminControl.SetReviewStatus(AutoMod.AddCensor(AdminControl.ReviewCollector[0].review.Comment!));
+										ReviewModerationService.SetReviewStatus(AutoModService.AddCensor(ReviewModerationService.ReviewCollector[0].review.Comment!));
 
 										try
 										{
@@ -1799,7 +1801,7 @@ class Program
 									}
 								case ("chkO"):
 									{
-										AdminControl.SetReviewStatus(true);
+										ReviewModerationService.SetReviewStatus(true);
 
 										try
 										{
@@ -1901,7 +1903,7 @@ class Program
 											throw new Exception($"Error while user {foundUser.UserID} trying to slow user");
 										}
 
-										if (SecurityManager.UpdateSuspiciousUser(userID, selectedClass))
+										if (SecurityService.UpdateSuspiciousUser(userID, selectedClass))
 										{
 											try
 											{
@@ -1938,7 +1940,7 @@ class Program
 											throw new Exception($"Error while user {foundUser.UserID} trying remove slow from user");
 										}
 
-										if (SecurityManager.SuspiciousUsers.TryRemove(userID, out _))
+										if (SecurityService.SuspiciousUsers.TryRemove(userID, out _))
 										{
 											try
 											{
@@ -1982,7 +1984,7 @@ class Program
 											throw new Exception($"Error while user {foundUser.UserID} trying to slow user");
 										}
 
-										if (SecurityManager.BlockedUsers.TryAdd(userID, selectedReason))
+										if (SecurityService.BlockedUsers.TryAdd(userID, selectedReason))
 										{
 											try
 											{
@@ -2019,7 +2021,7 @@ class Program
 											throw new Exception($"Error while user {foundUser.UserID} trying remove ban from user");
 										}
 
-										if (SecurityManager.BlockedUsers.TryRemove(userID, out _))
+										if (SecurityService.BlockedUsers.TryRemove(userID, out _))
 										{
 											try
 											{
@@ -2094,7 +2096,7 @@ class Program
 						{
 							case ("sendReview"):
 								{
-									if (AdminControl.AddReviewOnMod(place, foundUser.UserID, UserState.dictionary[foundUser.UserID].Rating, UserState.dictionary[foundUser.UserID].Comment) && UserState.dictionary[foundUser.UserID].Action == UserAction.NoActiveRequest)
+									if (ReviewModerationService.AddReviewOnMod(place, foundUser.UserID, UserState.dictionary[foundUser.UserID].Rating, UserState.dictionary[foundUser.UserID].Comment) && UserState.dictionary[foundUser.UserID].Action == UserAction.NoActiveRequest)
 									{
 										UserState.dictionary[foundUser.UserID].Action = null;
 
@@ -2127,7 +2129,7 @@ class Program
 								}
 							case ("deleteReview"):
 								{
-									if (!place.Reviews.Where(x => x.UserID == foundUser.UserID).Any() && !AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
+									if (!place.Reviews.Where(x => x.UserID == foundUser.UserID).Any() && !ReviewModerationService.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
 									{
 										await EditOrSendMessage(callbackQuery.Message, $"""
 										Вы не можете удалить отзыв на {place.Name}
@@ -2159,9 +2161,9 @@ class Program
 										await OnCommand("/info", splitStr[1], callbackQuery.Message);
 										break;
 									}
-									else if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
+									else if (ReviewModerationService.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
 									{
-										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
+										ReviewModerationService.SetReviewStatus(false, ReviewModerationService.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
 
 										try
 										{
@@ -2193,10 +2195,10 @@ class Program
 										break;
 
 									place.DeleteReview(foundUser.UserID);
-									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
-										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
+									if (ReviewModerationService.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
+										ReviewModerationService.SetReviewStatus(false, ReviewModerationService.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
 
-									AdminControl.AddReviewOnMod(place, foundUser.UserID, UserState.dictionary[foundUser.UserID].Rating, UserState.dictionary[foundUser.UserID].Comment);
+									ReviewModerationService.AddReviewOnMod(place, foundUser.UserID, UserState.dictionary[foundUser.UserID].Rating, UserState.dictionary[foundUser.UserID].Comment);
 
 									try
 									{

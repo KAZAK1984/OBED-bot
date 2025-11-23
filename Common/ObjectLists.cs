@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace OBED.Include
+namespace OBED.Common
 {
     static class ObjectLists
     {
@@ -21,25 +21,25 @@ namespace OBED.Include
 
 			switch (values)
 			{
-				case (List<Buffet> buffets):
+				case List<Buffet> buffets:
 					{
 						foreach (var buffet in buffets.AsEnumerable().Reverse())
 							Buffets.Add(buffet);
 						break;
 					}
-				case (List<Canteen> canteens):
+				case List<Canteen> canteens:
 					{
 						foreach (var canteen in canteens.AsEnumerable().Reverse())
 							Canteens.Add(canteen);
 						break;
 					}
-				case (List<Grocery> groceries):
+				case List<Grocery> groceries:
 					{
 						foreach (var grocery in groceries.AsEnumerable().Reverse())
 							Groceries.Add(grocery);
 						break;
 					}
-				case (List<Person> persons):
+				case List<Person> persons:
 					{
 						foreach(var person in persons.AsEnumerable().Reverse())
 							Persons.TryAdd(person.UserID, person);

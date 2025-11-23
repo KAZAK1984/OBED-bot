@@ -2,7 +2,7 @@
 
 namespace OBED.Include
 {
-	static partial class AutoMod
+	static partial class AutoModService
 	{
 		public static string BoldCandidateCensor(string str)
 		{
@@ -74,7 +74,7 @@ namespace OBED.Include
 		", RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace, "ru-RU")]
 		private static partial Regex SwearRegex();
 	}
-	static partial class AutoMod
+	static partial class AutoModService
 	{
 		[GeneratedRegex(@"
 			хлеб|небо|себя|тебе|тебя|европа|европейский|небеса|облако|снеба|

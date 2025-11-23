@@ -1,6 +1,8 @@
-﻿namespace OBED.Include
+﻿using OBED.Common;
+
+namespace OBED.Services
 {
-	static class AdminControl
+	static class ReviewModerationService
 	{
 		public static List<(Review review, BasePlace place)> ReviewCollector { get; private set; } = [];
 		private static readonly object adminControlLock = new();

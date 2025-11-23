@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
-using System.Data;
 
-namespace OBED.Include
+namespace OBED.Common
 {
 	public enum RoleType
 	{
@@ -60,7 +59,7 @@ namespace OBED.Include
 	}
 	class UserState
 	{
-        public static ConcurrentDictionary<long, UserState> dictionary = [];
+        public static readonly ConcurrentDictionary<long, UserState> dictionary = [];
         public UserAction? Action { get; set; }
 		public string? ReferenceToPlace { get; set; }
 		public string? Comment { get; set; }

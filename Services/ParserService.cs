@@ -135,8 +135,8 @@ namespace OBED.Services
 		{
 			return sortStr.ToLower().Trim() switch
 			{
-				"mainDish" => ProductType.MainDish,
-				"sideDish" => ProductType.SideDish,
+				"maindish" => ProductType.MainDish,
+				"sidedish" => ProductType.SideDish,
 				"drink" => ProductType.Drink,
 				"appetizer" => ProductType.Appetizer,
 				_ => null

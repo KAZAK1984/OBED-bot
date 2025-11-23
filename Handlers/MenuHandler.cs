@@ -52,7 +52,7 @@ namespace OBED.Handlers
 				Название: {place.Name}
 				Всего позиций в меню: {productCounter}
 				{(productType != null ? $"Режим сортировки: {productType}\n" : "")}
-				{(productCounter > pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : $"{(productType == null ? $"Меню \"{place.Name}\" не обнаружено" : $"Позиций по тегу \"{productType}\" не обнаружено")}")}
+				{(productCounter > pageElement	 ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : $"{(productType == null ? $"Меню \"{place.Name}\" не обнаружено" : $"Позиций по тегу \"{productType}\" не обнаружено")}")}
 				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
 				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
 				{(productCounter > ++pageElement ? $"{sortedProduct![pageElement].Name} | {sortedProduct![pageElement].Price.value} за {(sortedProduct![pageElement].Price.perGram ? byGramTag : byPortionTag)}" : "")}
@@ -67,16 +67,16 @@ namespace OBED.Handlers
 					[(productType == null ? "" : "Без сортировки", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{parsedArgs.Page} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")],
 
 					[
-						(productType == ProductType.MainDish  ? "" : "Блюда", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{parsedArgs.Page} PT:{ProductType.MainDish} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
-						(productType == ProductType.SideDish  ? "" : "Гарниры", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{parsedArgs.Page} PT:{ProductType.SideDish} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
-						(productType == ProductType.Drink     ? "" : "Напитки", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{parsedArgs.Page} PT:{ProductType.Drink} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
-						(productType == ProductType.Appetizer ? "" : "Закуски", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{parsedArgs.Page} PT:{ProductType.Appetizer} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
+						(productType == ProductType.MainDish  ? "" : "Блюда",	$"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{page} PT:{nameof(ProductType.MainDish)} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
+						(productType == ProductType.SideDish  ? "" : "Гарниры", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{page} PT:{nameof(ProductType.SideDish)} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
+						(productType == ProductType.Drink     ? "" : "Напитки", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{page} PT:{nameof(ProductType.Drink)} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
+						(productType == ProductType.Appetizer ? "" : "Закуски", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{page} PT:{nameof(ProductType.Appetizer)} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
 					],
 
 					[
-						((page != 0) ? "◀️" : "", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{parsedArgs.Page} PT:{ProductType.MainDish} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
+						((page != 0) ? "◀️" : "", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{page - 1} PT:{nameof(parsedArgs.ProductSortType)} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
 						("Назад", $"/info BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}"),
-						(productCounter > (pageElement + 1) ? "▶️" : "", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{parsedArgs.Page + 1} PT:{ProductType.MainDish} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")
+						(productCounter > (pageElement + 1) ? "▶️" : "", $"/menu BP:{nameof(parsedArgs.Places)} IN:{parsedArgs.Index} PG:{page + 1} PT:{nameof(parsedArgs.ProductSortType)} SP:{parsedArgs.SelectorPage} BN:{parsedArgs.BildingNumber.ToString() ?? "-"}")
 					]
 				}, Telegram.Bot.Types.Enums.ParseMode.Html));
 

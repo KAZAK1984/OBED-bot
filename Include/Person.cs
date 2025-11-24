@@ -55,13 +55,27 @@ namespace OBED.Include
 		/// <summary> Для МОДЕРАЦИИ отзывов. Отметка, позволяющая перейти к отправки отредактированного сообщения</summary>
 		Moderation,
 		/// <summary> Для МОДЕРАЦИИ отзывов. Отметка, позволяющая перейти к финальному этапу отправки отредактированного сообщения</summary>
-		NoActiveModeration
-	}
+		NoActiveModeration,
+		/// <summary> Для ДОБАВЛЕНИЯ точки питания админом. Запрос не-пустой строки/названия точки</summary>
+		PlaceNameRequest,
+		NoPlaceNameRequest,
+        CorpusRequest,
+        FloorRequest,
+        DescriptionRequest,
+        TypeRequest,
+		ProductNameRequest,
+		ProductValueRequest,
+		ProductperGramRequest,
+		ProductTypeRequest,
+		ProductPlaceRequest
+    }
 	class UserState
 	{
 		public UserAction? Action { get; set; }
 		public string? ReferenceToPlace { get; set; }
 		public string? Comment { get; set; }
 		public int Rating { get; set; }
+
+		public PlaceData? TempData { get; set; }
     }
 }

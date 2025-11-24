@@ -26,13 +26,13 @@
 		{
 			ArgumentNullException.ThrowIfNull(place);
 			if (comment == null)
-				return place.AddReview(new Review(userID, rating, comment));
+				return place.AddReview(new Review(place.Place_id,userID, rating, comment));
 
 			lock (adminControlLock)
 			{
 				if (!place.Reviews.Any(x => x.UserID == userID) || !ReviewCollector.Any(x => x.review.UserID == userID))
 				{
-					ReviewCollector.Add((new Review(userID, rating, comment), place));
+					ReviewCollector.Add((new Review(place.Place_id,userID, rating, comment), place));
 					return true;
 				}
 				return false;
@@ -59,7 +59,7 @@
 				if (index < 0 || index >= ReviewCollector.Count)
 					throw new InvalidDataException($"index {index} должен быть в рамках ReviewCollector ({ReviewCollector.Count})");
 
-				ReviewCollector[index].place.AddReview(ReviewCollector[index].review.UserID,
+				ReviewCollector[index].place.AddReview(ReviewCollector[index].place.Place_id,ReviewCollector[index].review.UserID,
 					ReviewCollector[index].review.Rating, censorStr);
 
 				ReviewCollector.RemoveAt(index);

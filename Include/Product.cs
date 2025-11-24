@@ -42,7 +42,7 @@ namespace OBED.Include
                                         	""Product_id""	INTEGER,
                                         	""Place_id""	INTEGER,
                                         	""Name""	TEXT NOT NULL DEFAULT 'Unkown',
-                                        	""Value""	INTEGER NOT NULL DEFAULT -1,
+                                        	""Value""	REAL NOT NULL DEFAULT -1.0,
                                         	""perGram""	INTEGER NOT NULL DEFAULT 0,
                                         	""Type""	INTEGER NOT NULL DEFAULT 0,
                                         	PRIMARY KEY(""Product_id"" AUTOINCREMENT),

@@ -263,9 +263,9 @@ namespace OBED.Include
                 command.Parameters.Add(new SqliteParameter("@pd", pd));
                 using (SqliteDataReader reader = command.ExecuteReader())
 				{
-					if (reader.HasRows)
+					while (reader.Read())
 					{
-						while (reader.Read())
+						if (reader.HasRows)
 						{
 							long UserID = reader.GetInt64(1);
 							int Placeid = reader.GetInt32(2);

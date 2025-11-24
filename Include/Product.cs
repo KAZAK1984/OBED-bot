@@ -81,15 +81,16 @@ namespace OBED.Include
                 command.Parameters.Add(new SqliteParameter("@placeid", placeid));
                 using(SqliteDataReader reader = command.ExecuteReader())
                 {
-                    if (reader.HasRows)
+                    while (reader.Read())
                     {
-                        while(reader.Read())
+                        if (reader.HasRows)
                         {
                             string name = reader.GetString(2);
                             float value = reader.GetFloat(3);
                             bool perGram = reader.GetInt32(4) != 0;
                             ProductType type = (ProductType)reader.GetInt32(5);
                             list.Add(new Product(placeid, name, type, (value, perGram)));
+
                         }
                     }
                 }

@@ -1082,7 +1082,8 @@ class Program
                                 [(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
                                 [("Меню блокировок", "/admin ban")],
                                 [("Обновить админ-меню", "/admin ref")],
-                                [("Добавить точку питания", "/admin add")], 
+                                [("Добавить точку питания", "/admin add")],
+                                [("Добавить продукт к точке питания","/admin adm")],
                                 [("Назад", $"/start")]
                             }, ParseMode.Html);
                             break;

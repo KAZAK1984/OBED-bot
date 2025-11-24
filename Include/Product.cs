@@ -79,7 +79,6 @@ namespace OBED.Include
                 command.Connection = connection;
                 command.CommandText = $@"SELECT * FROM Products WHERE Place_id = @placeid";
                 command.Parameters.Add(new SqliteParameter("@placeid", placeid));
-                command.ExecuteNonQuery();
                 using(SqliteDataReader reader = command.ExecuteReader())
                 {
                     if (reader.HasRows)

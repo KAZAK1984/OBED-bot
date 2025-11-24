@@ -335,10 +335,10 @@ class Program
 
                         await EditOrSendMessage(msg, "Старт", new InlineKeyboardButton[][]
                         {
-                            [("Места", "/places")],
-                            [("Профиль", "/person")],
-                            [("Помощь", "/help"), ("Поддержка", "/report")],
-                            [(checkUserRole(msg.Chat.Id) == "Administrator" ? "Админ панель" : "", "/admin")]
+                        [("Места", "/places")],
+                        [("Профиль", "/person")],
+                        [("Помощь", "/help"), ("Поддержка", "/report")],
+                        [(checkUserRole(msg.Chat.Id) == "Administrator" ? "Админ панель" : "", "/admin")]
                         });
                         break;
                     }
@@ -2476,23 +2476,6 @@ class Program
         }
     }
 
-    
-
-    private static bool deleteReview(int Review_id)
-    {
-        using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
-        {
-            connection.Open();
-            var command = new SqliteCommand();
-            command.Connection = connection;
-            command.CommandText =
-                $@"DELETE FROM ""Reviews""
-                   WHERE ""Review_id"" = {Review_id};";
-            command.ExecuteNonQuery();
-            return true;
-        }
-    }
-
     private static string checkUserRole(long UserID)
     {
         using(var connection = new SqliteConnection(dbConnectionString))
@@ -2512,96 +2495,6 @@ class Program
             }
         }
         return "Unknown";
-    }
-
-    private static bool AddNewPlace(string name,int corpus,int floor,string description,int type)
-    {
-        using(var connection = new SqliteConnection(dbConnectionString))
-        {
-            connection.Open();
-            var command = new SqliteCommand();
-            command.Connection = connection;
-            command.CommandText =
-                @"CREATE TABLE IF NOT EXISTS ""Places"" (
-                	""Place_id""	INTEGER,
-                	""Name""	TEXT NOT NULL DEFAULT 'UnknownPlace',
-                	""Type""	INTEGER,
-                	""Corpus""	INTEGER,
-                	""Description""	TEXT NOT NULL DEFAULT 'Description',
-                	""Floor""	INTEGER,
-                	PRIMARY KEY(""Place_id"" AUTOINCREMENT)
-                );";
-            command.ExecuteNonQuery();
-            if (ifPlaceExists(corpus,floor,name))
-            {
-                return false;
-            }
-            command.CommandText =
-                @"INSERT INTO Places(Name,Type,Corpus,Description,Floor) VALUES (@name,@type,@corpus,@description,@floor)";
-            command.Parameters.Add(new SqliteParameter("@name", name));
-            command.Parameters.Add(new SqliteParameter("@corpus", corpus));
-            command.Parameters.Add(new SqliteParameter("@floor", floor));
-            command.Parameters.Add(new SqliteParameter("@description", description));
-            command.Parameters.Add(new SqliteParameter("@type", type));
-            int number = command.ExecuteNonQuery();
-            Console.WriteLine($"Кол-во добавленных элементов: {number}");
-            return true;
-        }
-    }
-
-    private static bool ifPlaceExists(int corpus,int floor,string name)
-    {
-        using(var connection = new SqliteConnection(dbConnectionString))
-        {
-            connection.Open();
-            var command = new SqliteCommand();
-            command.Connection = connection;
-            command.CommandText = $@"SELECT 1 FROM Places WHERE ""Corpus"" LIKE {corpus} AND ""Floor"" LIKE {floor} AND ""Name"" LIKE '{name}'";
-            return command.ExecuteScalar() != null;
-        }
-    }
-
-    private static bool AddNewProduct(string name, int price, int pergrams, string productType, long stolovayaId)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("название продукта не может быть пустым", nameof(name));
-        if (price <= 0)
-            throw new ArgumentException("цена должна быть больше 0", nameof(price));
-        if (pergrams != 0 || pergrams != 1)
-            throw new ArgumentException("вес - да или нет, то есть 1 или 0", nameof(pergrams));
-        if (string.IsNullOrWhiteSpace(productType))
-            throw new ArgumentException("тип продукта не может быть пустым", nameof(productType));
-        if (stolovayaId <= 0)
-            throw new ArgumentException("id столовой должен быть больше 0", nameof(stolovayaId));
-
-        using (var connection = new SqliteConnection(dbConnectionString))
-        {
-            connection.Open();
-            var command = new SqliteCommand();
-            command.Connection = connection;
-            command.CommandText =
-                @"CREATE TABLE IF NOT EXISTS Products (
-                Product_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                Name TEXT NOT NULL,
-                Price INTEGER NOT NULL,
-                perGrams INTEGER NOT NULL,
-                ProductType TEXT NOT NULL,
-                Place_id INTEGER NOT NULL,
-                FOREIGN KEY(Place_id) REFERENCES Places(Place_id) ON UPDATE CASCADE
-            );";
-            command.ExecuteNonQuery();
-
-            command.CommandText =
-                @"INSERT INTO Products (Name, Price, perGrams, ProductType, Place_id) 
-              VALUES (@Name, @Price, @Grams, @ProductType, @StolovayaId)";
-            command.Parameters.Add(new SqliteParameter("@Name", name));
-            command.Parameters.Add(new SqliteParameter("@Price", price));
-            command.Parameters.Add(new SqliteParameter("@Grams", pergrams));
-            command.Parameters.Add(new SqliteParameter("@ProductType", productType));
-            command.Parameters.Add(new SqliteParameter("@StolovayaId", stolovayaId));
-            command.ExecuteNonQuery();
-            return true;
-        }
     }
 
 }

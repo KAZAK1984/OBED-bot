@@ -164,17 +164,11 @@ namespace OBED.Include
                 {
 					while (reader.Read())
 					{
-						if (reader.HasRows)
-						{
 							placeid = reader.GetInt32(0);
-							Console.WriteLine($"!!!!!!!  {placeid} !!!!!!!!!!!!!!!");
 							return placeid;
-
-						}
 					}
                 }
             }
-            Console.WriteLine($"!!!!!!!  {placeid} !!!!!!!!!!!!!!!");
             return placeid;
         }
 

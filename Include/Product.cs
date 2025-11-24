@@ -81,8 +81,8 @@ namespace OBED.Include
                         while(reader.Read())
                         {
                             string name = reader.GetString(2);
-                            int value = reader.GetInt32(3);
-                            bool perGram = reader.GetBoolean(4);
+                            float value = reader.GetFloat(3);
+                            bool perGram = reader.GetInt32(4) != 0;
                             ProductType type = (ProductType)reader.GetInt32(5);
                             list.Add(new Product(placeid, name, type, (value, perGram)));
                         }

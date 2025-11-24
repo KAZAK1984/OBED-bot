@@ -2507,25 +2507,9 @@ class Program
             connection.Open();
             var command = new SqliteCommand();
             command.Connection = connection;
-            command.CommandText = $"SELECT 1 FROM TG_Users WHERE TG_id LIKE {TG_id}";
+            command.CommandText = $"SELECT 1 FROM TG_Users WHERE TG_id = @tgid";
+            command.Parameters.Add(new SqliteParameter("@tgid", TG_id));
             return command.ExecuteScalar() != null;
-        }
-    }
-
-    
-
-    private static bool deleteReview(int Review_id)
-    {
-        using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
-        {
-            connection.Open();
-            var command = new SqliteCommand();
-            command.Connection = connection;
-            command.CommandText =
-                $@"DELETE FROM ""Reviews""
-                   WHERE ""Review_id"" = {Review_id};";
-            command.ExecuteNonQuery();
-            return true;
         }
     }
 
@@ -2536,14 +2520,18 @@ class Program
             connection.Open();
             var command = new SqliteCommand();
             command.Connection = connection;
-            command.CommandText = $@"SELECT Role FROM TG_Users WHERE TG_id LIKE {UserID}";
+            command.CommandText = $@"SELECT Role FROM TG_Users WHERE TG_id = @UserID";
+            command.Parameters.Add(new SqliteParameter("@UserID", UserID));
             using (SqliteDataReader reader = command.ExecuteReader())
             {
-                if (reader.HasRows)
+                while (reader.Read())
                 {
-                    reader.Read();
-                    var role = reader.GetString(0);
-                    return role;
+                    if (reader.HasRows)
+                    {
+                        reader.Read();
+                        var role = reader.GetString(0);
+                        return role;
+                    }
                 }
             }
         }
@@ -2592,7 +2580,10 @@ class Program
             connection.Open();
             var command = new SqliteCommand();
             command.Connection = connection;
-            command.CommandText = $@"SELECT 1 FROM Places WHERE ""Corpus"" LIKE {corpus} AND ""Floor"" LIKE {floor} AND ""Name"" LIKE '{name}'";
+            command.CommandText = $@"SELECT 1 FROM Places WHERE ""Corpus"" = @corpus AND ""Floor"" = @floor AND ""Name"" = @name";
+            command.Parameters.Add(new SqliteParameter("@corpus", corpus));
+            command.Parameters.Add(new SqliteParameter("@floor", floor));
+            command.Parameters.Add(new SqliteParameter("@name", name));
             return command.ExecuteScalar() != null;
         }
     }

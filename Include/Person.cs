@@ -71,6 +71,6 @@ namespace OBED.Include
 		public string? Comment { get; set; }
 		public int Rating { get; set; }
 
-		public PlaceData? TempData { get; set; } = new PlaceData();
+		public PlaceData? TempData { get; set; }
     }
 }

@@ -20,6 +20,7 @@ class Program
         var meBot = await bot.GetMe();
 
         // TODO: переход на SQL
+        Product.Save(new Product(10, "Супчик",ProductType.MainDish, (100f, false)));
         BasePlace.LoadAllPlaces(2);
         BasePlace.LoadAllPlaces(1);
         BasePlace.LoadAllPlaces(3);

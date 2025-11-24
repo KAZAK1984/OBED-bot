@@ -44,7 +44,7 @@ namespace OBED.Include
                                         	""Name""	TEXT NOT NULL DEFAULT 'Unkown',
                                         	""Value""	INTEGER NOT NULL DEFAULT -1,
                                         	""perGram""	INTEGER NOT NULL DEFAULT 0,
-                                        	""Type""	INTEGER NOT NULL DEFAULT 1,
+                                        	""Type""	INTEGER NOT NULL DEFAULT 0,
                                         	PRIMARY KEY(""Product_id"" AUTOINCREMENT),
                                         	FOREIGN KEY(""Place_id"") REFERENCES ""Places""(""Place_id"") ON UPDATE CASCADE
                                         );";
@@ -61,6 +61,35 @@ namespace OBED.Include
                 Console.WriteLine($"Добавлено элементов: {number}");
                 return true;
             }
+        }
+
+        public static List<Product> LoadAllProducts(int placeid)
+        {
+            string dbConnectionString = "Data Source=OBED_DB.db";
+            List<Product> list = [];
+            using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
+            {
+                connection.Open();
+                var command = new SqliteCommand();
+                command.Connection = connection;
+                command.CommandText = $@"SELECT * FROM Products WHERE Place_id LIKE {placeid}";
+                command.ExecuteNonQuery();
+                using(SqliteDataReader reader = command.ExecuteReader())
+                {
+                    if (reader.HasRows)
+                    {
+                        while(reader.Read())
+                        {
+                            string name = reader.GetString(2);
+                            int value = reader.GetInt32(3);
+                            bool perGram = reader.GetBoolean(4);
+                            ProductType type = (ProductType)reader.GetInt32(5);
+                            list.Add(new Product(placeid, name, type, (value, perGram)));
+                        }
+                    }
+                }
+            }
+            return list;
         }
 
         public static bool IfProductExists(Product product)

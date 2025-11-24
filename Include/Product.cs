@@ -56,7 +56,7 @@ namespace OBED.Include
                 int pg = 0;
                 if (product.Price.perGram) { pg = 1; }
                 
-                command.CommandText = $@"INSERT INTO Products(Place_id,Name,Value,perGram,Type) VALUES ({product.Place_id},{product.Name},{product.Price.value},{pg},{(int) product.Type})";
+                command.CommandText = $@"INSERT INTO Products(Place_id,Name,Value,perGram,Type) VALUES ({product.Place_id},'{product.Name}',{product.Price.value},{pg},{(int) product.Type})";
                 int number = command.ExecuteNonQuery();
                 Console.WriteLine($"Добавлено элементов: {number}");
                 return true;

@@ -322,9 +322,6 @@ class Program
 							ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
 							usersState.TryAdd(msg.Chat.Id, new());
 							ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
-
-							if (foundUser!.UserID == 1204402944)
-								foundUser.SetRole(RoleType.Administrator);
 						}
 						if (AddUserToDatabase(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, "CommonUser"))
 						{
@@ -1321,17 +1318,20 @@ class Program
 													{
 														case 1:
 															{
-																ObjectLists.AddRangeList<Buffet>([new(ObjectLists.Buffets[ObjectLists.Buffets.Count - 1].Place_id + 1, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
+																var lastid = ObjectLists.Buffets.Count > 0 ? ObjectLists.Buffets[^1].Place_id : 0;
+																ObjectLists.AddRangeList<Buffet>([new(lastid + 1, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
 																break;
 															}
 														case 2:
 															{
-																ObjectLists.AddRangeList<Canteen>([new(ObjectLists.Buffets[ObjectLists.Buffets.Count - 1].Place_id + 1, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
+																var lastid = ObjectLists.Canteens.Count > 0 ? ObjectLists.Canteens[^1].Place_id : 0;
+																ObjectLists.AddRangeList<Canteen>([new(lastid + 1, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
 																break;
 															}
 														case 3:
 															{
-																ObjectLists.AddRangeList<Grocery>([new(ObjectLists.Buffets[ObjectLists.Buffets.Count - 1].Place_id + 1, placeData.Name, placeData.Description)]);
+																var lastid = ObjectLists.Groceries.Count > 0 ? ObjectLists.Groceries[^1].Place_id : 0;
+																ObjectLists.AddRangeList<Grocery>([new(lastid + 1, placeData.Name, placeData.Description)]);
 																break;
 															}
 													}

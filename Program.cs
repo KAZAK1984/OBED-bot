@@ -333,7 +333,7 @@ class Program
 						[("Места", "/places")],
 						[("Профиль", "/person")],
 						[("Помощь", "/help"), ("Поддержка", "/report")],
-						[(checkUserRole(msg.Chat.Id) == "Administrator" ? "Админ панель" : "", "/admin")]
+						[(checkUserRole(msg.Chat.Id) == RoleType.Administrator ? "Админ панель" : "", "/admin")]
 						});
 						break;
 					}
@@ -1058,7 +1058,7 @@ class Program
 					}
 				case ("/admin"):
 					{
-						if (checkUserRole(foundUser!.UserID) != "Administrator")
+						if (checkUserRole(foundUser!.UserID) != RoleType.Administrator)
 						{
 							await EditOrSendMessage(msg, "Ошибка при запросе: неизвестная команда.", new InlineKeyboardButton[]
 							{
@@ -1933,7 +1933,7 @@ class Program
 							throw new Exception($"No command args: {callbackQuery.Message.Text}");
 						}
 
-						if (splitStr[0] == "#admin" && checkUserRole(foundUser.UserID) == "Administrator")
+						if (splitStr[0] == "#admin" && checkUserRole(foundUser.UserID) == RoleType.Administrator)
 						{
 							switch (splitStr[1][..4])
 							{
@@ -2513,7 +2513,7 @@ class Program
 		}
 	}
 
-	private static string checkUserRole(long UserID)
+	private static RoleType checkUserRole(long UserID)
 	{
 		using (var connection = new SqliteConnection(dbConnectionString))
 		{
@@ -2527,11 +2527,28 @@ class Program
 				while (reader.Read())
 				{
 					string role = reader.GetString(0);
-					return role;
+					switch (role)
+					{
+						case ("CommonUser"):
+							{
+								return RoleType.CommonUser;
+								break;
+							}
+						case ("VipUser"):
+							{
+								return RoleType.VipUser;
+								break;
+							}
+						case ("Administrator"):
+							{
+								return RoleType.Administrator;
+								break;
+							}
+					}
 				}
 			}
 		}
-		return "Unknown";
+		return RoleType.CommonUser;
 	}
 
 	private static bool AddNewPlace(string name, int corpus, int floor, string description, int type)

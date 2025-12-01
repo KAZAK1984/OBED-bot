@@ -1312,26 +1312,24 @@ class Program
 
 												var placeData = usersState[foundUser.UserID].TempData;
 												Console.WriteLine($"{placeData.Name},{placeData.Corpus},{placeData.Floor},{placeData.Description},{type}");
-												if (AddNewPlace(placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description, type))
+												var lastid = AddNewPlace(placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description, type);
+												if (lastid.HasValue)
 												{
 													switch (type)
 													{
 														case 1:
 															{
-																var lastid = ObjectLists.Buffets.Count > 0 ? ObjectLists.Buffets[^1].Place_id : 0;
-																ObjectLists.AddRangeList<Buffet>([new(lastid + 1, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
+																ObjectLists.AddRangeList<Buffet>([new(lastid.Value, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
 																break;
 															}
 														case 2:
 															{
-																var lastid = ObjectLists.Canteens.Count > 0 ? ObjectLists.Canteens[^1].Place_id : 0;
-																ObjectLists.AddRangeList<Canteen>([new(lastid + 1, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
+																ObjectLists.AddRangeList<Canteen>([new(lastid.Value, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
 																break;
 															}
 														case 3:
 															{
-																var lastid = ObjectLists.Groceries.Count > 0 ? ObjectLists.Groceries[^1].Place_id : 0;
-																ObjectLists.AddRangeList<Grocery>([new(lastid + 1, placeData.Name, placeData.Description)]);
+																ObjectLists.AddRangeList<Grocery>([new(lastid.Value, placeData.Name, placeData.Description)]);
 																break;
 															}
 													}
@@ -2551,7 +2549,7 @@ class Program
 		return RoleType.CommonUser;
 	}
 
-	private static bool AddNewPlace(string name, int corpus, int floor, string description, int type)
+	private static int? AddNewPlace(string name, int corpus, int floor, string description, int type)
 	{
 		using (var connection = new SqliteConnection(dbConnectionString))
 		{
@@ -2571,7 +2569,7 @@ class Program
 			command.ExecuteNonQuery();
 			if (ifPlaceExists(corpus, floor, name))
 			{
-				return false;
+				return null;
 			}
 			command.CommandText =
 				@"INSERT INTO Places(Name,Type,Corpus,Description,Floor) VALUES (@name,@type,@corpus,@description,@floor)";
@@ -2582,7 +2580,9 @@ class Program
 			command.Parameters.Add(new SqliteParameter("@type", type));
 			int number = command.ExecuteNonQuery();
 			Console.WriteLine($"Кол-во добавленных элементов: {number}");
-			return true;
+			command.CommandText = "SELECT last_insert_rowid()";
+			int placeid = (int)command.ExecuteScalar();
+			return placeid;
 		}
 	}
 

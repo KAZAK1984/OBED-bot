@@ -16,6 +16,12 @@
         public List<ReportTeg> Tegs { get; private set; } = tegs;
         public string[] Screenshots { get; private set; } = screenshots ?? [];
         public DateTime Date { get; private set; } = DateTime.Now;
+
+        public void ChangeComment(string comment)
+        {
+            Comment = comment;
+            Date = DateTime.Now;
+        }
     }
 
     class ComplaintReport(long userID, string comment, List<ReportTeg> tegs, long subjectID, string[]? screenshots = null) : FeedbackReport(userID, comment, tegs, screenshots)

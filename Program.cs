@@ -518,11 +518,11 @@ class Program
 
                         if (!int.TryParse(args[(args.IndexOf('|') + 1)..args.IndexOf('_')], out page))
                         {
-                            await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /changeReport.", new InlineKeyboardButton[]
-                            {
-                                ("Назад", "/report")
-                            });
-                            throw new Exception($"Invalid command agrs: {msg.Text}");
+								await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /changeReport.", new InlineKeyboardButton[]
+								{
+									("Назад", "/report")
+								});
+								throw new Exception($"Invalid command agrs: {msg.Text}");
                         }
 
                         switch (usersState[foundUser!.UserID].Action)
@@ -552,6 +552,13 @@ class Program
 									}, ParseMode.Html);
 
                                     
+                                    break;
+                                }
+                            default:
+                                {
+                                    await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к редактированию другого репорта или отзыва на точку. Сброс ранее введённой информации...");
+                                    usersState[foundUser.UserID].Action = null;
+                                    await OnCommand("/changeReport", args, msg);
                                     break;
                                 }
                         }
@@ -2495,7 +2502,16 @@ class Program
                                     if (usersState[foundUser.UserID].Action != null)
                                         break;
 
-                                    var existingReport = ObjectLists.FeedbackReports.FirstOrDefault(x => x.UserID == foundUser.UserID);
+
+                                    if (!int.TryParse(splitStr[1][(splitStr[1].IndexOf('|') + 1)..splitStr[1].IndexOf('_')], out int reportIndex))
+                                    {
+                                        await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды #changeReport.", new InlineKeyboardButton[]
+										{
+											("Назад", "/report")
+										});
+                                        throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
+                                    }
+                                    var existingReport = ObjectLists.FeedbackReports.Where(x => x.UserID == foundUser.UserID).ElementAtOrDefault(reportIndex);
                                     if (existingReport != null)
 									{
 										if (usersState[foundUser.UserID].Comment != null)

@@ -525,14 +525,14 @@ class Program
                             throw new Exception($"Invalid command agrs: {msg.Text}");
                         }
 
-                        await EditOrSendMessage(msg, $"Введите НОВЫЙ текст отчета или удалите его отправив -", null, ParseMode.None, true);
-
                         switch (usersState[foundUser!.UserID].Action)
                         {
                             case (null):
                                 {
                                     usersState[foundUser.UserID].Action = UserAction.ReportChange;
                                     usersState[foundUser.UserID].ActionArguments = args;
+                                    await EditOrSendMessage(msg, $"Введите НОВЫЙ текст отчета или удалите его отправив -", null, ParseMode.None, true);
+
                                     break;
                                 }
                             case (UserAction.NoActiveChange):
@@ -2453,17 +2453,27 @@ class Program
                                         throw new Exception($"Error while user {foundUser.UserID} trying to send report");
                                     }
 									
+									if (usersState[foundUser.UserID].Comment == null)
+									{
+                                        await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить пустой репорт", new InlineKeyboardButton[]
+                                        {
+                                            ("Назад", $"/report")
+                                        });
+                                        throw new Exception($"Error while user {foundUser.UserID} trying to send empty report");
+
+                                    }
+
                                     switch (splitStr[1][1])
 									{
 										case ('B'):
 											{
-												ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment, []));
+												ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment!, []));
                                                 await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет о баге успешно добавлен!");
                                                 break;
 											}
                                         case ('R'):
                                             {
-                                                ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment, [])); // TODO
+                                                ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment!, [])); // TODO
                                                 await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв о боте успешно добавлен!");
                                                 break;
                                             }
@@ -2501,7 +2511,7 @@ class Program
 											{
 												("Назад", $"/report")
 											});
-                                            throw new Exception($"Error while user {foundUser.UserID} trying to send report");
+                                            throw new Exception($"Error while user {foundUser.UserID} trying to send empty report");
                                         }
 									}
 

@@ -491,14 +491,14 @@ class Program
 
                         await EditOrSendMessage(msg, $"{reports[page].Comment}", new InlineKeyboardButton[][]
                         {
-                            [((page != 0) ? "◀️" : "", $"/pickReport |{page - 1}_"), ("Редактировать", $"/changeReport |{page - 1}_"), (reports.Count > page ? "▶️" : "", $"/pickReport |{page + 1}_")],
+                            [((page != 0) ? "◀️" : "", $"/pickReport {page - 1}"), ("Редактировать", $"/changeReport {page - 1}"), (reports.Count > page ? "▶️" : "", $"/pickReport {page + 1}")],
 							[("Назад", $"/report")]
                         }, ParseMode.Html);
                         break;
                     }
                 case ("/changeReport"):
                     {
-                        if (args == null)
+                        if (args == null || !int.TryParse(args, out int reportIndex) || reportIndex < 0)
                         {
                             await EditOrSendMessage(msg, "Ошибка при запросе: /changeReport не применяется без аргументов.", new InlineKeyboardButton[]
                             {
@@ -506,19 +506,6 @@ class Program
                             });
                             throw new Exception($"No command args: {msg.Text}");
                         }
-
-						int page = 0;
-						if (args.Contains('|') && args.Contains('_'))
-						{
-							if (!int.TryParse(args[(args.IndexOf('|') + 1)..args.IndexOf('_')], out page))
-							{
-								await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /changeReport.", new InlineKeyboardButton[]
-								{
-									("Назад", "/report")
-								});
-								throw new Exception($"Invalid command agrs: {msg.Text}");
-							}
-						}
 
                         switch (usersState[foundUser!.UserID].Action)
                         {
@@ -542,7 +529,7 @@ class Program
 									Всё верно?
 									""", new InlineKeyboardButton[][]
 									{
-										[("Да", $"#changeReport {usersState[foundUser!.UserID].ActionArguments}"), ("Нет", $"/changeReport -{usersState[foundUser!.UserID].ActionArguments}")],
+										[("Да", $"#changeReport {usersState[foundUser!.UserID].ActionArguments}"), ("Нет", $"/changeReport {usersState[foundUser!.UserID].ActionArguments}")],
 										[("Назад", $"/report")]
 									}, ParseMode.Html);
 
@@ -2497,18 +2484,13 @@ class Program
                                     if (usersState[foundUser.UserID].Action != null)
                                         break;
 
-									int reportIndex = 0;
-
-                                    if (splitStr[1].Contains('|') && splitStr[1].Contains('_'))
-									{
-										if (!int.TryParse(splitStr[1][(splitStr[1].IndexOf('|') + 1)..splitStr[1].IndexOf('_')], out reportIndex))
+                                    if (!int.TryParse(splitStr[1], out int reportIndex) || reportIndex < 0)
+                                    {
+										await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды #changeReport.", new InlineKeyboardButton[]
 										{
-											await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды #changeReport.", new InlineKeyboardButton[]
-											{
-											("Назад", "/report")
-											});
-											throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
-										}
+										("Назад", "/report")
+										});
+										throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
 									}
 
                                     var existingReport = ObjectLists.FeedbackReports.Where(x => x.UserID == foundUser.UserID).ElementAtOrDefault(reportIndex);

@@ -371,7 +371,7 @@ class Program
 					{
                         if (args == null)
                         {
-                            await EditOrSendMessage(msg, "Ошибка при запросе: /sendreport не применяется без аргументов.", new InlineKeyboardButton[]
+                            await EditOrSendMessage(msg, "Ошибка при запросе: /sendReport не применяется без аргументов.", new InlineKeyboardButton[]
                             {
                                 ("Назад", "/report")
                             });
@@ -429,7 +429,7 @@ class Program
 											{
                                                 await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /sendReport.", new InlineKeyboardButton[]
 												{
-													("Назад", "/places")
+													("Назад", "/report")
 												});
 												throw new Exception($"Invalid command agrs: {msg.Text}");
 											}

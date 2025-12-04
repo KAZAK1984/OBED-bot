@@ -1960,7 +1960,117 @@ class Program
 							throw new Exception($"No command args: {callbackQuery.Message.Text}");
 						}
 
-						if (splitStr[0] == "#admin" && foundUser.Role == RoleType.Administrator)
+						if (splitStr[0] == "sendReport")
+						{
+							if (usersState[foundUser.UserID].Action != null)
+							{
+								usersState[foundUser.UserID].Action = null;
+								await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
+								{
+										("Назад", $"/report")
+								});
+								throw new Exception($"Error while user {foundUser.UserID} trying to send report");
+							}
+
+							if (usersState[foundUser.UserID].Comment == null)
+							{
+								await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить пустой репорт", new InlineKeyboardButton[]
+								{
+										("Назад", $"/report")
+								});
+								throw new Exception($"Error while user {foundUser.UserID} trying to send empty report");
+
+							}
+
+							switch (splitStr[1][1])
+							{
+								case ('B'):
+									{
+										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Bug]));
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет о баге успешно добавлен!");
+										break;
+									}
+								case ('R'):
+									{
+										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Suggestion])); // TODO
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв о боте успешно добавлен!");
+										break;
+									}
+								default:
+									{
+										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
+										{
+												("Назад", $"/report")
+										});
+										throw new Exception($"Error while user {foundUser.UserID} trying to send report");
+									}
+							}
+
+							await OnCommand("/report", null, callbackQuery.Message);
+							break;
+						}
+                        if (splitStr[0] == "changeReport")
+                        {
+                            if (usersState[foundUser.UserID].Action != null)
+                                break;
+
+                            if (!int.TryParse(splitStr[1], out int reportIndex) || reportIndex < 0)
+                            {
+                                await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды #changeReport.", new InlineKeyboardButton[]
+                                {
+                                    ("Назад", "/report")
+                                });
+                                throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
+                            }
+
+                            var existingReport = ObjectLists.FeedbackReports.Where(x => x.UserID == foundUser.UserID).ElementAtOrDefault(reportIndex);
+
+                            if (existingReport == null)
+                            {
+                                await EditOrSendMessage(callbackQuery.Message, "Ошибка: репорт не найден или был удалён.", new InlineKeyboardButton[]
+                                {
+                                        ("Назад", "/report")
+                                });
+                                throw new Exception($"Report not found for user {foundUser.UserID} at index {reportIndex}");
+                            }
+                            else
+                            {
+                                if (usersState[foundUser.UserID].Comment != null)
+                                {
+                                    if (usersState[foundUser.UserID].Comment == "-")
+                                        ObjectLists.FeedbackReports.Remove(existingReport);
+                                    else
+                                        existingReport.ChangeComment(usersState[foundUser.UserID].Comment!);
+                                }
+                                else
+                                {
+                                    await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить пустой репорт", new InlineKeyboardButton[]
+                                    {
+                                            ("Назад", $"/report")
+                                    });
+                                    throw new Exception($"Error while user {foundUser.UserID} trying to send empty report");
+                                }
+                            }
+
+                            try
+                            {
+                                await bot.AnswerCallbackQuery(callbackQuery.Id, "Репорт успешно изменён!");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex);
+                                await bot.SendHtml(callbackQuery.Message.Chat, $"""
+									Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+									<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+									""");
+                            }
+
+                            await OnCommand("/report", null, callbackQuery.Message);
+                            break;
+                        }
+
+                        if (splitStr[0] == "#admin" && foundUser.Role == RoleType.Administrator)
 						{
 							switch (splitStr[1][..4])
 							{
@@ -2430,115 +2540,6 @@ class Program
 									await OnCommand("/info", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message);
 									break;
 								}
-							case ("sendReport"):
-								{
-                                    if (usersState[foundUser.UserID].Action != null)
-									{
-                                        usersState[foundUser.UserID].Action = null;
-                                        await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
-                                        {
-                                            ("Назад", $"/report")
-                                        });
-                                        throw new Exception($"Error while user {foundUser.UserID} trying to send report");
-                                    }
-									
-									if (usersState[foundUser.UserID].Comment == null)
-									{
-                                        await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить пустой репорт", new InlineKeyboardButton[]
-                                        {
-                                            ("Назад", $"/report")
-                                        });
-                                        throw new Exception($"Error while user {foundUser.UserID} trying to send empty report");
-
-                                    }
-
-                                    switch (splitStr[1][1])
-									{
-										case ('B'):
-											{
-												ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Bug]));
-                                                await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет о баге успешно добавлен!");
-                                                break;
-											}
-                                        case ('R'):
-                                            {
-                                                ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Suggestion])); // TODO
-                                                await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв о боте успешно добавлен!");
-                                                break;
-                                            }
-										default:
-											{
-                                                await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
-												{
-													("Назад", $"/report")
-												});
-                                                throw new Exception($"Error while user {foundUser.UserID} trying to send report");
-                                            }
-                                    }
-
-                                    await OnCommand("/report", null, callbackQuery.Message);
-                                    break;
-								}
-							case ("changeReport"):
-                                {
-                                    if (usersState[foundUser.UserID].Action != null)
-                                        break;
-
-                                    if (!int.TryParse(splitStr[1], out int reportIndex) || reportIndex < 0)
-                                    {
-										await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды #changeReport.", new InlineKeyboardButton[]
-										{
-										("Назад", "/report")
-										});
-										throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
-									}
-
-                                    var existingReport = ObjectLists.FeedbackReports.Where(x => x.UserID == foundUser.UserID).ElementAtOrDefault(reportIndex);
-                                    
-									if (existingReport == null)
-                                    {
-                                        await EditOrSendMessage(callbackQuery.Message, "Ошибка: репорт не найден или был удалён.", new InlineKeyboardButton[]
-                                        {
-                                            ("Назад", "/report")
-										});
-                                        throw new Exception($"Report not found for user {foundUser.UserID} at index {reportIndex}");
-                                    }
-									else
-									{
-										if (usersState[foundUser.UserID].Comment != null)
-										{
-											if (usersState[foundUser.UserID].Comment == "-")
-												ObjectLists.FeedbackReports.Remove(existingReport);
-											else
-												existingReport.ChangeComment(usersState[foundUser.UserID].Comment!);
-										}
-										else
-										{
-											await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить пустой репорт", new InlineKeyboardButton[]
-											{
-												("Назад", $"/report")
-											});
-											throw new Exception($"Error while user {foundUser.UserID} trying to send empty report");
-										}
-									}
-
-                                    try
-                                    {
-                                        await bot.AnswerCallbackQuery(callbackQuery.Id, "Репорт успешно изменён!");
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Console.WriteLine(ex);
-                                        await bot.SendHtml(callbackQuery.Message.Chat, $"""
-										Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
-
-										<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
-										""");
-                                    }
-
-                                    await OnCommand("/report", null, callbackQuery.Message);
-                                    break;
-                                }
                             default:
 								{
 									throw new InvalidDataException($"Некорректный #аргумент: {callbackQuery.Data}");

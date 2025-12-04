@@ -443,7 +443,7 @@ class Program
 									Всё верно?
 									""", new InlineKeyboardButton[][]
                                     {
-                                        [("Да", $"#sendReport -{usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"/sendReport -{usersState[foundUser.UserID].ActionArguments}")],
+                                        [("Да", $"#sendReport {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"/sendReport {usersState[foundUser.UserID].ActionArguments}")],
                                         [("Назад", $"/report")]
                                     }, ParseMode.Html);
 
@@ -462,7 +462,6 @@ class Program
                     }
                 case ("/pickReport"):
                     {
-                        string placeName;
                         List<FeedbackReport> reports = [.. ObjectLists.FeedbackReports.Where(x => x.UserID == foundUser.UserID)];
 
                         if (!reports.Any())
@@ -476,20 +475,14 @@ class Program
 
                         int page = 0;
 
-						if (args != null)
+                        if (!string.IsNullOrEmpty(args) && !int.TryParse(args, out page))
 						{
-							if (args.Contains('|'))
+                            await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /pickReport.", new InlineKeyboardButton[]
 							{
-								if (!int.TryParse(args[(args.IndexOf('|') + 1)..args.IndexOf('_')], out page))
-								{
-									await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /pickReport.", new InlineKeyboardButton[]
-									{
-									("Назад", "/report")
-									});
-									throw new Exception($"Invalid command agrs: {msg.Text}");
-								}
-							}
-						}
+								("Назад", "/report")
+							});
+                            throw new Exception($"Invalid command agrs: {msg.Text}");
+                        }
 
                         if (page < 0)
                             page = 0;
@@ -498,7 +491,7 @@ class Program
 
                         await EditOrSendMessage(msg, $"{reports[page].Comment}", new InlineKeyboardButton[][]
                         {
-                            [((page != 0) ? "◀️" : "", $"/pickReport {args[..3]}|{page - 1}_"), ("Редактировать", $"/changeReport {args[..3]}|{page - 1}_"), (reports.Count > page ? "▶️" : "", $"/pickReport {args[..3]}|{page + 1}_")],
+                            [((page != 0) ? "◀️" : "", $"/pickReport |{page - 1}_"), ("Редактировать", $"/changeReport |{page - 1}_"), (reports.Count > page ? "▶️" : "", $"/pickReport |{page + 1}_")],
 							[("Назад", $"/report")]
                         }, ParseMode.Html);
                         break;
@@ -2476,13 +2469,13 @@ class Program
 									{
 										case ('B'):
 											{
-												ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment!, [ReportTeg.Bug]));
+												ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Bug]));
                                                 await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет о баге успешно добавлен!");
                                                 break;
 											}
                                         case ('R'):
                                             {
-                                                ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment!, [ReportTeg.Suggestion])); // TODO
+                                                ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Suggestion])); // TODO
                                                 await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв о боте успешно добавлен!");
                                                 break;
                                             }

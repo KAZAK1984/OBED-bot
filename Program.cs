@@ -1,8 +1,5 @@
 ﻿using OBED.Include;
-using System;
 using System.Collections.Concurrent;
-using System.Reflection;
-using System.Xml.Linq;
 using Telegram.Bot;
 using Telegram.Bot.Extensions;
 using Telegram.Bot.Polling;
@@ -274,7 +271,7 @@ class Program
 
                                     usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
                                     usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-                                    await OnCommand("/changeReport", $"-{usersState[foundUser.UserID].ActionArguments}", msg);
+                                    await OnCommand("/changeReport", $"{usersState[foundUser.UserID].ActionArguments}", msg);
                                     break;
                                 }
                             case (UserAction.Moderation):
@@ -486,12 +483,12 @@ class Program
 
                         if (page < 0)
                             page = 0;
-						if (page >= reports.Count())
-							page = reports.Count() - 1;
+						if (page >= reports.Count)
+							page = reports.Count - 1;
 
                         await EditOrSendMessage(msg, $"{reports[page].Comment}", new InlineKeyboardButton[][]
                         {
-                            [((page != 0) ? "◀️" : "", $"/pickReport {page - 1}"), ("Редактировать", $"/changeReport {page - 1}"), (reports.Count > page ? "▶️" : "", $"/pickReport {page + 1}")],
+                            [((page != 0) ? "◀️" : "", $"/pickReport {page - 1}"), ("Редактировать", $"/changeReport {page}"), ((reports.Count - 1)> page ? "▶️" : "", $"/pickReport {page + 1}")],
 							[("Назад", $"/report")]
                         }, ParseMode.Html);
                         break;
@@ -524,7 +521,7 @@ class Program
                                     await EditOrSendMessage(msg, $"""
 									Ваш НОВЫЙ отчет:
 									
-										{usersState[foundUser!.UserID].Comment}
+									- {usersState[foundUser!.UserID].Comment}
 									
 									Всё верно?
 									""", new InlineKeyboardButton[][]
@@ -1960,7 +1957,7 @@ class Program
 							throw new Exception($"No command args: {callbackQuery.Message.Text}");
 						}
 
-						if (splitStr[0] == "sendReport")
+						if (splitStr[0] == "#sendReport")
 						{
 							if (usersState[foundUser.UserID].Action != null)
 							{
@@ -1982,15 +1979,15 @@ class Program
 
 							}
 
-							switch (splitStr[1][1])
+							switch (splitStr[1])
 							{
-								case ('B'):
+								case ("B"):
 									{
 										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Bug]));
 										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет о баге успешно добавлен!");
 										break;
 									}
-								case ('R'):
+								case ("R"):
 									{
 										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Suggestion])); // TODO
 										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв о боте успешно добавлен!");
@@ -2009,7 +2006,7 @@ class Program
 							await OnCommand("/report", null, callbackQuery.Message);
 							break;
 						}
-                        if (splitStr[0] == "changeReport")
+                        if (splitStr[0] == "#changeReport")
                         {
                             if (usersState[foundUser.UserID].Action != null)
                                 break;

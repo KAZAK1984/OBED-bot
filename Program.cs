@@ -1,4 +1,5 @@
-﻿using OBED.Include;
+﻿using Microsoft.Data.Sqlite;
+using OBED.Include;
 using System.Collections.Concurrent;
 using Telegram.Bot;
 using Telegram.Bot.Extensions;
@@ -9,61 +10,78 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 class Program
 {
+	private static string dbConnectionString = "Data Source=OBED_DB.db";
 	static async Task Main()
 	{
 		using var cts = new CancellationTokenSource();
-		var token = Environment.GetEnvironmentVariable("TOKEN");
+		var token = "8343345535:AAFo4dhmrQ9eAe90IjryQak4xEfCiYvvr4U";
 		var bot = new TelegramBotClient(token!, cancellationToken: cts.Token);
 		var meBot = await bot.GetMe();
 
 		// TODO: переход на SQL
-		List<Product> products1 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
-			new("Main2", ProductType.MainDish, (250, true)), new("Side2", ProductType.SideDish, (300, true)), new("Drink2", ProductType.Drink, (350, true)), new("Appetizer2", ProductType.Appetizer, (400, true)),
-			new("Main3", ProductType.MainDish, (450, false)), new("Side3", ProductType.SideDish, (500, false)), new("Drink3", ProductType.Drink, (550, false)), new("Appetizer3", ProductType.Appetizer, (600, false))];
+		using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
+		{
+			connection.Open();
+			using(SqliteCommand command = new SqliteCommand())
+			{
+				command.Connection = connection;
+				CreateTableTGUsers(command);
+				CreateTablePlaces(command);
+				Product.CreateTableProducts(command);
+				BasePlace.CreateTableReviews(command);
+			}
+		}
 
-		List<Product> products2 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false))];
+		BasePlace.LoadAllPlaces(2);
+		BasePlace.LoadAllPlaces(1);
+		BasePlace.LoadAllPlaces(3);
+		//List<Product> products1 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
+		//    new("Main2", ProductType.MainDish, (250, true)), new("Side2", ProductType.SideDish, (300, true)), new("Drink2", ProductType.Drink, (350, true)), new("Appetizer2", ProductType.Appetizer, (400, true)),
+		//    new("Main3", ProductType.MainDish, (450, false)), new("Side3", ProductType.SideDish, (500, false)), new("Drink3", ProductType.Drink, (550, false)), new("Appetizer3", ProductType.Appetizer, (600, false))];
 
-		List<Product> products3 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
-			new("Main2", ProductType.MainDish, (250, true))];
+		//List<Product> products2 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false))];
 
-		List<Product> products4 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
-			new("Main2", ProductType.MainDish, (250, true)), new("Side2", ProductType.SideDish, (300, true))];
+		//List<Product> products3 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
+		//    new("Main2", ProductType.MainDish, (250, true))];
 
-		List<Product> products5 = [new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)),
-			new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)),
-			new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false))];
+		//List<Product> products4 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
+		//    new("Main2", ProductType.MainDish, (250, true)), new("Side2", ProductType.SideDish, (300, true))];
 
-		List<Review> reviews1 = [new(123456789, 10), new(123456789, 9), new(123456789, 8), new(123456789, 7), new(123456789, 6), new(123456789, 5), new(123456789, 4)];
+		//List<Product> products5 = [new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)),
+		//    new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)),
+		//    new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false))];
 
-		List<Review> reviews2 = [new(123456789, 10), new(123456789, 9), new(123456789, 8, "8"), new(123456789, 7, "7"), new(123456789, 6), new(123456789, 5, "5"), new(123456789, 4)];
+		//List<Review> reviews1 = [new(3,123456789, 10), new(3,123456789, 9), new(3,123456789, 8), new(3,123456789, 7), new(3,123456789, 6), new(3,123456789, 5), new(3,123456789, 4)];
 
-		List<Review> reviews3 = [new(123456789, 7, "Old"), new(123456789, 9, "Old"), new(123456789, 5, "Old"), new(123456789, 10, "Old"), new(123456789, 6, "Old"), new(123456789, 8, "Old"), new(123456789, 4, "Old")];
-		reviews3.Add(new(987654321, 3, "New"));
+		//List<Review> reviews2 = [new(2,123456789, 10), new(2,123456789, 9), new(2,123456789, 8, "8"), new(2,123456789, 7, "7"), new(2,123456789, 6), new(2,123456789, 5, "5"), new(2,123456789, 4)];
 
-		ObjectLists.AddRangeList<Canteen>([new("Canteen1", 1, 1, null, reviews3, products1, null),
-			new("Canteen2", 2, 2, null, reviews2, products2, null),
-			new("Canteen3", 2, 2, null, reviews1, products3, null),
-			new("Canteen4", 2, 2, null, null, null, null),
-			new("Canteen5", 2, 2, null, null, null, null),
-			new("Canteen6", 2, 2, null, null, null, null),
-			new("Canteen7", 2, 2, null, null, null, null),
-			new("Canteen8", 2, 2, null, null, null, null),
-			new("Canteen9", 2, 2, null, null, null, null),
-			new("Canteen10", 2, 2, null, null, null, null),
-			new("Canteen11", 2, 2, null, null, null, null),
-			new("Canteen12", 2, 2, null, null, null, null),
-			new("Canteen13", 2, 2, null, null, null, null),
-			new("Canteen14", 2, 2, null, null, null, null),
-			new("Canteen15", 2, 2, null, reviews1, products5, null),
-			new("Canteen16", 3, 3, null, reviews1, products4, null)]);
-		ObjectLists.AddRangeList<Buffet>([new("Buffet1", 1, 1, null, reviews1, products1, null),
-			new("Buffet2", 2, 2, null, reviews2, products2, null),
-			new("Buffet3", 3, 3, null, reviews3, products4, null)]);
-		ObjectLists.AddRangeList<Grocery>([new("Grocery1", null, reviews1, products1, null),
-			new("Grocery2", null, reviews2, products2, null),
-			new("Grocery3", null, reviews3, products4, null)]);
+		//List<Review> reviews3 = [new(1,123456789, 7, "Old"), new(1,123456789, 9, "Old"), new(1,123456789, 5, "Old"), new(1,123456789, 10, "Old"), new(1,123456789, 6, "Old"), new(1,123456789, 8, "Old"), new(1,123456789, 4, "Old")];
+		//reviews3.Add(new(1,987654321, 3, "New"));
 
-		reviews3.Add(new(611614145, 3, "SuperNew"));
+		//ObjectLists.AddRangeList<Canteen>([new(1,"Canteen1", 1, 1, null, reviews3, products1, null),
+		//    new(2,"Canteen2", 2, 2, null, reviews2, products2, null),
+		//    new(3,"Canteen3", 2, 2, null, reviews1, products3, null),
+		//    new(4,"Canteen4", 2, 2, null, null, null, null),
+		//    new(5,"Canteen5", 2, 2, null, null, null, null),
+		//    new(6,"Canteen6", 2, 2, null, null, null, null),
+		//    new(7,"Canteen7", 2, 2, null, null, null, null),
+		//    new(8,"Canteen8", 2, 2, null, null, null, null),
+		//    new(9,"Canteen9", 2, 2, null, null, null, null),
+		//    new(10,"Canteen10", 2, 2, null, null, null, null),
+		//    new(11,"Canteen11", 2, 2, null, null, null, null),
+		//    new(12,"Canteen12", 2, 2, null, null, null, null),
+		//    new(13,"Canteen13", 2, 2, null, null, null, null),
+		//    new(14,"Canteen14", 2, 2, null, null, null, null),
+		//    new(15,"Canteen15", 2, 2, null, reviews1, products5, null),
+		//    new(16,"Canteen16", 3, 3, null, reviews1, products4, null)]);
+		//ObjectLists.AddRangeList<Buffet>([new(17,"Buffet1", 1, 1, null, reviews1, products1, null),
+		//    new(18,"Buffet2", 2, 2, null, reviews2, products2, null),
+		//    new(19,"Buffet3", 3, 3, null, reviews3, products4, null)]);
+		//ObjectLists.AddRangeList<Grocery>([new(20,"Grocery1", null, reviews1, products1, null),
+		//    new(21,"Grocery2", null, reviews2, products2, null),
+		//    new(22,"Grocery3", null, reviews3, products4, null)]);
+
+		//reviews3.Add(new(1,611614145, 3, "SuperNew"));
 
 		// TODO: переход на noSQL
 		ConcurrentDictionary<long, UserState> usersState = [];
@@ -84,11 +102,11 @@ class Program
 					else if (element.obj is CallbackQuery callbackQuery)
 						await OnDirectCallbackQuery(callbackQuery);
 
-                    SecurityManager.RequestQueue.TryDequeue(out _);
-                    --i;
-                }
+					SecurityManager.RequestQueue.TryDequeue(out _);
+					--i;
+				}
 			}
-        }
+		}
 
 		static string HtmlEscape(string? s) => (s ?? "-").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 
@@ -113,7 +131,7 @@ class Program
 					{
 						Console.WriteLine(ex);
 						await Task.Delay(2000, cts.Token);
-					}	
+					}
 				}
 			}
 			else
@@ -126,10 +144,10 @@ class Program
 			await Task.Delay(2000, cts.Token);
 		}
 
-        async Task OnStandarMessage(Message msg, UpdateType type)
+		async Task OnStandarMessage(Message msg, UpdateType type)
 		{
 			ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
-			
+
 			if (foundUser != null)
 			{
 				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
@@ -145,7 +163,7 @@ class Program
 			await OnDirectMessage(msg, type);
 		}
 
-        async Task OnDirectMessage(Message msg, UpdateType type)
+		async Task OnDirectMessage(Message msg, UpdateType type)
 		{
 			switch (msg)
 			{
@@ -171,57 +189,57 @@ class Program
 							break;
 						}
 
-                        switch (usersState[foundUser.UserID].Action)
-							{
-								case (UserAction.RatingRequest):
+						switch (usersState[foundUser.UserID].Action)
+						{
+							case (UserAction.RatingRequest):
+								{
+									if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
 									{
-										if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
-										{
-											usersState[foundUser.UserID].Rating = rating;
-											usersState[foundUser.UserID].Action = UserAction.CommentRequest;
-											await EditOrSendMessage(msg, $"Введите текст отзыва или откажитесь от сообщения отправив -", null, ParseMode.None, true);
-											break;
-										}
-
-										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
+										usersState[foundUser.UserID].Rating = rating;
+										usersState[foundUser.UserID].Action = UserAction.CommentRequest;
+										await EditOrSendMessage(msg, $"Введите текст отзыва или откажитесь от сообщения отправив -", null, ParseMode.None, true);
 										break;
 									}
-								case (UserAction.RatingChange):
-									{
-										if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
-										{
-											usersState[foundUser.UserID].Rating = rating;
-											usersState[foundUser.UserID].Comment = "saved_mark";
-											usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-											await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
-											break;
-										}
 
-										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
+									await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
+									break;
+								}
+							case (UserAction.RatingChange):
+								{
+									if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
+									{
+										usersState[foundUser.UserID].Rating = rating;
+										usersState[foundUser.UserID].Comment = "saved_mark";
+										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
+										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
 										break;
 									}
-								case (UserAction.CommentRequest):
-									{
-										if (string.IsNullOrWhiteSpace(msg.Text))
-										{
-											await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
-											break;
-										}
 
-										if (msg.Text.Length > 720)
-										{
-											await EditOrSendMessage(msg, $"""
+									await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
+									break;
+								}
+							case (UserAction.CommentRequest):
+								{
+									if (string.IsNullOrWhiteSpace(msg.Text))
+									{
+										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
+										break;
+									}
+
+									if (msg.Text.Length > 720)
+									{
+										await EditOrSendMessage(msg, $"""
 											Ошибка при обработке! Комментарий не может быть больше 720 символов. Текущая длина сообщения: {msg.Text.Length}.
 											Убедитесь, что ваше новое сообщение содержит текст или откажитесь от сообщения отправив -
 											""", null, ParseMode.Html, true);
-											break;
-										}
-										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-										if (usersState[foundUser.UserID].Comment == "-")
-											usersState[foundUser.UserID].Comment = null;
+										break;
+									}
+									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+									if (usersState[foundUser.UserID].Comment == "-")
+										usersState[foundUser.UserID].Comment = null;
 
-										usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
-										await EditOrSendMessage(msg, $"""
+									usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
+									await EditOrSendMessage(msg, $"""
 									Ваш отзыв:
 									
 										• Оценка: {usersState[foundUser.UserID].Rating}
@@ -229,39 +247,64 @@ class Program
 									
 									Всё верно?
 									""", new InlineKeyboardButton[][]
-										{
+									{
 										[("Да", $"#sendReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"callback_resetAction")],
-										}, ParseMode.Html);
-										break;
-									}
-								case (UserAction.CommentChange):
+									}, ParseMode.Html);
+									break;
+								}
+							case (UserAction.CommentChange):
+								{
+									if (string.IsNullOrWhiteSpace(msg.Text))
 									{
-										if (string.IsNullOrWhiteSpace(msg.Text))
-										{
-											await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
-											break;
-										}
-
-										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-										usersState[foundUser.UserID].Rating = 0;
-										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
+										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
 										break;
 									}
-								case (UserAction.Moderation):
+
+									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+									usersState[foundUser.UserID].Rating = 0;
+									usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
+									await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
+									break;
+								}
+							case (UserAction.Moderation):
+								{
+									if (string.IsNullOrWhiteSpace(msg.Text))
 									{
-										if (string.IsNullOrWhiteSpace(msg.Text))
-										{
-											await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или удалите сообщение отправив -", null, ParseMode.None, true);
-											break;
-										}
-
-										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-										usersState[foundUser.UserID].Action = UserAction.NoActiveModeration;
-										await OnCommand("/admin", "chkA", msg);
+										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или удалите сообщение отправив -", null, ParseMode.None, true);
 										break;
 									}
-							}
+
+									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+									usersState[foundUser.UserID].Action = UserAction.NoActiveModeration;
+									await OnCommand("/admin", "chkA", msg);
+									break;
+								}
+							case (UserAction.PlaceNameRequest):
+								{
+									await OnCommand("/admin", "add", msg);
+									break;
+								}
+							case (UserAction.CorpusRequest):
+								{
+									await OnCommand("/admin", "add", msg);
+									break;
+								}
+							case (UserAction.FloorRequest):
+								{
+									await OnCommand("/admin", "add", msg);
+									break;
+								}
+							case (UserAction.DescriptionRequest):
+								{
+									await OnCommand("/admin", "add", msg);
+									break;
+								}
+							case (UserAction.TypeRequest):
+								{
+									await OnCommand("/admin", "add", msg);
+									break;
+								}
+						}
 						break;
 					}
 			}
@@ -292,17 +335,18 @@ class Program
 							ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
 							usersState.TryAdd(msg.Chat.Id, new());
 							ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
-
-							if (foundUser!.UserID == 1204402944)
-								foundUser.SetRole(RoleType.Administrator);
+						}
+						if (AddUserToDatabase(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, "CommonUser"))
+						{
+							Console.WriteLine("Добавлен новый пользователь");
 						}
 
 						await EditOrSendMessage(msg, "Старт", new InlineKeyboardButton[][]
 						{
-							[("Места", "/places")],
-							[("Профиль", "/person")],
-							[("Помощь", "/help"), ("Поддержка", "/report")],
-							[(foundUser!.Role == RoleType.Administrator ? "Админ панель" : "", "/admin")]
+						[("Места", "/places")],
+						[("Профиль", "/person")],
+						[("Помощь", "/help"), ("Поддержка", "/report")],
+						[(checkUserRole(msg.Chat.Id) == RoleType.Administrator ? "Админ панель" : "", "/admin")]
 						});
 						break;
 					}
@@ -310,7 +354,7 @@ class Program
 					{
 						await EditOrSendMessage(msg, $"""
 						Ваше имя: {foundUser!.Username} ({foundUser!.UserID})
-						Ваш статус: {foundUser!.Role}
+						Ваш статус: {checkUserRole(foundUser!.UserID)}
 						""", new InlineKeyboardButton[]
 						{
 							("Назад","/start")
@@ -1027,7 +1071,7 @@ class Program
 					}
 				case ("/admin"):
 					{
-						if (foundUser!.Role != RoleType.Administrator)
+						if (checkUserRole(foundUser!.UserID) != RoleType.Administrator)
 						{
 							await EditOrSendMessage(msg, "Ошибка при запросе: неизвестная команда.", new InlineKeyboardButton[]
 							{
@@ -1046,7 +1090,10 @@ class Program
 							{
 								[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
 								[("Меню блокировок", "/admin ban")],
-								[("Обновить админ-меню", "/admin ref"), ("Назад", $"/start")]
+								[("Обновить админ-меню", "/admin ref")],
+								[("Добавить точку питания", "/admin add")],
+								[("Добавить продукт к точке питания","/admin adm")],
+								[("Назад", $"/start")]
 							}, ParseMode.Html);
 							break;
 						}
@@ -1073,9 +1120,48 @@ class Program
 									{
 										[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
 										[("Меню блокировок", "/admin ban")],
-										[("Обновить админ-меню", "/admin"), ("Назад", $"/start")]
+										[("Обновить админ-меню", "/admin")],
+										[("Добавить точку питания","/admin add")],
+										[("Добавить продукт к точке питания","/admin adm")],
+										[("Назад", $"/start")]
 									}, ParseMode.Html);
 									break;
+								}
+							case ("adm"):
+								{
+									await EditOrSendMessage(msg, "Эта штука ещё не реализована", new InlineKeyboardButton[][]
+										{
+										[("Назад","/start")]
+										});
+									break;
+									//switch (usersState[foundUser!.UserID].Action)
+									//{
+									//	case (null):
+									//		{
+									//			await EditOrSendMessage(msg, "Выбор типа точек", new InlineKeyboardButton[][]
+									//				 {
+									//					  [("Столовые", "/admin adm C")],
+									//					  [("Буфеты", "/admin adm C")],
+									//					  [("Внешние магазины", "/admin adm G")],
+									//					  [("Назад", "/start")]
+									//				 });
+									//			usersState[foundUser!.UserID].Action = UserAction.ProductNameRequest;
+									//			break;
+									//		}
+									//	case (UserAction.ProductPlaceRequest):
+									//		{
+									//			switch (args[4])
+									//			{
+									//				case ('C'):
+									//					{
+
+									//						break; ;
+									//					}
+									//			}
+									//			break;
+									//		}
+									//}
+									//break;
 								}
 							case ("chk"):
 								{
@@ -1159,6 +1245,130 @@ class Program
 													("Назад", "/admin chk")
 												});
 												throw new Exception($"Invalid command agrs: {msg.Text}");
+											}
+									}
+									break;
+								}
+							case ("add"):
+								{
+
+									switch (usersState[foundUser!.UserID].Action)
+									{
+										case (null):
+											{
+												usersState[foundUser!.UserID].Action = UserAction.PlaceNameRequest;
+												usersState[foundUser!.UserID].TempData = new PlaceData();
+												await EditOrSendMessage(msg, "Введите название");
+												break;
+											}
+										case (UserAction.PlaceNameRequest):
+											{
+												if (string.IsNullOrWhiteSpace(msg.Text))
+												{
+													await EditOrSendMessage(msg, "Ошибка! Название не может быть пустым", new InlineKeyboardButton[]
+													{
+														("Назад","/admin add")
+													});
+													usersState[foundUser.UserID].Action = null;
+													break;
+												}
+												usersState[foundUser.UserID].TempData.Name = msg.Text.Trim();
+												usersState[foundUser.UserID].Action = UserAction.CorpusRequest;
+												await EditOrSendMessage(msg, "Введите корпус");
+												break;
+											}
+										case (UserAction.CorpusRequest):
+											{
+												if (!int.TryParse(msg.Text?.Trim(), out int corpus))
+												{
+													await EditOrSendMessage(msg, "Ошибка при парсинге данных! Убедитесь что вы ввели исключительно цифры.", new InlineKeyboardButton[]
+													{
+														("Назад","/admin add")
+													});
+													usersState[foundUser.UserID].Action = null;
+													break;
+												}
+												usersState[foundUser.UserID].TempData.Corpus = corpus;
+												usersState[foundUser.UserID].Action = UserAction.FloorRequest;
+												await EditOrSendMessage(msg, "Введите этаж");
+												break;
+											}
+										case (UserAction.FloorRequest):
+											{
+												if (!int.TryParse(msg.Text?.Trim(), out int floor))
+												{
+													await EditOrSendMessage(msg, "Ошибка при парсинге данных! Убедитесь что вы ввели исключительно цифры.", new InlineKeyboardButton[]
+													{
+														("Назад","/admin add")
+													});
+													usersState[foundUser.UserID].Action = null;
+													break;
+												}
+
+												usersState[foundUser.UserID].TempData.Floor = floor;
+												usersState[foundUser.UserID].Action = UserAction.DescriptionRequest;
+												await EditOrSendMessage(msg, "Введите описание");
+												break;
+											}
+										case (UserAction.DescriptionRequest):
+											{
+												if (string.IsNullOrWhiteSpace(msg.Text))
+												{
+													await EditOrSendMessage(msg, "Ошибка! Описание не может быть пустым", new InlineKeyboardButton[]
+													{
+														("Назад","/admin add")
+													});
+													usersState[foundUser.UserID].Action = null;
+													break;
+												}
+												usersState[foundUser.UserID].TempData.Description = msg.Text.Trim();
+												usersState[foundUser.UserID].Action = UserAction.TypeRequest;
+												await EditOrSendMessage(msg, "Введите тип точки питания:\n1 - буфет\n2 - столовая\n3 - продуктовый");
+												break;
+											}
+										case (UserAction.TypeRequest):
+											{
+												if (!int.TryParse(msg.Text?.Trim(), out int type) || type < 1 || type > 3)
+												{
+													await EditOrSendMessage(msg, "Ошибка! Введите число от 1 до 3, где 1 - Буфет, 2 - Столовая, 3 - Продуктовый", new InlineKeyboardButton[]
+													{
+														("Назад","/admin add")
+													});
+													usersState[foundUser.UserID].Action = null;
+													break;
+												}
+
+												var placeData = usersState[foundUser.UserID].TempData;
+												Console.WriteLine($"{placeData.Name},{placeData.Corpus},{placeData.Floor},{placeData.Description},{type}");
+												var lastid = AddNewPlace(placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description, type);
+												if (lastid.HasValue)
+												{
+													switch (type)
+													{
+														case 1:
+															{
+																ObjectLists.AddRangeList<Buffet>([new(lastid.Value, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
+																break;
+															}
+														case 2:
+															{
+																ObjectLists.AddRangeList<Canteen>([new(lastid.Value, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
+																break;
+															}
+														case 3:
+															{
+																ObjectLists.AddRangeList<Grocery>([new(lastid.Value, placeData.Name, placeData.Description)]);
+																break;
+															}
+													}
+													Console.WriteLine("Таблица создана");
+												}
+												usersState[foundUser!.UserID].Action = null;
+												await EditOrSendMessage(msg, "Ну вроде сохранил", new InlineKeyboardButton[][]
+												{
+													[("Назад", "/admin")]
+												}, ParseMode.Html);
+												break;
 											}
 									}
 									break;
@@ -1361,7 +1571,7 @@ class Program
 												break;
 											}
 									}
-									
+
 									int realReviewIndex = basePlace.Reviews.IndexOf(reviews[reviewIndex]);
 									await EditOrSendMessage(msg, $"""
 									Вы уверены, что хотите удалить отзыв на {basePlace.Name} от @{(ObjectLists.Persons.TryGetValue(reviews[reviewIndex].UserID, out Person? user) ? user.Username : "???")}?
@@ -1438,7 +1648,7 @@ class Program
 													x.Value.suspiciousClass,
 													x.Value.time
 												}).ToList();
-											
+
 												await EditOrSendMessage(msg, $"""
 												С кого снять замедление?
 
@@ -1573,8 +1783,8 @@ class Program
 													<i><b>Траблмейкинг</b></i> - "общая" причина блокировки. Следует использовать только в случаях, когда причины выше неактуальны.
 													""", new InlineKeyboardButton[][]
 													{
-														[("1 | Спам атака", "/admin banB-L_0")], 
-														[("2 | Оскорбительный отзыв", "/admin banB-M_0")], 
+														[("1 | Спам атака", "/admin banB-L_0")],
+														[("2 | Оскорбительный отзыв", "/admin banB-M_0")],
 														[("3 | Траблмейкинг", "/admin banB-H_0")],
 														[("Назад", "/admin ban")]
 													}, ParseMode.Html);
@@ -1674,14 +1884,14 @@ class Program
 			}
 		}
 
-        async Task OnStandartCallbackQuery(CallbackQuery callbackQuery)
+		async Task OnStandartCallbackQuery(CallbackQuery callbackQuery)
 		{
-            ArgumentNullException.ThrowIfNull(callbackQuery.Data);
-            ArgumentNullException.ThrowIfNull(callbackQuery.Message);
+			ArgumentNullException.ThrowIfNull(callbackQuery.Data);
+			ArgumentNullException.ThrowIfNull(callbackQuery.Message);
 
-            ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
-            if (foundUser != null)
-            {
+			ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
+			if (foundUser != null)
+			{
 				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
 				{
 					await bot.SendMessage(callbackQuery.Message.Chat, $"Вы были заблокированы за: {reason ?? "Траблмейкинг"}.");
@@ -1689,29 +1899,29 @@ class Program
 				}
 
 				if (SecurityManager.SecurityCheck<CallbackQuery>(foundUser.UserID, callbackQuery))
-                    return;
+					return;
 			}
 
 			await OnDirectCallbackQuery(callbackQuery);
-        }
+		}
 
-        async Task OnDirectCallbackQuery(CallbackQuery callbackQuery)
+		async Task OnDirectCallbackQuery(CallbackQuery callbackQuery)
 		{
 			ArgumentNullException.ThrowIfNull(callbackQuery.Data);
 			ArgumentNullException.ThrowIfNull(callbackQuery.Message);
 
-            ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
+			ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
 			if (foundUser == null && callbackQuery.Data != "/start")
 				return;
 
-            switch (callbackQuery.Data[0])
+			switch (callbackQuery.Data[0])
 			{
 				case ('/'):
 					{
 						try
 						{
-                            await bot.AnswerCallbackQuery(callbackQuery.Id);
-                        }
+							await bot.AnswerCallbackQuery(callbackQuery.Id);
+						}
 						catch (Exception ex)
 						{
 							Console.WriteLine(ex);
@@ -1749,7 +1959,7 @@ class Program
 							throw new Exception($"No command args: {callbackQuery.Message.Text}");
 						}
 
-						if (splitStr[0] == "#admin" && foundUser.Role == RoleType.Administrator)
+						if (splitStr[0] == "#admin" && checkUserRole(foundUser.UserID) == RoleType.Administrator)
 						{
 							switch (splitStr[1][..4])
 							{
@@ -1759,7 +1969,7 @@ class Program
 											AdminControl.SetReviewStatus(usersState[foundUser.UserID].Comment!);
 										else
 										{
-											AdminControl.ReviewCollector[0].place.AddReview(AdminControl.ReviewCollector[0].review.UserID, AdminControl.ReviewCollector[0].review.Rating, null);
+											AdminControl.ReviewCollector[0].place.AddReview(AdminControl.ReviewCollector[0].place.Place_id, AdminControl.ReviewCollector[0].review.UserID, AdminControl.ReviewCollector[0].review.Rating, null, 0);
 											AdminControl.SetReviewStatus();
 										}
 
@@ -1776,7 +1986,7 @@ class Program
 											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
 											""");
 										}
-										
+
 										await OnCommand("/admin", "chk", callbackQuery.Message);
 										break;
 									}
@@ -1797,7 +2007,7 @@ class Program
 											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
 											""");
 										}
-										
+
 										await OnCommand("/admin", "chk", callbackQuery.Message);
 										break;
 									}
@@ -1818,7 +2028,7 @@ class Program
 											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
 											""");
 										}
-										
+
 										await OnCommand("/admin", "chk", callbackQuery.Message);
 										break;
 									}
@@ -2115,7 +2325,7 @@ class Program
 											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
 											""");
 										}
-										
+
 										await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
 									}
 									else
@@ -2144,7 +2354,7 @@ class Program
 										break;
 									}
 
-									if (place.DeleteReview(foundUser.UserID))	
+									if (place.DeleteReview(foundUser.UserID))
 									{
 										try
 										{
@@ -2159,7 +2369,7 @@ class Program
 											<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
 											""");
 										}
-										
+
 										await OnCommand("/info", splitStr[1], callbackQuery.Message);
 										break;
 									}
@@ -2257,6 +2467,183 @@ class Program
 						break;
 					}
 			}
+		}
+	}
+	private static void GetUsers()
+	{
+		using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
+		{
+			var users = new List<string>();
+			connection.Open();
+			SqliteCommand command = new SqliteCommand();
+			command.Connection = connection;
+			command.CommandText = $"SELECT * FROM TG_Users";
+			var reader = command.ExecuteReader();
+			while (reader.Read())
+			{
+				users.Add(reader.GetString(0));
+			}
+			foreach (var user in users)
+			{
+				Console.WriteLine($"{user}");
+			}
+		}
+	}
+	private static bool AddUserToDatabase(string username, long TG_id, string role)
+	{
+		using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
+		{
+			connection.Open();
+
+			// проверка на наличие таблицы
+			using (SqliteCommand command = new SqliteCommand())
+			{
+				command.Connection = connection;
+				CreateTableTGUsers(command);
+
+				if (ifUserExists(TG_id))
+				{
+					return false;
+				}
+				else
+				{
+					//добавление юзера
+					command.CommandText = @"INSERT INTO TG_Users(Name,TG_id,Role) VALUES (@username,@TG_id,@role)";
+					command.Parameters.Add(new SqliteParameter("@username", username));
+					command.Parameters.Add(new SqliteParameter("@TG_id", TG_id));
+					command.Parameters.Add(new SqliteParameter("@role", role));
+					command.ExecuteNonQuery();
+					return true;
+				}
+			}
+		}
+	}
+
+	private static void CreateTableTGUsers(SqliteCommand command)
+	{
+
+		command.CommandText =
+					@"CREATE TABLE IF NOT EXISTS TG_Users (
+										List_id	INTEGER,
+									    Name	TEXT DEFAULT 'Unknown',
+										TG_id	INTEGER NOT NULL UNIQUE,
+										Role	TEXT NOT NULL DEFAULT 'CommonUser',
+										PRIMARY KEY(""List_id"" AUTOINCREMENT)
+										);";
+		command.ExecuteNonQuery();
+	}
+
+	private static bool ifUserExists(long TG_id)
+	{
+		using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
+		{
+			connection.Open();
+			var command = new SqliteCommand();
+			command.Connection = connection;
+			command.CommandText = $"SELECT 1 FROM TG_Users WHERE TG_id = @tgid";
+			command.Parameters.Add(new SqliteParameter("@tgid", TG_id));
+			return command.ExecuteScalar() != null;
+		}
+	}
+
+	private static RoleType checkUserRole(long UserID)
+	{
+		using (var connection = new SqliteConnection(dbConnectionString))
+		{
+			connection.Open();
+			var command = new SqliteCommand();
+			command.Connection = connection;
+			command.CommandText = $@"SELECT Role FROM TG_Users WHERE TG_id = @UserID";
+			command.Parameters.Add(new SqliteParameter("@UserID", UserID));
+			using (SqliteDataReader reader = command.ExecuteReader())
+			{
+				while (reader.Read())
+				{
+					string role = reader.GetString(0);
+					switch (role)
+					{
+						case ("CommonUser"):
+							{
+								return RoleType.CommonUser;
+							}
+						case ("VipUser"):
+							{
+								return RoleType.VipUser;
+							}
+						case ("Administrator"):
+							{
+								return RoleType.Administrator;
+							}
+					}
+				}
+			}
+		}
+		return RoleType.CommonUser;
+	}
+
+	private static long? AddNewPlace(string name, int corpus, int floor, string description, int type)
+	{
+		using (var connection = new SqliteConnection(dbConnectionString))
+		{
+			connection.Open();
+			var command = new SqliteCommand();
+			command.Connection = connection;
+			command.CommandText =
+				@"CREATE TABLE IF NOT EXISTS ""Places"" (
+                	""Place_id""	INTEGER,
+                	""Name""	TEXT NOT NULL DEFAULT 'UnknownPlace',
+                	""Type""	INTEGER,
+                	""Corpus""	INTEGER,
+                	""Description""	TEXT NOT NULL DEFAULT 'Description',
+                	""Floor""	INTEGER,
+                	PRIMARY KEY(""Place_id"" AUTOINCREMENT)
+                );";
+			command.ExecuteNonQuery();
+			if (ifPlaceExists(corpus, floor, name))
+			{
+				return null;
+			}
+			command.CommandText =
+				@"INSERT INTO Places(Name,Type,Corpus,Description,Floor) VALUES (@name,@type,@corpus,@description,@floor)";
+			command.Parameters.Add(new SqliteParameter("@name", name));
+			command.Parameters.Add(new SqliteParameter("@corpus", corpus));
+			command.Parameters.Add(new SqliteParameter("@floor", floor));
+			command.Parameters.Add(new SqliteParameter("@description", description));
+			command.Parameters.Add(new SqliteParameter("@type", type));
+			int number = command.ExecuteNonQuery();
+			Console.WriteLine($"Кол-во добавленных элементов: {number}");
+			command.CommandText = "SELECT last_insert_rowid()";
+			long placeid = (long)command.ExecuteScalar();
+			return placeid;
+		}
+	}
+	private static void CreateTablePlaces(SqliteCommand command)
+	{
+		command.CommandText =
+				@"CREATE TABLE IF NOT EXISTS ""Places"" (
+                	""Place_id""	INTEGER,
+                	""Name""	TEXT NOT NULL DEFAULT 'UnknownPlace',
+                	""Type""	INTEGER,
+                	""Corpus""	INTEGER,
+                	""Description""	TEXT NOT NULL DEFAULT 'Description',
+                	""Floor""	INTEGER,
+                	PRIMARY KEY(""Place_id"" AUTOINCREMENT)
+                );";
+		command.ExecuteNonQuery();
+	}
+
+	private static bool ifPlaceExists(int corpus, int floor, string name)
+	{
+		using (var connection = new SqliteConnection(dbConnectionString))
+		{
+			connection.Open();
+			var command = new SqliteCommand();
+			command.Connection = connection;
+			command.CommandText = $@"SELECT 1 FROM Places WHERE ""Corpus"" = @corpus AND ""Floor"" = @floor AND ""Name"" = @name";
+			command.Parameters.Add(new SqliteParameter("@corpus", corpus));
+			command.Parameters.Add(new SqliteParameter("@floor", floor));
+			command.Parameters.Add(new SqliteParameter("@name", name));
+			return command.ExecuteScalar() != null;
 		}
 	}
 }

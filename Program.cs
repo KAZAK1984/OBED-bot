@@ -259,7 +259,7 @@ class Program
 
                                     usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
                                     usersState[foundUser.UserID].Action = UserAction.NoActiveReport;
-                                    await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ActionArguments}", msg);
+                                    await OnCommand("/sendReport", $"{usersState[foundUser.UserID].ActionArguments}", msg);
                                     break;
 								}
                             case (UserAction.Moderation):
@@ -397,14 +397,14 @@ class Program
                                     usersState[foundUser.UserID].Action = null;
 
                                     string message = "";
-                                    switch (usersState[foundUser.UserID].ActionArguments[1])
+                                    switch (usersState[foundUser.UserID].ActionArguments)
                                     {
-                                        case ('B'):
+										case ("B"):
                                             {
                                                 message = "Сообщение об ошибке:";
                                                 break;
                                             }
-                                        case ('R'):
+                                        case ("R"):
                                             {
                                                 message = "Ваш отзыв на бота:";
                                                 break;
@@ -420,14 +420,14 @@ class Program
                                     }
 
                                     await EditOrSendMessage(msg, $"""
-										{message}
+									{message}
 
-											{usersState[foundUser.UserID].Comment}
+									- {usersState[foundUser.UserID].Comment}
 									
 									Всё верно?
 									""", new InlineKeyboardButton[][]
                                     {
-                                        [("Да", $"#sendReport {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"/sendReport -{usersState[foundUser.UserID].ActionArguments}")],
+                                        [("Да", $"#sendReport {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"/sendReport {usersState[foundUser.UserID].ActionArguments}")],
                                         [("Назад", $"/start {args[1..]}")]
                                     }, ParseMode.Html);
 
@@ -1858,6 +1858,46 @@ class Program
 							throw new Exception($"No command args: {callbackQuery.Message.Text}");
 						}
 
+						if (splitStr[0] == "#sendReport")
+						{
+							if (usersState[foundUser.UserID].Action != null)
+							{
+								usersState[foundUser.UserID].Action = null;
+								await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
+								{
+											("Назад", $"/report")
+								});
+								throw new Exception($"Error while user {foundUser.UserID} trying to send report");
+							}
+
+							switch (splitStr[1])
+							{
+								case ("R"):
+									{
+										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment, []));
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет о баге успешно добавлен!");
+										break;
+									}
+								case ("B"):
+									{
+										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment, [])); // TODO
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв о боте успешно добавлен!");
+										break;
+									}
+								default:
+									{
+										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
+										{
+													("Назад", $"/report")
+										});
+										throw new Exception($"Error while user {foundUser.UserID} trying to send report");
+									}
+							}
+
+							await OnCommand("/report", null, callbackQuery.Message);
+							break;
+						}
+
 						if (splitStr[0] == "#admin" && foundUser.Role == RoleType.Administrator)
 						{
 							switch (splitStr[1][..4])
@@ -2327,45 +2367,6 @@ class Program
 
 									await OnCommand("/info", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message);
 									break;
-								}
-							case ("sendReport"):
-								{
-                                    if (usersState[foundUser.UserID].Action != null)
-									{
-                                        usersState[foundUser.UserID].Action = null;
-                                        await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
-                                        {
-                                            ("Назад", $"/report")
-                                        });
-                                        throw new Exception($"Error while user {foundUser.UserID} trying to send report");
-                                    }
-									
-                                    switch (splitStr[1][1])
-									{
-										case ('R'):
-											{
-												ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment, []));
-                                                await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет о баге успешно добавлен!");
-                                                break;
-											}
-                                        case ('B'):
-                                            {
-                                                ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment, [])); // TODO
-                                                await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв о боте успешно добавлен!");
-                                                break;
-                                            }
-										default:
-											{
-                                                await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
-												{
-													("Назад", $"/report")
-												});
-                                                throw new Exception($"Error while user {foundUser.UserID} trying to send report");
-                                            }
-                                    }
-
-                                    await OnCommand("/report", null, callbackQuery.Message);
-                                    break;
 								}
 							default:
 								{

@@ -183,23 +183,23 @@ class Program
 											break;
 										}
 
-										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
+									await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
+									break;
+								}
+								case (UserAction.RatingChange):
+								{
+									if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
+									{
+										usersState[foundUser.UserID].Rating = rating;
+										usersState[foundUser.UserID].Comment = "saved_mark";
+										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
+										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ActionArguments}", msg);
 										break;
 									}
-								case (UserAction.RatingChange):
-									{
-										if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
-										{
-											usersState[foundUser.UserID].Rating = rating;
-											usersState[foundUser.UserID].Comment = "saved_mark";
-											usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-											await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
-											break;
-										}
 
 										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
 										break;
-									}
+								}
 								case (UserAction.CommentRequest):
 									{
 										if (string.IsNullOrWhiteSpace(msg.Text))
@@ -229,39 +229,65 @@ class Program
 									
 									Всё верно?
 									""", new InlineKeyboardButton[][]
-										{
-										[("Да", $"#sendReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"callback_resetAction")],
-										}, ParseMode.Html);
-										break;
-									}
-								case (UserAction.CommentChange):
 									{
-										if (string.IsNullOrWhiteSpace(msg.Text))
-										{
-											await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
-											break;
-										}
-
-										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-										usersState[foundUser.UserID].Rating = 0;
-										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
-										break;
-									}
-								case (UserAction.Moderation):
+										[("Да", $"#sendReview {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"{((foundUser != null) ? ("/info") : ("/start"))}")],
+									}, ParseMode.Html);
+									break;
+								}
+							case (UserAction.CommentChange):
+								{
+									if (string.IsNullOrWhiteSpace(msg.Text))
 									{
-										if (string.IsNullOrWhiteSpace(msg.Text))
-										{
-											await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или удалите сообщение отправив -", null, ParseMode.None, true);
-											break;
-										}
-
-										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-										usersState[foundUser.UserID].Action = UserAction.NoActiveModeration;
-										await OnCommand("/admin", "chkA", msg);
+										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
 										break;
 									}
-							}
+
+									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+									usersState[foundUser.UserID].Rating = 0;
+									usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
+									await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ActionArguments}", msg);
+									break;
+								}
+							case (UserAction.ReportRequest):
+								{
+                                    if (string.IsNullOrWhiteSpace(msg.Text))
+                                    {
+                                        await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
+                                        break;
+                                    }
+
+                                    usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+                                    usersState[foundUser.UserID].Action = UserAction.NoActiveReport;
+                                    await OnCommand("/sendReport", $"{usersState[foundUser.UserID].ActionArguments}", msg);
+                                    break;
+								}
+							case (UserAction.ReportChange):
+                                {
+                                    if (string.IsNullOrWhiteSpace(msg.Text))
+                                    {
+                                        await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
+                                        break;
+                                    }
+
+                                    usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+                                    usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
+                                    await OnCommand("/changeReport", $"{usersState[foundUser.UserID].ActionArguments}", msg);
+                                    break;
+                                }
+                            case (UserAction.Moderation):
+                                {
+                                    if (string.IsNullOrWhiteSpace(msg.Text))
+                                    {
+                                        await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или удалите сообщение отправив -", null, ParseMode.None, true);
+                                        break;
+                                    }
+
+                                    usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+                                    usersState[foundUser.UserID].Action = UserAction.NoActiveModeration;
+                                    await OnCommand("/admin", "chkA", msg);
+                                    break;
+                                }
+                        }
 						break;
 					}
 			}
@@ -329,13 +355,195 @@ class Program
 				case ("/report"):
 					{
 						// TODO: Сообщать нам только о тех ошибках, которые реально мешают юзерам, а не о фантомных стикерах
-						await EditOrSendMessage(msg, $"TODO: report", new InlineKeyboardButton[][]
+						await EditOrSendMessage(msg, $"Что вы хотите сделать?", new InlineKeyboardButton[][]
 							{
+								[("Сообщить об ошибке","/sendReport B")],
+								[("Оставить отзыв о боте","/sendReport R")],
+								[("Изменить отчет", "/pickReport")],
 								[("Назад","/start")]
 							});
 						break;
 					}
-				case ("/places"):
+				case ("/sendReport"):
+					{
+                        if (args == null)
+                        {
+                            await EditOrSendMessage(msg, "Ошибка при запросе: /sendReport не применяется без аргументов.", new InlineKeyboardButton[]
+                            {
+                                ("Назад", "/report")
+                            });
+                            throw new Exception($"No command args: {msg.Text}");
+                        }
+
+                        switch (usersState[foundUser.UserID].Action)
+                        {
+                            case (null):
+                                {
+                                    usersState[foundUser.UserID].Action = UserAction.ReportRequest;
+                                    usersState[foundUser.UserID].ActionArguments = args;
+
+									switch(args)
+									{
+										case ("B"):
+											{
+                                                await EditOrSendMessage(msg, $"Введите сообщение об ошибке, указав в чем была проблема, условия возникновения бага, и ожидаемое поведение", null, ParseMode.None, true);
+                                                break;
+											}
+                                        case ("R"):
+                                            {
+                                                await EditOrSendMessage(msg, $"Напишите, что вы думаете об этом боте, или какие у вас есть предложения по его улучшению", null, ParseMode.None, true);
+                                                break;
+                                            }
+										default:
+											{
+                                                await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /sendReport.", new InlineKeyboardButton[]
+												{
+													("Назад", "/report")
+												});
+                                                throw new Exception($"Invalid command agrs: {msg.Text}");
+											}
+                                    }
+                                    break;
+                                }
+                            case (UserAction.NoActiveReport):
+                                {
+                                    usersState[foundUser.UserID].Action = null;
+
+                                    string message = "";
+                                    switch (usersState[foundUser.UserID].ActionArguments)
+                                    {
+										case ("B"):
+                                            {
+                                                message = "Сообщение об ошибке:";
+                                                break;
+                                            }
+                                        case ("R"):
+                                            {
+                                                message = "Ваш отзыв на бота:";
+                                                break;
+                                            }
+										default:
+											{
+                                                await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /sendReport.", new InlineKeyboardButton[]
+												{
+													("Назад", "/report")
+												});
+												throw new Exception($"Invalid command agrs: {msg.Text}");
+											}
+                                    }
+
+                                    await EditOrSendMessage(msg, $"""
+									{message}
+
+									- {usersState[foundUser.UserID].Comment}
+									
+									Всё верно?
+									""", new InlineKeyboardButton[][]
+                                    {
+                                        [("Да", $"#sendReport {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"/sendReport {usersState[foundUser.UserID].ActionArguments}")],
+                                        [("Назад", $"/report")]
+                                    }, ParseMode.Html);
+
+                                    break;
+                                }
+                            default:
+                                {
+                                    await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к редактированию другого репорта или отзыва на точку. Сброс ранее введённой информации...");
+                                    usersState[foundUser.UserID].Action = null;
+                                    await OnCommand("/sendReport", args, msg);
+                                    break;
+                                }
+                        }
+
+                        break;
+                    }
+                case ("/pickReport"):
+                    {
+                        List<FeedbackReport> reports = [.. ObjectLists.FeedbackReports.Where(x => x.UserID == foundUser.UserID)];
+
+                        if (!reports.Any())
+                        {
+                            await EditOrSendMessage(msg, $"Вы не оставили ни одного репорта", new InlineKeyboardButton[]
+                            {
+                                ("Назад", $"/report")
+                            }, ParseMode.Html);
+                            break;
+                        }
+
+                        int page = 0;
+
+                        if (!string.IsNullOrEmpty(args) && !int.TryParse(args, out page))
+						{
+                            await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /pickReport.", new InlineKeyboardButton[]
+							{
+								("Назад", "/report")
+							});
+                            throw new Exception($"Invalid command agrs: {msg.Text}");
+                        }
+
+                        if (page < 0)
+                            page = 0;
+						if (page >= reports.Count)
+							page = reports.Count - 1;
+
+                        await EditOrSendMessage(msg, $"{reports[page].Comment}", new InlineKeyboardButton[][]
+                        {
+                            [((page != 0) ? "◀️" : "", $"/pickReport {page - 1}"), ("Редактировать", $"/changeReport {page}"), ((reports.Count - 1)> page ? "▶️" : "", $"/pickReport {page + 1}")],
+							[("Назад", $"/report")]
+                        }, ParseMode.Html);
+                        break;
+                    }
+                case ("/changeReport"):
+                    {
+                        if (args == null || !int.TryParse(args, out int reportIndex) || reportIndex < 0)
+                        {
+                            await EditOrSendMessage(msg, "Ошибка при запросе: /changeReport не применяется без аргументов.", new InlineKeyboardButton[]
+                            {
+                                ("Назад", "/report")
+                            });
+                            throw new Exception($"No command args: {msg.Text}");
+                        }
+
+                        switch (usersState[foundUser!.UserID].Action)
+                        {
+                            case (null):
+                                {
+                                    usersState[foundUser.UserID].Action = UserAction.ReportChange;
+                                    usersState[foundUser.UserID].ActionArguments = args;
+                                    await EditOrSendMessage(msg, $"Введите НОВЫЙ текст отчета или удалите его отправив -", null, ParseMode.None, true);
+
+                                    break;
+                                }
+                            case (UserAction.NoActiveChange):
+                                {
+                                    usersState[foundUser!.UserID].Action = null;
+
+                                    await EditOrSendMessage(msg, $"""
+									Ваш НОВЫЙ отчет:
+									
+									- {usersState[foundUser!.UserID].Comment}
+									
+									Всё верно?
+									""", new InlineKeyboardButton[][]
+									{
+										[("Да", $"#changeReport {usersState[foundUser!.UserID].ActionArguments}"), ("Нет", $"/changeReport {usersState[foundUser!.UserID].ActionArguments}")],
+										[("Назад", $"/report")]
+									}, ParseMode.Html);
+
+                                    
+                                    break;
+                                }
+                            default:
+                                {
+                                    await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к редактированию другого репорта или отзыва на точку. Сброс ранее введённой информации...");
+                                    usersState[foundUser.UserID].Action = null;
+                                    await OnCommand("/changeReport", args, msg);
+                                    break;
+                                }
+                        }
+                        break;
+                    }
+                case ("/places"):
 					{
 						await EditOrSendMessage(msg, "Выбор типа точек", new InlineKeyboardButton[][]
 						{
@@ -865,8 +1073,8 @@ class Program
 						{
 							case (null):
 								{
-									usersState[foundUser!.UserID].Action = UserAction.RatingRequest;
-									usersState[foundUser!.UserID].ReferenceToPlace = args;
+									usersState[foundUser.UserID].Action = UserAction.RatingRequest;
+									usersState[foundUser.UserID].ActionArguments = args;
 
 									await EditOrSendMessage(msg, $"Введите оценку от 1⭐️ до 10⭐️", null, ParseMode.None, true);
 									break;
@@ -958,16 +1166,16 @@ class Program
 						{
 							case ('R'):
 								{
-									usersState[foundUser!.UserID].Action = UserAction.RatingChange;
-									usersState[foundUser!.UserID].ReferenceToPlace = args[1..];
+									usersState[foundUser.UserID].Action = UserAction.RatingChange;
+									usersState[foundUser.UserID].ActionArguments = args[1..];
 
 									await EditOrSendMessage(msg, $"Введите НОВУЮ оценку от 1⭐️ до 10⭐️", null, ParseMode.None, true);
 									break;
 								}
 							case ('C'):
 								{
-									usersState[foundUser!.UserID].Action = UserAction.CommentChange;
-									usersState[foundUser!.UserID].ReferenceToPlace = args[1..];
+									usersState[foundUser.UserID].Action = UserAction.CommentChange;
+									usersState[foundUser.UserID].ActionArguments = args[1..];
 
 									await EditOrSendMessage(msg, $"Введите НОВЫЙ текст отзыва или удалите его отправив -", null, ParseMode.None, true);
 									break;
@@ -1001,7 +1209,7 @@ class Program
 										if (usersState[foundUser!.UserID].Rating == 0)
 											usersState[foundUser!.UserID].Rating = place.Reviews.First(x => x.UserID == foundUser!.UserID).Rating;
 										if (usersState[foundUser!.UserID].Comment == "saved_mark")
-											usersState[foundUser!.UserID].Comment = null;    // Если есть сохранённый коммент - его бы нашли в админ контроле
+											usersState[foundUser!.UserID].Comment = place.Reviews.First(x => x.UserID == foundUser!.UserID).Comment;
 									}
 
 									if (usersState[foundUser!.UserID].Comment == "-")
@@ -1017,7 +1225,7 @@ class Program
 									Всё верно?
 									""", new InlineKeyboardButton[][]
 									{
-										[("Да", $"#changeReview {usersState[foundUser!.UserID].ReferenceToPlace}"), ("Нет", $"/changeReview -{usersState[foundUser!.UserID].ReferenceToPlace}")],
+										[("Да", $"#changeReview {usersState[foundUser!.UserID].ActionArguments}"), ("Нет", $"/changeReview -{usersState[foundUser!.UserID].ActionArguments}")],
 										[("Назад", $"/info {args[1..]}")]
 									}, ParseMode.Html);
 									break;
@@ -1742,14 +1950,124 @@ class Program
 						var splitStr = callbackQuery.Data.Split(' ');
 						if (splitStr.Length < 2)
 						{
-							await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректный аргументов.", new InlineKeyboardButton[]
+							await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректные аргументы.", new InlineKeyboardButton[]
 							{
 											("Назад", "/places")
 							});
 							throw new Exception($"No command args: {callbackQuery.Message.Text}");
 						}
 
-						if (splitStr[0] == "#admin" && foundUser.Role == RoleType.Administrator)
+						if (splitStr[0] == "#sendReport")
+						{
+							if (usersState[foundUser.UserID].Action != null)
+							{
+								usersState[foundUser.UserID].Action = null;
+								await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
+								{
+										("Назад", $"/report")
+								});
+								throw new Exception($"Error while user {foundUser.UserID} trying to send report");
+							}
+
+							if (usersState[foundUser.UserID].Comment == null)
+							{
+								await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить пустой репорт", new InlineKeyboardButton[]
+								{
+										("Назад", $"/report")
+								});
+								throw new Exception($"Error while user {foundUser.UserID} trying to send empty report");
+
+							}
+
+							switch (splitStr[1])
+							{
+								case ("B"):
+									{
+										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Bug]));
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет о баге успешно добавлен!");
+										break;
+									}
+								case ("R"):
+									{
+										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Suggestion])); // TODO
+										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв о боте успешно добавлен!");
+										break;
+									}
+								default:
+									{
+										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить репорт", new InlineKeyboardButton[]
+										{
+												("Назад", $"/report")
+										});
+										throw new Exception($"Error while user {foundUser.UserID} trying to send report");
+									}
+							}
+
+							await OnCommand("/report", null, callbackQuery.Message);
+							break;
+						}
+                        if (splitStr[0] == "#changeReport")
+                        {
+                            if (usersState[foundUser.UserID].Action != null)
+                                break;
+
+                            if (!int.TryParse(splitStr[1], out int reportIndex) || reportIndex < 0)
+                            {
+                                await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды #changeReport.", new InlineKeyboardButton[]
+                                {
+                                    ("Назад", "/report")
+                                });
+                                throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
+                            }
+
+                            var existingReport = ObjectLists.FeedbackReports.Where(x => x.UserID == foundUser.UserID).ElementAtOrDefault(reportIndex);
+
+                            if (existingReport == null)
+                            {
+                                await EditOrSendMessage(callbackQuery.Message, "Ошибка: репорт не найден или был удалён.", new InlineKeyboardButton[]
+                                {
+                                        ("Назад", "/report")
+                                });
+                                throw new Exception($"Report not found for user {foundUser.UserID} at index {reportIndex}");
+                            }
+                            else
+                            {
+                                if (usersState[foundUser.UserID].Comment != null)
+                                {
+                                    if (usersState[foundUser.UserID].Comment == "-")
+                                        ObjectLists.FeedbackReports.Remove(existingReport);
+                                    else
+                                        existingReport.ChangeComment(usersState[foundUser.UserID].Comment!);
+                                }
+                                else
+                                {
+                                    await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке отправить пустой репорт", new InlineKeyboardButton[]
+                                    {
+                                            ("Назад", $"/report")
+                                    });
+                                    throw new Exception($"Error while user {foundUser.UserID} trying to send empty report");
+                                }
+                            }
+
+                            try
+                            {
+                                await bot.AnswerCallbackQuery(callbackQuery.Id, "Репорт успешно изменён!");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex);
+                                await bot.SendHtml(callbackQuery.Message.Chat, $"""
+									Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+									<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+									""");
+                            }
+
+                            await OnCommand("/report", null, callbackQuery.Message);
+                            break;
+                        }
+
+                        if (splitStr[0] == "#admin" && foundUser.Role == RoleType.Administrator)
 						{
 							switch (splitStr[1][..4])
 							{
@@ -2059,7 +2377,7 @@ class Program
 
 						if (!char.IsLetter(splitStr[1][1]) || !int.TryParse(splitStr[1][2..splitStr[1].IndexOf('_')], out int index))
 						{
-							await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректный аргументов.", new InlineKeyboardButton[]
+							await EditOrSendMessage(callbackQuery.Message, $"Ошибка при #{callbackQuery.Data} запросе: некорректные аргументы.", new InlineKeyboardButton[]
 							{
 											("Назад", "/places")
 							});
@@ -2116,15 +2434,15 @@ class Program
 											""");
 										}
 										
-										await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
+										await OnCommand("/info", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message);
 									}
 									else
 									{
 										await EditOrSendMessage(callbackQuery.Message, $"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].Rating}⭐️| {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}", new InlineKeyboardButton[]
 										{
-											("Назад", $"/info {usersState[foundUser.UserID].ReferenceToPlace}")
+											("Назад", $"/info {usersState[foundUser.UserID].ActionArguments}")
 										});
-										throw new Exception($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].ReferenceToPlace} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
+										throw new Exception($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].ActionArguments} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
 									}
 
 									break;
@@ -2216,10 +2534,10 @@ class Program
 										""");
 									}
 
-									await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
+									await OnCommand("/info", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message);
 									break;
 								}
-							default:
+                            default:
 								{
 									throw new InvalidDataException($"Некорректный #аргумент: {callbackQuery.Data}");
 								}
@@ -2227,33 +2545,8 @@ class Program
 						break;
 					}
 				default:
-					{
-						if (callbackQuery.Data == "callback_resetAction")
-						{
-							try
-							{
-								await bot.AnswerCallbackQuery(callbackQuery.Id);
-							}
-							catch (Exception ex)
-							{
-								Console.WriteLine(ex);
-								await bot.SendHtml(callbackQuery.Message.Chat, $"""
-								Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
-
-								<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
-								""");
-							}
-
-							if (foundUser == null)
-								await OnCommand("/start", null, callbackQuery.Message!);
-							else
-							{
-								usersState[foundUser.UserID].Action = null;
-								await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message!);
-							}
-						}
-						else
-							Console.WriteLine($"Зафиксирован необработанный callbackQuery {callbackQuery.Data}");
+					{	
+						Console.WriteLine($"Зафиксирован необработанный callbackQuery {callbackQuery.Data}");
 						break;
 					}
 			}

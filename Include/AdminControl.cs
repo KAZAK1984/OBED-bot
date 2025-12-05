@@ -1,4 +1,7 @@
-﻿namespace OBED.Include
+﻿using System.Xml.Linq;
+using Telegram.Bot.Types;
+
+namespace OBED.Include
 {
 	static class AdminControl
 	{
@@ -10,12 +13,13 @@
 			ArgumentNullException.ThrowIfNull(review);
 			ArgumentNullException.ThrowIfNull(place);
 			if (review.Comment == null)
-				return place.AddReview(review);
+				return place.AddReview(review,0);
 
 			lock (adminControlLock)
 			{
 				if (!place.Reviews.Any(x => x.UserID == review.UserID) || !ReviewCollector.Any(x => x.review.UserID == review.UserID))
 				{
+					place.Save(review,1);
 					ReviewCollector.Add((review, place));
 					return true;
 				}
@@ -26,12 +30,13 @@
 		{
 			ArgumentNullException.ThrowIfNull(place);
 			if (comment == null)
-				return place.AddReview(new Review(place.Place_id,userID, rating, comment));
+				return place.AddReview(new Review(place.Place_id,userID, rating, comment),0);
 
 			lock (adminControlLock)
 			{
 				if (!place.Reviews.Any(x => x.UserID == userID) || !ReviewCollector.Any(x => x.review.UserID == userID))
 				{
+					place.Save(new Review(place.Place_id,userID,rating,comment), 1);
 					ReviewCollector.Add((new Review(place.Place_id,userID, rating, comment), place));
 					return true;
 				}
@@ -46,7 +51,7 @@
 					throw new InvalidDataException($"index {index} должен быть в рамках ReviewCollector ({ReviewCollector.Count})");
 
 				if (status)
-					ReviewCollector[index].place.AddReview(ReviewCollector[index].review);
+					ReviewCollector[index].place.AddReview(ReviewCollector[index].review,0);
 
 				ReviewCollector.RemoveAt(index);
 			}
@@ -60,7 +65,7 @@
 					throw new InvalidDataException($"index {index} должен быть в рамках ReviewCollector ({ReviewCollector.Count})");
 
 				ReviewCollector[index].place.AddReview(ReviewCollector[index].place.Place_id,ReviewCollector[index].review.UserID,
-					ReviewCollector[index].review.Rating, censorStr);
+					ReviewCollector[index].review.Rating, censorStr,0);
 
 				ReviewCollector.RemoveAt(index);
 			}

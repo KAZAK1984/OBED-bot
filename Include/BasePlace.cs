@@ -69,7 +69,7 @@ namespace OBED.Include
 		//abstract public void Load(string file);
 		//abstract public void Save(string file);
 
-		public virtual bool Save(Review review)
+		public virtual bool Save(Review review,int mod)
 		{
 			if (review.UserID <= 0)
 				throw new ArgumentException("UserID должно быть больше 0", nameof(review.UserID));
@@ -82,20 +82,37 @@ namespace OBED.Include
 				command.Connection = connection;
 				//Создание таблицы если её нету
 				CreateTableReviews(command);
-                if (IfUserHaveReviewOnPlace(review.UserID, review.Place_Id))
+                if (IfUserHaveReviewOnPlace(review.UserID, review.Place_Id,out long? review_id))
 				{
-					return false;
+					command.CommandText = @"UPDATE Reviews SET Comment = @com,Rating = @rating,Date = @date,OnMod = @mod WHERE Review_id = @reviewid";
+					if(review.Comment == null)
+					{
+						command.CommandText = @"UPDATE Reviews SET Rating = @rating,Date = @date WHERE Review_id = @reviewid";
+					}
+					command.Parameters.Add(new SqliteParameter("@mod", mod));
+					command.Parameters.Add(new SqliteParameter("@com", review.Comment));
+					command.Parameters.Add(new SqliteParameter("@rating", review.Rating));
+					command.Parameters.Add(new SqliteParameter("@date", review.Date));
+					command.Parameters.Add(new SqliteParameter("@reviewid", review_id));
+					int idk = command.ExecuteNonQuery();
+					Console.WriteLine($"Кол-во добавленных элементов: {idk}");
+					return idk != 0;
 				}
-				command.CommandText =
-					@"INSERT INTO Reviews(Users_id,Place_id,Comment,Rating,Date) VALUES (@UserID,@Place,@comment,@Rating,@date)";
+				command.CommandText = 
+						@"INSERT INTO Reviews(Users_id,Place_id,Comment,Rating,Date) VALUES (@UserID,@Place,@comment,@Rating,@date)";
+				if (review.Comment == null)
+				{
+					command.CommandText =
+						@"INSERT INTO Reviews(Users_id,Place_id,Rating,Date) VALUES (@UserID,@Place,@Rating,@date)";
+				}
+				command.Parameters.Add(new SqliteParameter("@comment", review.Comment));
 				command.Parameters.Add(new SqliteParameter("@UserID", review.UserID));
 				command.Parameters.Add(new SqliteParameter("@Rating", review.Rating));
-				command.Parameters.Add(new SqliteParameter("@comment", review.Comment));
 				command.Parameters.Add(new SqliteParameter("@Place", review.Place_Id));
 				command.Parameters.Add(new SqliteParameter("@date", review.Date));
 				int number = command.ExecuteNonQuery();
 				Console.WriteLine($"Кол-во добавленных элементов: {number}");
-				return true;
+				return number != 0;
 			}
 		}
 
@@ -109,6 +126,7 @@ namespace OBED.Include
                 	""Comment""	TEXT,
                 	""Rating""	INTEGER NOT NULL,
                     ""Date"" TEXT,
+					""OnMod"" INTEGER,
                 	FOREIGN KEY(""Users_id"") REFERENCES ""TG_Users""(""TG_id"") ON UPDATE CASCADE,
                     FOREIGN KEY(""Place_id"") REFERENCES ""Places""(Place_id) ON UPDATE CASCADE,
                     PRIMARY KEY(""Review_id"" AUTOINCREMENT)
@@ -245,7 +263,7 @@ namespace OBED.Include
 				connection.Open();
                 var command = new SqliteCommand();
                 command.Connection = connection;
-                command.CommandText = $@"SELECT * FROM Reviews WHERE Place_id = @pd";
+                command.CommandText = $@"SELECT * FROM Reviews WHERE Place_id = @pd AND OnMod = 0";
                 command.Parameters.Add(new SqliteParameter("@pd", pd));
                 using (SqliteDataReader reader = command.ExecuteReader())
 				{
@@ -263,7 +281,7 @@ namespace OBED.Include
 			return list;
         }
 
-		public virtual bool AddReview(Review review)
+		public virtual bool AddReview(Review review,int mod)
 		{
 			ArgumentNullException.ThrowIfNull(review);
 
@@ -271,14 +289,13 @@ namespace OBED.Include
 			{
 				if (!Reviews.Any(x => x.UserID == review.UserID))
 				{
-					Reviews.Add(review);
-					Save(review);
+					if (Save(review,mod)) { Reviews.Add(review); }
 					return true;
 				}
 				return false;
 			}
 		}
-		public virtual bool AddReview(long placeid,long userID, int rating, string? comment)
+		public virtual bool AddReview(long placeid,long userID, int rating, string? comment,int mod)
 		{
 			lock (reviewLock)
 			{
@@ -286,8 +303,7 @@ namespace OBED.Include
 				{
 					Review review = new Review(placeid, userID, rating, comment);
 
-                    Reviews.Add(review);
-					Save(review);
+					if (Save(review,mod)) { Reviews.Add(review); }
 					return true;
 				}
 				return false;
@@ -316,16 +332,19 @@ namespace OBED.Include
 				connection.Open();
 				var command = new SqliteCommand();
 				command.Connection = connection;
-				command.CommandText = $@"DELETE FROM Reviews WHERE Place_id = @Place_id AND Users_id = @UserID";
-                command.Parameters.Add(new SqliteParameter("@Place_id", review.Place_Id));
-                command.Parameters.Add(new SqliteParameter("@UserID", review.UserID));
-                int number = command.ExecuteNonQuery();
-				return number != 0;
+				if(IfUserHaveReviewOnPlace(review.UserID,review.Place_Id,out long? Reviewid))
+				{
+					command.CommandText = $@"UPDATE Reviews SET OnMod = 1 WHERE Review_id = @reviewid";
+					command.Parameters.Add(new SqliteParameter("@reviewid", Reviewid));
+					int number = command.ExecuteNonQuery();
+					return number != 0;
+				}
+				return false;
 			}
         }
 
 		public virtual Review? GetReview(long userID) => Reviews.FirstOrDefault(x => x.UserID == userID);
-        private static bool IfUserHaveReviewOnPlace(long UserID, long Place)
+        private static bool IfUserHaveReviewOnPlace(long UserID, long Place,out long? Review_id)
         {
             using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
             {
@@ -338,7 +357,8 @@ namespace OBED.Include
                     ""Users_id"" = @UserID AND ""Place_id"" = @place";
 				command.Parameters.Add(new SqliteParameter("@UserID", UserID));
                 command.Parameters.Add(new SqliteParameter("@place", Place));
-                return command.ExecuteScalar() != null;
+				Review_id = (long?)command.ExecuteScalar();
+				return Review_id != null;
             }
         }
     }

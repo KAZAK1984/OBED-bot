@@ -1258,67 +1258,82 @@ class Program
 											{
 												usersState[foundUser!.UserID].Action = UserAction.PlaceNameRequest;
 												usersState[foundUser!.UserID].TempData = new PlaceData();
-												await EditOrSendMessage(msg, "введите название");
+												await EditOrSendMessage(msg, "Введите название");
 												break;
 											}
 										case (UserAction.PlaceNameRequest):
 											{
 												if (string.IsNullOrWhiteSpace(msg.Text))
 												{
-													await EditOrSendMessage(msg, "ошибка! название не может быть пустым");
+													await EditOrSendMessage(msg, "Ошибка! Название не может быть пустым", new InlineKeyboardButton[]
+													{
+														("Назад","/admin add")
+													});
 													usersState[foundUser.UserID].Action = null;
 													break;
 												}
 												usersState[foundUser.UserID].TempData.Name = msg.Text.Trim();
 												usersState[foundUser.UserID].Action = UserAction.CorpusRequest;
-												await EditOrSendMessage(msg, "введите корпус");
+												await EditOrSendMessage(msg, "Введите корпус");
 												break;
 											}
 										case (UserAction.CorpusRequest):
 											{
 												if (!int.TryParse(msg.Text?.Trim(), out int corpus))
 												{
-													await EditOrSendMessage(msg, "ошибка! неправильный ввод");
+													await EditOrSendMessage(msg, "Ошибка при парсинге данных! Убедитесь что вы ввели исключительно цифры.", new InlineKeyboardButton[]
+													{
+														("Назад","/admin add")
+													});
 													usersState[foundUser.UserID].Action = null;
 													break;
 												}
 												usersState[foundUser.UserID].TempData.Corpus = corpus;
 												usersState[foundUser.UserID].Action = UserAction.FloorRequest;
-												await EditOrSendMessage(msg, "введите этаж");
+												await EditOrSendMessage(msg, "Введите этаж");
 												break;
 											}
 										case (UserAction.FloorRequest):
 											{
 												if (!int.TryParse(msg.Text?.Trim(), out int floor))
 												{
-													await EditOrSendMessage(msg, "ошибка! неправильный ввод");
+													await EditOrSendMessage(msg, "Ошибка при парсинге данных! Убедитесь что вы ввели исключительно цифры.", new InlineKeyboardButton[]
+													{
+														("Назад","/admin add")
+													});
 													usersState[foundUser.UserID].Action = null;
 													break;
 												}
 
 												usersState[foundUser.UserID].TempData.Floor = floor;
 												usersState[foundUser.UserID].Action = UserAction.DescriptionRequest;
-												await EditOrSendMessage(msg, "введите описание");
+												await EditOrSendMessage(msg, "Введите описание");
 												break;
 											}
 										case (UserAction.DescriptionRequest):
 											{
 												if (string.IsNullOrWhiteSpace(msg.Text))
 												{
-													await EditOrSendMessage(msg, "ошибка! описание не может быть пустым");
+													await EditOrSendMessage(msg, "Ошибка! Описание не может быть пустым", new InlineKeyboardButton[]
+													{
+														("Назад","/admin add")
+													});
 													usersState[foundUser.UserID].Action = null;
 													break;
 												}
 												usersState[foundUser.UserID].TempData.Description = msg.Text.Trim();
 												usersState[foundUser.UserID].Action = UserAction.TypeRequest;
-												await EditOrSendMessage(msg, "введите тип точки питания:\n1 - буфет\n2 - столовая\n3 - продуктовый");
+												await EditOrSendMessage(msg, "Введите тип точки питания:\n1 - буфет\n2 - столовая\n3 - продуктовый");
 												break;
 											}
 										case (UserAction.TypeRequest):
 											{
 												if (!int.TryParse(msg.Text?.Trim(), out int type) || type < 1 || type > 3)
 												{
-													await EditOrSendMessage(msg, "ошибка! введите число от 1 до 3, где 1 - Буфет, 2 - Столовая, 3 - Продуктовый");
+													await EditOrSendMessage(msg, "Ошибка! Введите число от 1 до 3, где 1 - Буфет, 2 - Столовая, 3 - Продуктовый", new InlineKeyboardButton[]
+													{
+														("Назад","/admin add")
+													});
 													usersState[foundUser.UserID].Action = null;
 													break;
 												}
@@ -1954,7 +1969,7 @@ class Program
 											AdminControl.SetReviewStatus(usersState[foundUser.UserID].Comment!);
 										else
 										{
-											AdminControl.ReviewCollector[0].place.AddReview(AdminControl.ReviewCollector[0].place.Place_id, AdminControl.ReviewCollector[0].review.UserID, AdminControl.ReviewCollector[0].review.Rating, null);
+											AdminControl.ReviewCollector[0].place.AddReview(AdminControl.ReviewCollector[0].place.Place_id, AdminControl.ReviewCollector[0].review.UserID, AdminControl.ReviewCollector[0].review.Rating, null, 0);
 											AdminControl.SetReviewStatus();
 										}
 

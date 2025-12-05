@@ -187,12 +187,12 @@ class Program
 									await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
 									break;
 								}
-							case (UserAction.RatingChange):
+								case (UserAction.RatingChange):
 								{
 									if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
 									{
 										usersState[foundUser.UserID].Rating = rating;
-										usersState[foundUser.UserID].Comment = "-";
+										usersState[foundUser.UserID].Comment = "saved_mark";
 										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
 										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ActionArguments}", msg);
 										break;
@@ -200,7 +200,7 @@ class Program
 
 										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
 										break;
-									}
+								}
 								case (UserAction.CommentRequest):
 									{
 										if (string.IsNullOrWhiteSpace(msg.Text))
@@ -1110,7 +1110,7 @@ class Program
 										if (usersState[foundUser!.UserID].Rating == 0)
 											usersState[foundUser!.UserID].Rating = place.Reviews.First(x => x.UserID == foundUser!.UserID).Rating;
 										if (usersState[foundUser!.UserID].Comment == "saved_mark")
-											usersState[foundUser!.UserID].Comment = null;    // Если есть сохранённый коммент - его бы нашли в админ контроле
+											usersState[foundUser!.UserID].Comment = place.Reviews.First(x => x.UserID == foundUser!.UserID).Comment;
 									}
 
 									if (usersState[foundUser!.UserID].Comment == "-")

@@ -334,7 +334,7 @@ namespace OBED.Include
 				command.Connection = connection;
 				if(IfUserHaveReviewOnPlace(review.UserID,review.Place_Id,out long? Reviewid))
 				{
-					command.CommandText = $@"UPDATE Reviews SET OnMod = 1 WHERE Review_id = @reviewid";
+					command.CommandText = $@"UPDATE Reviews SET OnMod = 2 WHERE Review_id = @reviewid";
 					command.Parameters.Add(new SqliteParameter("@reviewid", Reviewid));
 					int number = command.ExecuteNonQuery();
 					return number != 0;

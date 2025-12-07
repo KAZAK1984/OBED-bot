@@ -285,7 +285,12 @@ class Program
 
                                     usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
                                     usersState[foundUser.UserID].Action = UserAction.NoActiveReportResponse;
-                                    await OnCommand("/admin", $"res", msg);
+                                    
+									if (msg.Text == "/admin resA")
+										await OnCommand("/admin", $"resA", msg);
+                                    if (msg.Text == "/admin resT")
+                                        await OnCommand("/admin", $"resT", msg);
+
                                     break;
                                 }
                             case (UserAction.Moderation):
@@ -1264,11 +1269,10 @@ class Program
 							Доброго времени, адмеместратор {foundUser!.Username}
 							
 							Кол-во отзывов на проверку: {AdminControl.ReviewCollector.Count}
-							Кол-во репортов на проверку: {ObjectLists.FeedbackReports.Where(x => x.Answer == null).Count()}
 							""", new InlineKeyboardButton[][]
 							{
 								[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку отзывов" : "", $"/admin chk")],
-                                [(ObjectLists.FeedbackReports.Where(x => x.Answer == null).Count() > 0 ? "Начать проверку репортов" : "", $"/admin res")],
+                                [(ObjectLists.FeedbackReports.Count() > 0 ? "Начать проверку репортов" : "", $"/admin res")],
                                 [("Меню блокировок", "/admin ban")],
 								[("Обновить админ-меню", "/admin ref"), ("Назад", $"/start")]
 							}, ParseMode.Html);
@@ -1391,15 +1395,24 @@ class Program
 								{
                                     if (args.Length < 4)
                                     {
-                                        if (ObjectLists.FeedbackReports.Where(x => x.Answer == null).Count() > 0)
+                                        if (ObjectLists.FeedbackReports.Count() > 0)
                                         {
                                             ObjectLists.Persons.TryGetValue(ObjectLists.FeedbackReports[0].UserID, out Person? writer);
 											ArgumentNullException.ThrowIfNull(writer);
 
                                             await EditOrSendMessage(msg, $"""
 											Пользователь: @{writer.Username}, {writer.Role}.
-											Репорт: {ObjectLists.FeedbackReports[0].Comment}.
-											Дата отправки на модерацию: {ObjectLists.FeedbackReports[0].Date}
+
+											Репорт: 
+												"{ObjectLists.FeedbackReports[0].Comment}".
+
+											Дата отправки на модерацию: {ObjectLists.FeedbackReports[0].Date}.
+
+											Ответ:
+												{ObjectLists.FeedbackReports[0].Answer ?? "Отсутствует"}.
+
+											Теги:
+												{ObjectLists.FeedbackReports[0].Tegs}.
 											""", new InlineKeyboardButton[][]
                                                 {
                                                 [("Ответить", $"/admin resA")],

@@ -1045,7 +1045,7 @@ class Program
 										if (usersState[foundUser!.UserID].Rating == 0)
 											usersState[foundUser!.UserID].Rating = place.Reviews.First(x => x.UserID == foundUser!.UserID).Rating;
 										if (usersState[foundUser!.UserID].Comment == "saved_mark")
-											usersState[foundUser!.UserID].Comment = null;    // Если есть сохранённый коммент - его бы нашли в админ контроле
+											usersState[foundUser!.UserID].Comment = place.Reviews.First(x => x.UserID == foundUser!.UserID).Comment;    // Если есть сохранённый коммент - его бы нашли в админ контроле
 									}
 
 									if (usersState[foundUser!.UserID].Comment == "-")

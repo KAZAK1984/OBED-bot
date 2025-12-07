@@ -61,7 +61,11 @@ namespace OBED.Include
         /// <summary> Для ОБНОВЛЕНИЯ отчетов (репортов). Запрос нового комментария</summary>
         ReportChange,
         /// <summary> Для НОВЫХ отчетов (репортов). Отметка, позволяющая перейти к финальному этапу отправки репорта</summary>
-        NoActiveReport
+        NoActiveReport,
+		/// <summary> Для РЕАГИРОВАНИЯ НА РЕПОРТЫ. Запрос ответа на репорт пользователя</summary>
+		ReportResponse,
+        /// <summary> Для РЕАГИРОВАНИЯ НА РЕПОРТЫ. Отметка, позволяющая перейти к финальному этапу отправки ответа на репорт</summary>
+        NoActiveReportResponse
     }
 
     class UserState

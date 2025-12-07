@@ -1,5 +1,6 @@
 ﻿using OBED.Include;
 using System.Collections.Concurrent;
+using System.Xml.Linq;
 using Telegram.Bot;
 using Telegram.Bot.Extensions;
 using Telegram.Bot.Polling;
@@ -274,6 +275,19 @@ class Program
                                     await OnCommand("/changeReport", $"{usersState[foundUser.UserID].ActionArguments}", msg);
                                     break;
                                 }
+                            case (UserAction.ReportResponse):
+                                {
+                                    if (string.IsNullOrWhiteSpace(msg.Text))
+                                    {
+                                        await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
+                                        break;
+                                    }
+
+                                    usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+                                    usersState[foundUser.UserID].Action = UserAction.NoActiveReportResponse;
+                                    await OnCommand("/admin", $"res", msg);
+                                    break;
+                                }
                             case (UserAction.Moderation):
                                 {
                                     if (string.IsNullOrWhiteSpace(msg.Text))
@@ -319,7 +333,7 @@ class Program
 							usersState.TryAdd(msg.Chat.Id, new());
 							ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
 
-							if (foundUser!.UserID == 1204402944)
+							if (foundUser!.UserID == 5105337031)
 								foundUser.SetRole(RoleType.Administrator);
 						}
 
@@ -1250,10 +1264,12 @@ class Program
 							Доброго времени, адмеместратор {foundUser!.Username}
 							
 							Кол-во отзывов на проверку: {AdminControl.ReviewCollector.Count}
+							Кол-во репортов на проверку: {ObjectLists.FeedbackReports.Where(x => x.Answer == null).Count()}
 							""", new InlineKeyboardButton[][]
 							{
-								[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
-								[("Меню блокировок", "/admin ban")],
+								[(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку отзывов" : "", $"/admin chk")],
+                                [(ObjectLists.FeedbackReports.Where(x => x.Answer == null).Count() > 0 ? "Начать проверку репортов" : "", $"/admin res")],
+                                [("Меню блокировок", "/admin ban")],
 								[("Обновить админ-меню", "/admin ref"), ("Назад", $"/start")]
 							}, ParseMode.Html);
 							break;
@@ -1370,6 +1386,138 @@ class Program
 											}
 									}
 									break;
+								}
+							case ("res"):
+								{
+                                    if (args.Length < 4)
+                                    {
+                                        if (ObjectLists.FeedbackReports.Where(x => x.Answer == null).Count() > 0)
+                                        {
+                                            ObjectLists.Persons.TryGetValue(ObjectLists.FeedbackReports[0].UserID, out Person? writer);
+											ArgumentNullException.ThrowIfNull(writer);
+
+                                            await EditOrSendMessage(msg, $"""
+											Пользователь: @{writer.Username}, {writer.Role}.
+											Репорт: {ObjectLists.FeedbackReports[0].Comment}.
+											Дата отправки на модерацию: {ObjectLists.FeedbackReports[0].Date}
+											""", new InlineKeyboardButton[][]
+                                                {
+                                                [("Ответить", $"/admin resA")],
+                                                [("Ответить", $"/admin resT")],
+                                                [("Пропустить", $"#admin resS")],
+                                                [("Назад", $"/admin")]
+                                                }, ParseMode.Html);
+                                        }
+                                        else
+                                            await EditOrSendMessage(msg, $"""	
+											Репортов на проверку не осталось, отличная работа!
+											""", new InlineKeyboardButton[][]
+                                                {
+                                                [("Назад", $"/admin")]
+                                                }, ParseMode.Html);
+                                        break;
+                                    }
+
+                                    switch (args[3])
+                                    {
+                                        case ('A'):
+                                            {
+                                                switch (usersState[foundUser!.UserID].Action)
+                                                {
+                                                    case (null):
+                                                        {
+                                                            usersState[foundUser!.UserID].Action = UserAction.ReportResponse;
+                                                            await EditOrSendMessage(msg, $"""
+																Сообщение пользователя:
+																	"{ObjectLists.FeedbackReports[0].Comment}"
+																
+																Введите ответ на данный репорт
+																""", null, ParseMode.None, true);
+																
+                                                            break;
+                                                        }
+                                                    case (UserAction.NoActiveReportResponse):
+                                                        {
+                                                            usersState[foundUser!.UserID].Action = null;
+                                                            await EditOrSendMessage(msg, $"""
+															Сообщение пользователя:
+																"{ObjectLists.FeedbackReports[0].Comment}"
+
+															Ваш ответ:
+																{usersState[foundUser!.UserID].Comment ?? "Удалён"}
+									
+															Всё верно?
+															""", new InlineKeyboardButton[][]
+                                                            {
+                                                                [("Да", $"#admin resA"), ("Нет", "/admin resA")],
+                                                                [("Назад", "/admin res")]
+                                                            }, ParseMode.Html);
+                                                            break;
+                                                        }
+                                                    default:
+                                                        {
+                                                            await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
+                                                            usersState[foundUser!.UserID].Action = null;
+                                                            await OnCommand("/admin", args, msg);
+                                                            break;
+                                                        }
+                                                }
+                                                break;
+                                            }
+										case ('T'):
+											{
+                                                switch (usersState[foundUser!.UserID].Action)
+                                                {
+                                                    case (null):
+                                                        {
+                                                            usersState[foundUser!.UserID].Action = UserAction.ReportResponse;
+                                                            await EditOrSendMessage(msg, $"""
+																Сообщение пользователя:
+																	"{ObjectLists.FeedbackReports[0].Comment}"
+																
+																Введите список тегов для этого репорта через пробел с маленькой буквы
+																""", null, ParseMode.None, true);
+
+                                                            break;
+                                                        }
+                                                    case (UserAction.NoActiveReportResponse):
+                                                        {
+                                                            usersState[foundUser!.UserID].Action = null;
+                                                            await EditOrSendMessage(msg, $"""
+															Сообщение пользователя:
+																"{ObjectLists.FeedbackReports[0].Comment}"
+
+															Теги:
+																{usersState[foundUser!.UserID].Comment}
+									
+															Всё верно?
+															""", new InlineKeyboardButton[][]
+                                                            {
+                                                                [("Да", $"#admin resT"), ("Нет", "/admin resT")],
+                                                                [("Назад", "/admin res")]
+                                                            }, ParseMode.Html);
+                                                            break;
+                                                        }
+                                                    default:
+                                                        {
+                                                            await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
+                                                            usersState[foundUser!.UserID].Action = null;
+                                                            await OnCommand("/admin", args, msg);
+                                                            break;
+                                                        }
+                                                }
+                                                break;
+											}
+                                        default:
+                                            {
+                                                await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin chk...", new InlineKeyboardButton[]
+                                                {
+                                                    ("Назад", "/admin chk")
+                                                });
+                                                throw new Exception($"Invalid command agrs: {msg.Text}");
+                                            }
+                                    }
+                                    break;
 								}
 							case ("del"):
 								{
@@ -2140,7 +2288,130 @@ class Program
 										await OnCommand("/admin", "chk", callbackQuery.Message);
 										break;
 									}
-								case ("delR"):
+								case ("resA"):
+									{
+										if (usersState[foundUser.UserID].Comment != null)
+										{
+											ObjectLists.FeedbackReports[0].Answer = usersState[foundUser.UserID].Comment!;
+                                        }
+										else
+										{
+                                            await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды /admin resA.", new InlineKeyboardButton[]
+                                            {
+                                            ("Назад", "/resA")
+                                            });
+                                            throw new Exception($"Invalid command agrs: {callbackQuery.Data}");
+                                        }
+
+										try
+										{
+											await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
+										}
+										catch (Exception ex)
+										{
+											Console.WriteLine(ex);
+											await bot.SendHtml(callbackQuery.Message.Chat, $"""
+										Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+										<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+										""");
+										}
+
+                                        await OnCommand("/admin", "res", callbackQuery.Message);
+
+                                        break;
+									}
+                                case ("resT"):
+                                    {
+                                        if (usersState[foundUser.UserID].Comment != null)
+                                        {
+                                            var splitTegs = usersState[foundUser.UserID].Comment!.Split(' ');
+
+											ObjectLists.FeedbackReports[0].Tegs.Clear();
+
+                                            foreach (var teg in splitTegs)
+											{
+												switch (teg)
+												{
+													case ("bug"):
+														{
+															ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.Bug);
+															break;
+														}
+													case ("outdatedinfo"):
+														{
+                                                            ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.OutdatedInfo);
+                                                            break;
+														}
+													case ("wronginfo"):
+														{
+                                                            ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.WrongInfo);
+                                                            break;
+														}
+													case ("suggestion"):
+														{
+                                                            ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.Suggestion);
+                                                            break;
+														}
+													default:
+														{
+                                                            throw new Exception($"Invalid report teg: {teg}");
+														}
+                                                }
+											}
+                                        }
+                                        else
+                                        {
+                                            await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды /admin resA.", new InlineKeyboardButton[]
+                                            {
+                                            ("Назад", "/resA")
+                                            });
+                                            throw new Exception($"Invalid command agrs: {callbackQuery.Data}");
+                                        }
+
+                                        try
+                                        {
+                                            await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine(ex);
+                                            await bot.SendHtml(callbackQuery.Message.Chat, $"""
+										Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+										<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+										""");
+                                        }
+
+                                        await OnCommand("/admin", "res", callbackQuery.Message);
+
+                                        break;
+                                    }
+                                case ("resS"):
+                                    {
+										FeedbackReport report = ObjectLists.FeedbackReports[0];
+										ObjectLists.FeedbackReports.Add(report);
+										ObjectLists.FeedbackReports.RemoveAt(0);
+
+                                        try
+                                        {
+                                            await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine(ex);
+                                            await bot.SendHtml(callbackQuery.Message.Chat, $"""
+										Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
+
+										<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
+										""");
+                                        }
+
+                                        await OnCommand("/admin", "res", callbackQuery.Message);
+
+                                        break;
+                                    }
+                                case ("delR"):
 									{
 										if (!char.IsLetter(splitStr[1][4]) || !int.TryParse(splitStr[1][5..splitStr[1].IndexOf('_')], out int locationReview) || !int.TryParse(splitStr[1][(splitStr[1].IndexOf('_') + 1)..], out int reviewIndex))
 										{

@@ -12,8 +12,8 @@
     {
         public long UserID { get; init; } = userID;
         public string Comment { get; private set; } = comment;
-        public string? Answer { get; private set; } = null;
-        public List<ReportTeg> Tegs { get; private set; } = tegs;
+        public string? Answer { get; set; } = null;
+        public List<ReportTeg> Tegs { get; set; } = tegs;
         public string[] Screenshots { get; private set; } = screenshots ?? [];
         public DateTime Date { get; private set; } = DateTime.Now;
 

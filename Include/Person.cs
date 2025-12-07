@@ -65,7 +65,11 @@ namespace OBED.Include
 		/// <summary> Для РЕАГИРОВАНИЯ НА РЕПОРТЫ. Запрос ответа на репорт пользователя</summary>
 		ReportResponse,
         /// <summary> Для РЕАГИРОВАНИЯ НА РЕПОРТЫ. Отметка, позволяющая перейти к финальному этапу отправки ответа на репорт</summary>
-        NoActiveReportResponse
+        NoActiveReportResponse,
+		/// <summary> Для ДОБАВЛЕНИЯ ТЕГОВ для репортов. Запрос тегов для репорта от пользователя</summary>
+		ReportSetTegs,
+        /// <summary> Для ДОБАВЛЕНИЯ ТЕГОВ для репортов. Отметка, позволяющая перейти к финальному этапу отправки тегов для репорт</summary>
+        NoActiveReportSetTegs
     }
 
     class UserState

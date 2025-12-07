@@ -285,12 +285,22 @@ class Program
 
                                     usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
                                     usersState[foundUser.UserID].Action = UserAction.NoActiveReportResponse;
-                                    
-									if (msg.Text == "/admin resA")
-										await OnCommand("/admin", $"resA", msg);
-                                    if (msg.Text == "/admin resT")
-                                        await OnCommand("/admin", $"resT", msg);
 
+                                    await OnCommand("/admin", $"resA", msg);
+                                    break;
+                                }
+                            case (UserAction.ReportSetTegs):
+                                {
+                                    if (string.IsNullOrWhiteSpace(msg.Text))
+                                    {
+                                        await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или откажитесь от сообщения отправив -", null, ParseMode.None, true);
+                                        break;
+                                    }
+
+                                    usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+                                    usersState[foundUser.UserID].Action = UserAction.NoActiveReportSetTegs;
+
+                                    await OnCommand("/admin", $"resT", msg);
                                     break;
                                 }
                             case (UserAction.Moderation):
@@ -1412,7 +1422,7 @@ class Program
 												{ObjectLists.FeedbackReports[0].Answer ?? "Отсутствует"}.
 
 											Теги:
-												{ObjectLists.FeedbackReports[0].Tegs}.
+												{string.Join(", ", ObjectLists.FeedbackReports[0].Tegs)}.
 											""", new InlineKeyboardButton[][]
                                                 {
                                                 [("Ответить", $"/admin resA")],
@@ -1483,7 +1493,7 @@ class Program
                                                 {
                                                     case (null):
                                                         {
-                                                            usersState[foundUser!.UserID].Action = UserAction.ReportResponse;
+                                                            usersState[foundUser!.UserID].Action = UserAction.ReportSetTegs;
                                                             await EditOrSendMessage(msg, $"""
 																Сообщение пользователя:
 																	"{ObjectLists.FeedbackReports[0].Comment}"
@@ -1493,7 +1503,7 @@ class Program
 
                                                             break;
                                                         }
-                                                    case (UserAction.NoActiveReportResponse):
+                                                    case (UserAction.NoActiveReportSetTegs):
                                                         {
                                                             usersState[foundUser!.UserID].Action = null;
                                                             await EditOrSendMessage(msg, $"""
@@ -1523,7 +1533,7 @@ class Program
 											}
                                         default:
                                             {
-                                                await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin chk...", new InlineKeyboardButton[]
+                                                await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin res...", new InlineKeyboardButton[]
                                                 {
                                                     ("Назад", "/admin chk")
                                                 });
@@ -2318,7 +2328,7 @@ class Program
 
 										try
 										{
-											await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
+											await bot.AnswerCallbackQuery(callbackQuery.Id, "Ответ на репорт успешно сохранён!");
 										}
 										catch (Exception ex)
 										{
@@ -2379,7 +2389,7 @@ class Program
                                         }
                                         else
                                         {
-                                            await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды /admin resA.", new InlineKeyboardButton[]
+                                            await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды /admin resT.", new InlineKeyboardButton[]
                                             {
                                             ("Назад", "/admin res")
                                             });
@@ -2388,7 +2398,7 @@ class Program
 
                                         try
                                         {
-                                            await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
+                                            await bot.AnswerCallbackQuery(callbackQuery.Id, "Теги репорта успешно обновлены!");
                                         }
                                         catch (Exception ex)
                                         {

@@ -1403,7 +1403,7 @@ class Program
 											""", new InlineKeyboardButton[][]
                                                 {
                                                 [("Ответить", $"/admin resA")],
-                                                [("Ответить", $"/admin resT")],
+                                                [("Добавить теги", $"/admin resT")],
                                                 [("Пропустить", $"#admin resS")],
                                                 [("Назад", $"/admin")]
                                                 }, ParseMode.Html);
@@ -1456,7 +1456,7 @@ class Program
                                                         }
                                                     default:
                                                         {
-                                                            await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
+                                                            await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к модерации в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
                                                             usersState[foundUser!.UserID].Action = null;
                                                             await OnCommand("/admin", args, msg);
                                                             break;
@@ -1500,7 +1500,7 @@ class Program
                                                         }
                                                     default:
                                                         {
-                                                            await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
+                                                            await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к модерации в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
                                                             usersState[foundUser!.UserID].Action = null;
                                                             await OnCommand("/admin", args, msg);
                                                             break;
@@ -2298,7 +2298,7 @@ class Program
 										{
                                             await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды /admin resA.", new InlineKeyboardButton[]
                                             {
-                                            ("Назад", "/resA")
+                                            ("Назад", "/admin res")
                                             });
                                             throw new Exception($"Invalid command agrs: {callbackQuery.Data}");
                                         }
@@ -2355,6 +2355,10 @@ class Program
 														}
 													default:
 														{
+                                                            await EditOrSendMessage(callbackQuery.Message, $"Неизвестный тег: {teg}. Допустимые теги: bug, outdatedinfo, wronginfo, suggestion", new InlineKeyboardButton[]
+															{
+                                                                ("Назад", "/admin res")
+                                                            });
                                                             throw new Exception($"Invalid report teg: {teg}");
 														}
                                                 }
@@ -2364,7 +2368,7 @@ class Program
                                         {
                                             await EditOrSendMessage(callbackQuery.Message, "Ошибка при запросе: некорректный аргумент команды /admin resA.", new InlineKeyboardButton[]
                                             {
-                                            ("Назад", "/resA")
+                                            ("Назад", "/admin res")
                                             });
                                             throw new Exception($"Invalid command agrs: {callbackQuery.Data}");
                                         }
@@ -2393,22 +2397,7 @@ class Program
 										ObjectLists.FeedbackReports.Add(report);
 										ObjectLists.FeedbackReports.RemoveAt(0);
 
-                                        try
-                                        {
-                                            await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв с правками успешно оставлен!");
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            Console.WriteLine(ex);
-                                            await bot.SendHtml(callbackQuery.Message.Chat, $"""
-										Превышено время ожидания ответа на запрос. Пожалуйста, повторите попытку чуть позже.
-
-										<tg-spoiler><code>Код необработанного запроса: {callbackQuery.Data}</code></tg-spoiler>
-										""");
-                                        }
-
                                         await OnCommand("/admin", "res", callbackQuery.Message);
-
                                         break;
                                     }
                                 case ("delR"):

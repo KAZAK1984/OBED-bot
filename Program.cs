@@ -14,7 +14,7 @@ static class Program
 	static async Task Main()
 	{
 		using var cts = new CancellationTokenSource();
-		var token = "8343345535:AAFo4dhmrQ9eAe90IjryQak4xEfCiYvvr4U";
+		var token = Environment.GetEnvironmentVariable("TOKEN");
 		var bot = new TelegramBotClient(token!, cancellationToken: cts.Token);
 
 		// TODO: переход на SQL
@@ -34,55 +34,7 @@ static class Program
 		BasePlace.LoadAllPlaces(2);
 		BasePlace.LoadAllPlaces(1);
 		BasePlace.LoadAllPlaces(3);
-		//List<Product> products1 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
-		//    new("Main2", ProductType.MainDish, (250, true)), new("Side2", ProductType.SideDish, (300, true)), new("Drink2", ProductType.Drink, (350, true)), new("Appetizer2", ProductType.Appetizer, (400, true)),
-		//    new("Main3", ProductType.MainDish, (450, false)), new("Side3", ProductType.SideDish, (500, false)), new("Drink3", ProductType.Drink, (550, false)), new("Appetizer3", ProductType.Appetizer, (600, false))];
 
-		//List<Product> products2 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false))];
-
-		//List<Product> products3 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
-		//    new("Main2", ProductType.MainDish, (250, true))];
-
-		//List<Product> products4 = [new("Main1", ProductType.MainDish, (50, false)), new("Side1", ProductType.SideDish, (100, false)), new("Drink1", ProductType.Drink, (150, false)), new("Appetizer1", ProductType.Appetizer, (200, false)),
-		//    new("Main2", ProductType.MainDish, (250, true)), new("Side2", ProductType.SideDish, (300, true))];
-
-		//List<Product> products5 = [new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)),
-		//    new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)),
-		//    new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false)), new("Main1", ProductType.MainDish, (50, false))];
-
-		//List<Review> reviews1 = [new(3,123456789, 10), new(3,123456789, 9), new(3,123456789, 8), new(3,123456789, 7), new(3,123456789, 6), new(3,123456789, 5), new(3,123456789, 4)];
-
-		//List<Review> reviews2 = [new(2,123456789, 10), new(2,123456789, 9), new(2,123456789, 8, "8"), new(2,123456789, 7, "7"), new(2,123456789, 6), new(2,123456789, 5, "5"), new(2,123456789, 4)];
-
-		//List<Review> reviews3 = [new(1,123456789, 7, "Old"), new(1,123456789, 9, "Old"), new(1,123456789, 5, "Old"), new(1,123456789, 10, "Old"), new(1,123456789, 6, "Old"), new(1,123456789, 8, "Old"), new(1,123456789, 4, "Old")];
-		//reviews3.Add(new(1,987654321, 3, "New"));
-
-		//ObjectLists.AddRangeList<Canteen>([new(1,"Canteen1", 1, 1, null, reviews3, products1, null),
-		//    new(2,"Canteen2", 2, 2, null, reviews2, products2, null),
-		//    new(3,"Canteen3", 2, 2, null, reviews1, products3, null),
-		//    new(4,"Canteen4", 2, 2, null, null, null, null),
-		//    new(5,"Canteen5", 2, 2, null, null, null, null),
-		//    new(6,"Canteen6", 2, 2, null, null, null, null),
-		//    new(7,"Canteen7", 2, 2, null, null, null, null),
-		//    new(8,"Canteen8", 2, 2, null, null, null, null),
-		//    new(9,"Canteen9", 2, 2, null, null, null, null),
-		//    new(10,"Canteen10", 2, 2, null, null, null, null),
-		//    new(11,"Canteen11", 2, 2, null, null, null, null),
-		//    new(12,"Canteen12", 2, 2, null, null, null, null),
-		//    new(13,"Canteen13", 2, 2, null, null, null, null),
-		//    new(14,"Canteen14", 2, 2, null, null, null, null),
-		//    new(15,"Canteen15", 2, 2, null, reviews1, products5, null),
-		//    new(16,"Canteen16", 3, 3, null, reviews1, products4, null)]);
-		//ObjectLists.AddRangeList<Buffet>([new(17,"Buffet1", 1, 1, null, reviews1, products1, null),
-		//    new(18,"Buffet2", 2, 2, null, reviews2, products2, null),
-		//    new(19,"Buffet3", 3, 3, null, reviews3, products4, null)]);
-		//ObjectLists.AddRangeList<Grocery>([new(20,"Grocery1", null, reviews1, products1, null),
-		//    new(21,"Grocery2", null, reviews2, products2, null),
-		//    new(22,"Grocery3", null, reviews3, products4, null)]);
-
-		//reviews3.Add(new(1,611614145, 3, "SuperNew"));
-
-		// TODO: переход на noSQL
 		ConcurrentDictionary<long, UserState> usersState = [];
 
 		bot.OnError += OnError;
@@ -194,19 +146,18 @@ static class Program
 							case (UserAction.RatingRequest):
 								{
 								    if (int.TryParse(msg.Text, out int rating) && (rating > 0 && rating < 11))
-										{
-										  usersState[foundUser.UserID].Rating = rating;
-											usersState[foundUser.UserID].Action = UserAction.CommentRequest;
-											await EditOrSendMessage(msg, $"🪶 Введи текст отзыва или откажись от сообщения, отправив -", null, ParseMode.None, true);
-											break;
-										}
-
-										await EditOrSendMessage(msg, $"""
-											💀 Упс, ошибка при обработке! 
-											❕ Убедись, что твоё сообщение содержит только цифры, а также они должны входить в промежуток от 1 до 10 включительно
-											""", null, ParseMode.Html, true);
+									{
+										usersState[foundUser.UserID].Rating = rating;
+										usersState[foundUser.UserID].Action = UserAction.CommentRequest;
+										await EditOrSendMessage(msg, $"🪶 Введи текст отзыва или откажись от сообщения, отправив -", null, ParseMode.None, true);
 										break;
+									}
 
+									await EditOrSendMessage(msg, $"""
+										💀 Упс, ошибка при обработке! 
+										❕ Убедись, что твоё сообщение содержит только цифры, а также они должны входить в промежуток от 1 до 10 включительно
+										""", null, ParseMode.Html, true);
+									break;
 								}
 							case (UserAction.RatingChange):
 								{
@@ -217,84 +168,61 @@ static class Program
 										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
 										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
 										break;
-                  }
+									}
 										await EditOrSendMessage(msg, $"""
 											💀 Упс, ошибка при обработке! 
 											❕ Убедись, что твоё сообщение содержит только цифры, а также они должны входить в промежуток от 1 до 10 включительно
 											""", null, ParseMode.Html, true);
-									break;
-									}
-
-									await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит только цифры, также они должны входить в промежуток от 1 до 10 включительно", null, ParseMode.None, true);
 									break;
 								}
 							case (UserAction.CommentRequest):
 								{
 									if (string.IsNullOrWhiteSpace(msg.Text))
 									{
-										if (string.IsNullOrWhiteSpace(msg.Text))
-										{
-											await EditOrSendMessage(msg, $"""
-												💀 Упс, ошибка при обработке! 
-												❕ Убедись, что твоё сообщение не содержит файлов, стикеров и т.д. или же откажись от отправки введя -
-												""", null, ParseMode.Html, true);
-										break;
-										}
-
-										if (msg.Text.Length > 720)
-										{
-											await EditOrSendMessage(msg, $"""
-												💀 Упс, ошибка при обработке!
-												😭 Комментарий не может быть больше 720 символов. Текущая длина сообщения: {msg.Text.Length}.
-												❕ Убедись, что твоё сообщение не содержит файлов, стикеров и т.д. или же откажись от отправки введя -
-												""", null, ParseMode.Html, true);
-											break;
-										}
-										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-										if (usersState[foundUser.UserID].Comment == "-")
-											usersState[foundUser.UserID].Comment = null;
-
-										usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
-										await EditOrSendMessage(msg, $"""
-											❕Твой отзыв:
-									
-											💠 Оценка: {usersState[foundUser.UserID].Rating}
-											💠	Комментарий: {usersState[foundUser.UserID].Comment ?? "Отсутствует"}
-									
-											❓ Всё так?
-											""", new InlineKeyboardButton[][]
-											{
-												[("Да", $"#sendReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"callback_resetAction")] 
-											});
-										break;
-									}
-								case (UserAction.CommentChange):
-									{
-										if (string.IsNullOrWhiteSpace(msg.Text))
-										{
-											await EditOrSendMessage(msg, $"""
-												💀 Упс, ошибка при обработке! 
-												❕ Убедись, что твоё сообщение не содержит файлов, стикеров и т.д. или же откажись от отправки введя -
-												""", null, ParseMode.Html, true);
-										break;
-										}
-
-										usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
-										usersState[foundUser.UserID].Rating = 0;
-										usersState[foundUser.UserID].Action = UserAction.NoActiveChange;
-										await OnCommand("/changeReview", $"-{usersState[foundUser.UserID].ReferenceToPlace}", msg);
-										break;
-									}
-								case (UserAction.Moderation):
-									{
-										if (string.IsNullOrWhiteSpace(msg.Text))
-										{
 										await EditOrSendMessage(msg, $"""
 											💀 Упс, ошибка при обработке! 
 											❕ Убедись, что твоё сообщение не содержит файлов, стикеров и т.д. или же откажись от отправки введя -
 											""", null, ParseMode.Html, true);
+									break;
+									}
+
+									if (msg.Text.Length > 720)
+									{
+										await EditOrSendMessage(msg, $"""
+											💀 Упс, ошибка при обработке!
+											😭 Комментарий не может быть больше 720 символов. Текущая длина сообщения: {msg.Text.Length}.
+											❕ Убедись, что твоё сообщение не содержит файлов, стикеров и т.д. или же откажись от отправки введя -
+											""", null, ParseMode.Html, true);
 										break;
-										}
+									}
+									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
+									if (usersState[foundUser.UserID].Comment == "-")
+										usersState[foundUser.UserID].Comment = null;
+
+									usersState[foundUser.UserID].Action = UserAction.NoActiveRequest;
+									await EditOrSendMessage(msg, $"""
+										❕Твой отзыв:
+									
+										💠 Оценка: {usersState[foundUser.UserID].Rating}
+										💠	Комментарий: {usersState[foundUser.UserID].Comment ?? "Отсутствует"}
+									
+										❓ Всё так?
+										""", new InlineKeyboardButton[][]
+										{
+											[("Да", $"#sendReview {usersState[foundUser.UserID].ReferenceToPlace}"), ("Нет", $"callback_resetAction")] 
+										});
+									break;
+								}
+							case (UserAction.CommentChange):
+								{
+									if (string.IsNullOrWhiteSpace(msg.Text))
+									{
+										await EditOrSendMessage(msg, $"""
+											💀 Упс, ошибка при обработке! 
+											❕ Убедись, что твоё сообщение не содержит файлов, стикеров и т.д. или же откажись от отправки введя -
+											""", null, ParseMode.Html, true);
+									break;
+									}
 
 									usersState[foundUser.UserID].Comment = HtmlEscape(msg.Text).Trim();
 									usersState[foundUser.UserID].Rating = 0;
@@ -306,7 +234,10 @@ static class Program
 								{
 									if (string.IsNullOrWhiteSpace(msg.Text))
 									{
-										await EditOrSendMessage(msg, $"Ошибка при обработке! Убедитесь, что ваше сообщение содержит текст или удалите сообщение отправив -", null, ParseMode.None, true);
+										await EditOrSendMessage(msg, $"""
+											💀 Упс, ошибка при обработке! 
+											❕ Убедись, что твоё сообщение не содержит файлов, стикеров и т.д. или же откажись от отправки введя -
+											""", null, ParseMode.Html, true);
 										break;
 									}
 

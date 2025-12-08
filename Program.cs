@@ -1,7 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using OBED.Include;
 using System.Collections.Concurrent;
-//using System.Xml.Linq;
 using Telegram.Bot;
 using Telegram.Bot.Extensions;
 using Telegram.Bot.Polling;
@@ -18,7 +17,6 @@ static class Program
 		var token = Environment.GetEnvironmentVariable("TOKEN");
 		var bot = new TelegramBotClient(token!, cancellationToken: cts.Token);
 
-		// TODO: переход на SQL
 		using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
 		{
 			connection.Open();
@@ -381,9 +379,6 @@ static class Program
 							ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
 							usersState.TryAdd(msg.Chat.Id, new());
 							ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
-
-							if (foundUser!.UserID == 1204402944)
-								foundUser.SetRole(RoleType.Administrator);
 						}
 
                         await EditOrSendMessage(msg, """
@@ -431,6 +426,9 @@ static class Program
 							💠 В случае чего, ты в любой момент можешь удалить или изменить через тоже меню.
 							❕ Мы просим воздержаться от оскорбительных и нецензурных выражений в отзывах, чтобы поддерживать дружелюбную атмосферу в нашем сообществе. Проверка отзывов с комментариями в среднем занимает до 24 часов.
 
+							✨ Если вдруг у тебя есть вопросы не только про обеды, но и в целом про жизнь нашего вуза, то можем предложить отличный ресурс от наших партнёров: @FirstUni_bot
+							👍 OBED team ремоендует!
+
 							❓ Если у тебя остались вопросы или ты хочешь предложить свои уникальные идеи, не стесняйся обращаться в поддержку через кнопку "Обратная связь" в главном меню.
 							""", new InlineKeyboardButton[][]
 							{
@@ -461,17 +459,15 @@ static class Program
                         if (args == null)
                         {
                             await EditOrSendMessage(msg, """
-								💀 Упс, ошибка при запросе: 
-								/sendReport не применяется без аргументов.
+								💀 Упс, ошибка при запросе: /sendReport не применяется без аргументов.
 								""", new InlineKeyboardButton[]
-								
-                            {
-                                ("Назад", "/report")
-                            });
+									{
+										("Назад", "/report")
+									});
                             throw new ArgumentException($"No command args: {msg.Text}");
                         }
 
-                        switch (usersState[foundUser.UserID].Action)
+                        switch (usersState[foundUser!.UserID].Action)
                         {
                             case (null):
                                 {
@@ -482,24 +478,22 @@ static class Program
 									{
 										case ("B"):
 											{
-                                                await EditOrSendMessage(msg, $"Введите сообщение об ошибке, указав в чем была проблема, условия возникновения бага, и ожидаемое поведение", null, ParseMode.None, true);
+                                                await EditOrSendMessage(msg, $"🪶 Введи сообщение об ошибке, указав в чем была проблема, условия возникновения бага, и ожидаемое поведение", null, ParseMode.None, true);
                                                 break;
 											}
                                         case ("R"):
                                             {
-                                                await EditOrSendMessage(msg, $"Напишите, что вы думаете об этом боте, или какие у вас есть предложения по его улучшению", null, ParseMode.None, true);
+                                                await EditOrSendMessage(msg, $"🪶 Напишит, что ты думаешь об этом боте, или какие у тебя есть предложения по его улучшению", null, ParseMode.None, true);
                                                 break;
                                             }
 										default:
 											{
                                                 await EditOrSendMessage(msg, """
-													💀 Упс, ошибка при запросе: 
-													Некорректный аргумент команды /sendReport.
+													💀 Упс, ошибка при запросе: некорректный аргумент команды /sendReport.
 													""", new InlineKeyboardButton[]
-													
-												{
-													("Назад", "/report")
-												});
+													{
+														("Назад", "/report")
+													});
                                                 throw new ArgumentException($"Invalid command agrs: {msg.Text}");
 											}
                                     }
@@ -514,44 +508,43 @@ static class Program
                                     {
 										case ("B"):
                                             {
-                                                message = "Сообщение об ошибке:";
+                                                message = "🪲 Сообщение об ошибке:";
                                                 break;
                                             }
                                         case ("R"):
                                             {
-                                                message = "Ваш отзыв на бота:";
+                                                message = "✨ Ваш отзыв на бота:";
                                                 break;
                                             }
 										default:
 											{
                                                 await EditOrSendMessage(msg, """
-													💀 Упс, ошибка при запросе:
-													Некорректный аргумент команды /sendReport.
+													💀 Упс, ошибка при запросе: некорректный аргумент команды /sendReport.
 													""", new InlineKeyboardButton[]
-												{
-													("Назад", "/report")
-												});
+													{
+														("Назад", "/report")
+													});
 												throw new ArgumentException($"Invalid command agrs: {msg.Text}");
 											}
                                     }
 
                                     await EditOrSendMessage(msg, $"""
-										{ message}
+										{message}
 
-										- {usersState[foundUser.UserID].Comment}
+										💠 {usersState[foundUser.UserID].Comment}
 									
-									Всё верно?
-									""", new InlineKeyboardButton[][]
-                                    {
-                                        [("Да", $"#sendReport {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"/sendReport {usersState[foundUser.UserID].ActionArguments}")],
-                                        [("Назад", $"/report")]
-                                    }, ParseMode.Html);
+										❓ Всё верно?
+										""", new InlineKeyboardButton[][]
+										{
+											[("Да", $"#sendReport {usersState[foundUser.UserID].ActionArguments}"), ("Нет", $"/sendReport {usersState[foundUser.UserID].ActionArguments}")],
+											[("Назад", $"/report")]
+										}, ParseMode.Html);
 
                                     break;
                                 }
                             default:
                                 {
-                                    await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к редактированию другого репорта или отзыва на точку. Сброс ранее введённой информации...");
+                                    await EditOrSendMessage(msg, $"❕ Зафиксирована попытка приступить к редактированию другого репорта или отзыва на точку. Сброс ранее введённой информации...");
                                     usersState[foundUser.UserID].Action = null;
                                     await OnCommand("/sendReport", args, msg);
                                     break;
@@ -566,10 +559,10 @@ static class Program
 
                         if (!reports.Any())
                         {
-                            await EditOrSendMessage(msg, $"Вы не оставили ни одного репорта", new InlineKeyboardButton[]
-                            {
-                                ("Назад", $"/report")
-                            }, ParseMode.Html);
+                            await EditOrSendMessage(msg, $"😭 Вы не оставили ни одного репорта", new InlineKeyboardButton[]
+								{
+									("Назад", $"/report")
+								}, ParseMode.Html);
                             break;
                         }
 
@@ -578,13 +571,11 @@ static class Program
                         if (!string.IsNullOrEmpty(args) && !int.TryParse(args, out page))
 						{
                             await EditOrSendMessage(msg, """
-								💀 Упс, ошибка при запросе:
-								Некорректный аргумент команды /pickReport.
+								💀 Упс, ошибка при запросе: некорректный аргумент команды /pickReport.
 								""", new InlineKeyboardButton[]
-								
-							{
-								("Назад", "/report")
-							});
+								{
+									("Назад", "/report")
+								});
                             throw new ArgumentException($"Invalid command agrs: {msg.Text}");
                         }
 
@@ -594,19 +585,19 @@ static class Program
 							page = reports.Count - 1;
 
                         await EditOrSendMessage(msg, $"""
-							Репорт:
-								"{reports[page].Comment}".
+							📕 Репорт:
+							    "{reports[page].Comment}".
 
-							Дата отправки на рассмотрение: 
-								{reports[page].Date}.
+							⌚ Дата отправки на рассмотрение: 
+							    {reports[page].Date}.
 							
-							Ответ:
-								{reports[page].Answer ?? "Отсутствует"}.
+							🗣️ Ответ:
+							    {reports[page].Answer ?? "Отсутствует"}.
 							""", new InlineKeyboardButton[][]
-                        {
-                            [((page != 0) ? "◀️" : "", $"/pickReport {page - 1}"), ("Редактировать", $"/changeReport {page}"), ((reports.Count - 1)> page ? "▶️" : "", $"/pickReport {page + 1}")],
-							[("Назад", $"/report")]
-                        }, ParseMode.Html);
+							{
+								[((page != 0) ? "◀️" : "", $"/pickReport {page - 1}"), ("Редактировать", $"/changeReport {page}"), ((reports.Count - 1)> page ? "▶️" : "", $"/pickReport {page + 1}")],
+								[("Назад", $"/report")]
+							}, ParseMode.Html);
                         break;
                     }
                 case ("/changeReport"):
@@ -614,13 +605,11 @@ static class Program
                         if (args == null || !int.TryParse(args, out int reportIndex) || reportIndex < 0)
                         {
                             await EditOrSendMessage(msg, """
-								💀 Упс, ошибка при запросе:
-								/changeReport не применяется без аргументов.
-								""", new InlineKeyboardButton[]
-								
-                            {
-                                ("Назад", "/report")
-                            });
+								💀 Упс, ошибка при запросе: /changeReport не применяется без аргументов.
+								""", new InlineKeyboardButton[]	
+								{
+									("Назад", "/report")
+								});
                             throw new ArgumentException($"No command args: {msg.Text}");
                         }
 
@@ -630,7 +619,7 @@ static class Program
                                 {
                                     usersState[foundUser.UserID].Action = UserAction.ReportChange;
                                     usersState[foundUser.UserID].ActionArguments = args;
-                                    await EditOrSendMessage(msg, $"Введите НОВЫЙ текст отчета или удалите его отправив -", null, ParseMode.None, true);
+                                    await EditOrSendMessage(msg, $"🪶 Введите НОВЫЙ текст отчета или удалите его отправив -", null, ParseMode.None, true);
 
                                     break;
                                 }
@@ -639,18 +628,16 @@ static class Program
                                     usersState[foundUser!.UserID].Action = null;
 
                                     await EditOrSendMessage(msg, $"""
-										Ваш НОВЫЙ отчет:
+										📗 Ваш НОВЫЙ отчет:
 									
-										- {(usersState[foundUser!.UserID].Comment != "-" ? usersState[foundUser!.UserID].Comment : "Удален")}
+										💠 {(usersState[foundUser!.UserID].Comment != "-" ? usersState[foundUser!.UserID].Comment : "Удален")}
 									
-										Всё верно?
+										❓ Всё верно?
 										""", new InlineKeyboardButton[][]
-									{
-										[("Да", $"#changeReport {usersState[foundUser!.UserID].ActionArguments}"), ("Нет", $"/changeReport {usersState[foundUser!.UserID].ActionArguments}")],
-										[("Назад", $"/report")]
-									}, ParseMode.Html);
-
-                                    
+										{
+											[("Да", $"#changeReport {usersState[foundUser!.UserID].ActionArguments}"), ("Нет", $"/changeReport {usersState[foundUser!.UserID].ActionArguments}")],
+											[("Назад", $"/report")]
+										}, ParseMode.Html);
                                     break;
                                 }
                             default:

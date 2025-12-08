@@ -376,7 +376,7 @@ static class Program
 							usersState.TryAdd(msg.Chat.Id, new());
 							ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
 
-							if (foundUser!.UserID == 5105337031)
+							if (foundUser!.UserID == 1204402944)
 								foundUser.SetRole(RoleType.Administrator);
 						}
 						if (AddUserToDatabase(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, "CommonUser"))
@@ -534,10 +534,9 @@ static class Program
                                     }
 
                                     await EditOrSendMessage(msg, $"""
+										{ message}
 
-                                    { message}
-
-									- {usersState[foundUser.UserID].Comment}
+										- {usersState[foundUser.UserID].Comment}
 									
 									Всё верно?
 									""", new InlineKeyboardButton[][]
@@ -593,8 +592,7 @@ static class Program
 							page = reports.Count - 1;
 
                         await EditOrSendMessage(msg, $"""
-
-                            Репорт:
+							Репорт:
 								"{reports[page].Comment}".
 
 							Дата отправки на рассмотрение: 
@@ -639,13 +637,12 @@ static class Program
                                     usersState[foundUser!.UserID].Action = null;
 
                                     await EditOrSendMessage(msg, $"""
-
-                                    Ваш НОВЫЙ отчет:
+										Ваш НОВЫЙ отчет:
 									
-									- {usersState[foundUser!.UserID].Comment}
+										- {(usersState[foundUser!.UserID].Comment != "-" ? usersState[foundUser!.UserID].Comment : "Удален")}
 									
-									Всё верно?
-									""", new InlineKeyboardButton[][]
+										Всё верно?
+										""", new InlineKeyboardButton[][]
 									{
 										[("Да", $"#changeReport {usersState[foundUser!.UserID].ActionArguments}"), ("Нет", $"/changeReport {usersState[foundUser!.UserID].ActionArguments}")],
 										[("Назад", $"/report")]
@@ -1366,7 +1363,7 @@ static class Program
 									❓ Всё так?
 									""", new InlineKeyboardButton[][]
 									{
-										[("Да", $"#changeReview {usersState[foundUser!.UserID].ActionArguments}"), ("Нет", $"/changeReview -{usersState[foundUser!.UserID].ReferenceToPlace}")],
+										[("Да", $"#changeReview {usersState[foundUser!.UserID].ActionArguments}"), ("Нет", $"/changeReview -{usersState[foundUser!.UserID].ActionArguments}")],
 										[("Назад", $"/info {args[1..]}")]
 									});
 									break;
@@ -1403,9 +1400,6 @@ static class Program
                             }, ParseMode.Html);
 							break;
 						}
-
-						if (args.Length < 3)
-						{
 
 						if (args.Length < 3)
 						{
@@ -2383,7 +2377,7 @@ static class Program
 							throw new ArgumentException($"No command args: {callbackQuery.Message.Text}");
 						}
 
-                        if (usersState[foundUser.UserID].Action != null)
+                        if (splitStr[0] == "#sendReport")
 						{
                             if (usersState[foundUser.UserID].Action != null)
 							{
@@ -2974,7 +2968,7 @@ static class Program
 												""");
 										}
 										
-										await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message);
+										await OnCommand("/info", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message);
 									}
 									else
 									{
@@ -2982,7 +2976,7 @@ static class Program
 										{
 											("Назад", $"/info {usersState[foundUser.UserID].ActionArguments}")
 										});
-										throw new ArgumentException($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].ReferenceToPlace} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
+										throw new ArgumentException($"Ошибка при попытке оставить отзыв: {usersState[foundUser.UserID].ActionArguments} - {usersState[foundUser.UserID].Rating} | {usersState[foundUser.UserID].Comment ?? "Комментарий отсутствует"}");
 									}
 
 									break;
@@ -3107,7 +3101,7 @@ static class Program
 							else
 							{
 								usersState[foundUser.UserID].Action = null;
-								await OnCommand("/info", usersState[foundUser.UserID].ReferenceToPlace, callbackQuery.Message!);
+								await OnCommand("/info", usersState[foundUser.UserID].ActionArguments, callbackQuery.Message!);
 							}
 						}
 						else

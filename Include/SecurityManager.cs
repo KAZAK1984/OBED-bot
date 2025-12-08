@@ -187,7 +187,7 @@ namespace OBED.Include
 
 		public static void CreateBlockedUsersTable(SqliteCommand command)
 		{
-			command.CommandText = @"CREATE TABLE ""BlockedUsers"" (
+			command.CommandText = @"CREATE TABLE IF NOT EXISTS ""BlockedUsers"" (
 										""List_id""	INTEGER,
 										""Reason""	TEXT NOT NULL,
 										FOREIGN KEY(""List_id"") REFERENCES ""TG_Users""(""List_id"") ON UPDATE CASCADE

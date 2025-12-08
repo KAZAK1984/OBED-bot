@@ -520,10 +520,10 @@ class Program
 								"{reports[page].Comment}".
 
 							Дата отправки на рассмотрение: 
-								{ObjectLists.FeedbackReports[0].Date}.
+								{reports[page].Date}.
 							
 							Ответ:
-								{ObjectLists.FeedbackReports[0].Answer ?? "Отсутствует"}.
+								{reports[page].Answer ?? "Отсутствует"}.
 							""", new InlineKeyboardButton[][]
                         {
                             [((page != 0) ? "◀️" : "", $"/pickReport {page - 1}"), ("Редактировать", $"/changeReport {page}"), ((reports.Count - 1)> page ? "▶️" : "", $"/pickReport {page + 1}")],

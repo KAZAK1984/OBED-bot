@@ -98,13 +98,27 @@ namespace OBED.Include
 		/// <summary> Для ОБНОВЛЕНИЯ отзывов. Запрос новой не-пустой строки</summary>
 		CommentChange,
 		/// <summary> Для НОВЫХ отзывов. Отметка, позволяющая перейти к финальному этапу отправки отзыва</summary>
-		NoActiveRequest,
+        NoActiveRequest,
 		/// <summary> Для ОБНОВЛЕНИЯ отзывов. Отметка, позволяющая перейти к финальному этапу обновления отзыва</summary>
 		NoActiveChange,
 		/// <summary> Для МОДЕРАЦИИ отзывов. Отметка, позволяющая перейти к отправки отредактированного сообщения</summary>
 		Moderation,
 		/// <summary> Для МОДЕРАЦИИ отзывов. Отметка, позволяющая перейти к финальному этапу отправки отредактированного сообщения</summary>
 		NoActiveModeration,
+		/// <summary> Для НОВЫХ отчетов (репортов). Запрос комментария</summary>
+		ReportRequest,
+        /// <summary> Для ОБНОВЛЕНИЯ отчетов (репортов). Запрос нового комментария</summary>
+        ReportChange,
+        /// <summary> Для НОВЫХ отчетов (репортов). Отметка, позволяющая перейти к финальному этапу отправки репорта</summary>
+        NoActiveReport,
+		/// <summary> Для РЕАГИРОВАНИЯ НА РЕПОРТЫ. Запрос ответа на репорт пользователя</summary>
+		ReportResponse,
+        /// <summary> Для РЕАГИРОВАНИЯ НА РЕПОРТЫ. Отметка, позволяющая перейти к финальному этапу отправки ответа на репорт</summary>
+        NoActiveReportResponse,
+		/// <summary> Для ДОБАВЛЕНИЯ ТЕГОВ для репортов. Запрос тегов для репорта от пользователя</summary>
+		ReportSetTegs,
+        /// <summary> Для ДОБАВЛЕНИЯ ТЕГОВ для репортов. Отметка, позволяющая перейти к финальному этапу отправки тегов для репорт</summary>
+        NoActiveReportSetTegs,
 		/// <summary> Для ДОБАВЛЕНИЯ точки питания админом. Запрос не-пустой строки/названия точки</summary>
 		PlaceNameRequest,
 		NoPlaceNameRequest,
@@ -121,7 +135,7 @@ namespace OBED.Include
 	class UserState
 	{
 		public UserAction? Action { get; set; }
-		public string? ReferenceToPlace { get; set; }
+		public string? ActionArguments { get; set; }
 		public string? Comment { get; set; }
 		public int Rating { get; set; }
 

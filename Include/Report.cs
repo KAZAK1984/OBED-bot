@@ -1,20 +1,31 @@
 ﻿namespace OBED.Include
 {
-    class Report(long userID, string comment, List<string> tegs)
+    enum ReportTeg // Будет пополнятся новыми тегами
+    {
+        Bug,
+        OutdatedInfo,
+        WrongInfo,
+        Suggestion
+    }
+    
+    class FeedbackReport(long userID, string comment, List<ReportTeg> tegs, string[]? screenshots = null)
     {
         public long UserID { get; init; } = userID;
-        public string Comment { get; init; } = comment;
-        public List<string> Tegs { get; init; } = tegs; // for bugs / outdated info / violation type -> enum?
-        public DateTime Date { get; init; } = DateTime.Now;
+        public string Comment { get; private set; } = comment;
+        public string? Answer { get; set; } = null;
+        public List<ReportTeg> Tegs { get; set; } = tegs;
+        public string[] Screenshots { get; private set; } = screenshots ?? [];
+        public DateTime Date { get; private set; } = DateTime.Now;
+
+        public void ChangeComment(string comment)
+        {
+            Comment = comment;
+            Date = DateTime.Now;
+        }
     }
 
-    class BugReport(long userID, string comment, List<string> tegs, List<object>? screenshots) : Report(userID, comment, tegs)
+    class ComplaintReport(long userID, string comment, List<ReportTeg> tegs, long subjectID, string[]? screenshots = null) : FeedbackReport(userID, comment, tegs, screenshots)
     {
-        public List<object> Screenshots { get; init; } = screenshots ?? [];
-    }
-
-    class Complaint(long userID, string comment, List<string> tegs, Review review) : Report(userID, comment, tegs)
-    {
-        public Review Review { get; init; } = review;
+        public long SubjectID { get; init; } = subjectID;
     }
 }

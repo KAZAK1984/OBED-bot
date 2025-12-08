@@ -1,4 +1,6 @@
-﻿using System.Data;
+﻿using Microsoft.Data.Sqlite;
+using System.Data;
+using Telegram.Bot.Types;
 
 namespace OBED.Include
 {
@@ -10,6 +12,7 @@ namespace OBED.Include
 	}
 	class Person
 	{
+		private static readonly string dbConnectionString = "Data Source=OBED_DB.db";
 		public string Username { get; private set; }
 		public long UserID { get; init; }
 		public RoleType Role { get; private set; }
@@ -32,6 +35,52 @@ namespace OBED.Include
 			if (!Enum.IsDefined(typeof(RoleType), role))
 				throw new ArgumentException("Недопустимое значение роли.", nameof(role));
 			Role = role;
+		}
+
+		public static void LoadPersonsFromBD()
+		{
+			using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
+			{
+				connection.Open();
+				var command = new SqliteCommand();
+				command.Connection = connection;
+				command.CommandText = @"SELECT * FROM TG_Users";
+				using(SqliteDataReader reader = command.ExecuteReader())
+				{
+					while (reader.Read())
+					{
+						string username = reader.GetString(reader.GetOrdinal("Name"));
+						long UserID = reader.GetInt64(reader.GetOrdinal("TG_id"));
+						string role = reader.GetString(reader.GetOrdinal("Role"));
+						RoleType role1;
+						switch (role)
+						{
+							case ("CommonUser"):
+								{
+									role1 = RoleType.CommonUser;
+									break;
+								}
+							case ("VipUser"):
+								{
+									role1 = RoleType.VipUser;
+									break;
+								}
+							case ("Administrator"):
+								{
+									role1 = RoleType.Administrator;
+									break;
+								}
+							default:
+								{
+									role1 = RoleType.CommonUser;
+									break;
+								}
+						}
+						int onban = reader.GetInt32(reader.GetOrdinal("OnBan"));
+						ObjectLists.Persons.TryAdd(UserID, new Person(username, UserID, role1));
+					}
+				}
+			}
 		}
 	// TODO: ChangeUsername()
 }

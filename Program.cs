@@ -28,9 +28,11 @@ static class Program
 				CreateTablePlaces(command);
 				Product.CreateTableProducts(command);
 				BasePlace.CreateTableReviews(command);
+				SecurityManager.CreateBlockedUsersTable(command);
 			}
 		}
-
+		SecurityManager.LoadBlockedUsersBD();
+		Person.LoadPersonsFromBD();
 		BasePlace.LoadAllPlaces(2);
 		BasePlace.LoadAllPlaces(1);
 		BasePlace.LoadAllPlaces(3);
@@ -300,14 +302,14 @@ static class Program
 					{
 						if (foundUser == null)
 						{
+							if (AddUserToDatabase(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, "CommonUser"))
+							{
+								Console.WriteLine("Добавлен новый пользователь");
+							}
 							Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
 							ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
 							usersState.TryAdd(msg.Chat.Id, new());
 							ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
-						}
-						if (AddUserToDatabase(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, "CommonUser"))
-						{
-							Console.WriteLine("Добавлен новый пользователь");
 						}
 
 						await EditOrSendMessage(msg, """
@@ -2190,6 +2192,7 @@ static class Program
 										{
 											try
 											{
+												SecurityManager.UpdateOnBanBD(userID, 1,selectedReason);
 												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Пользователь успешно заблокирован!");
 											}
 											catch (Exception ex)
@@ -2227,6 +2230,7 @@ static class Program
 										{
 											try
 											{
+												SecurityManager.UpdateOnBanBD(userID, 0);
 												await bot.AnswerCallbackQuery(callbackQuery.Id, $"Блокировка успешно снята!");
 											}
 											catch (Exception ex)
@@ -2518,6 +2522,7 @@ static class Program
 									    Name	TEXT DEFAULT 'Unknown',
 										TG_id	INTEGER NOT NULL UNIQUE,
 										Role	TEXT NOT NULL DEFAULT 'CommonUser',
+										OnBan INTEGER DEFAULT 0,
 										PRIMARY KEY(""List_id"" AUTOINCREMENT)
 										);";
 		command.ExecuteNonQuery();

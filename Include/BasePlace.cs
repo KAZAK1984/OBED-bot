@@ -362,7 +362,7 @@ namespace OBED.Include
 				command.Connection = connection;
 
 				command.CommandText =
-						$@"SELECT 1 FROM Reviews WHERE
+						$@"SELECT Review_id FROM Reviews WHERE
                     ""Users_id"" = @UserID AND ""Place_id"" = @place AND ""OnMod"" != 2";
 				command.Parameters.Add(new SqliteParameter("@UserID", UserID));
 				command.Parameters.Add(new SqliteParameter("@place", Place));

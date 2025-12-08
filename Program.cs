@@ -515,7 +515,16 @@ class Program
 						if (page >= reports.Count)
 							page = reports.Count - 1;
 
-                        await EditOrSendMessage(msg, $"{reports[page].Comment}", new InlineKeyboardButton[][]
+                        await EditOrSendMessage(msg, $"""
+							Репорт:
+								"{reports[page].Comment}".
+
+							Дата отправки на рассмотрение: 
+								{ObjectLists.FeedbackReports[0].Date}.
+							
+							Ответ:
+								{ObjectLists.FeedbackReports[0].Answer ?? "Отсутствует"}.
+							""", new InlineKeyboardButton[][]
                         {
                             [((page != 0) ? "◀️" : "", $"/pickReport {page - 1}"), ("Редактировать", $"/changeReport {page}"), ((reports.Count - 1)> page ? "▶️" : "", $"/pickReport {page + 1}")],
 							[("Назад", $"/report")]
@@ -1416,7 +1425,7 @@ class Program
 											Репорт: 
 												"{ObjectLists.FeedbackReports[0].Comment}".
 
-											Дата отправки на модерацию: {ObjectLists.FeedbackReports[0].Date}.
+											Дата отправки на рассмотрение: {ObjectLists.FeedbackReports[0].Date}.
 
 											Ответ:
 												{ObjectLists.FeedbackReports[0].Answer ?? "Отсутствует"}.
@@ -1479,7 +1488,7 @@ class Program
                                                         }
                                                     default:
                                                         {
-                                                            await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к модерации в процессе написания отзыва на другую точку. Сброс ранее введённой информации...");
+                                                            await EditOrSendMessage(msg, $"Зафиксирована попытка приступить к обрабортке другого репорта. Сброс ранее введённой информации...");
                                                             usersState[foundUser!.UserID].Action = null;
                                                             await OnCommand("/admin", args, msg);
                                                             break;
@@ -1535,7 +1544,7 @@ class Program
                                             {
                                                 await EditOrSendMessage(msg, "Ошибка при запросе: некорректный аргумент команды /admin res...", new InlineKeyboardButton[]
                                                 {
-                                                    ("Назад", "/admin chk")
+                                                    ("Назад", "/admin res")
                                                 });
                                                 throw new Exception($"Invalid command agrs: {msg.Text}");
                                             }
@@ -2416,9 +2425,12 @@ class Program
                                     }
                                 case ("resS"):
                                     {
-										FeedbackReport report = ObjectLists.FeedbackReports[0];
-										ObjectLists.FeedbackReports.Add(report);
-										ObjectLists.FeedbackReports.RemoveAt(0);
+										if (ObjectLists.FeedbackReports.Count > 0)
+										{
+											FeedbackReport report = ObjectLists.FeedbackReports[0];
+											ObjectLists.FeedbackReports.Add(report);
+											ObjectLists.FeedbackReports.RemoveAt(0);
+										}
 
                                         await OnCommand("/admin", "res", callbackQuery.Message);
                                         break;

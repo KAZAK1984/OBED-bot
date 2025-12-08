@@ -70,13 +70,26 @@ namespace OBED.Include
 		ReportSetTegs,
         /// <summary> Для ДОБАВЛЕНИЯ ТЕГОВ для репортов. Отметка, позволяющая перейти к финальному этапу отправки тегов для репорт</summary>
         NoActiveReportSetTegs
+		/// <summary> Для ДОБАВЛЕНИЯ точки питания админом. Запрос не-пустой строки/названия точки</summary>
+		PlaceNameRequest,
+		NoPlaceNameRequest,
+        CorpusRequest,
+        FloorRequest,
+        DescriptionRequest,
+        TypeRequest,
+		ProductNameRequest,
+		ProductValueRequest,
+		ProductperGramRequest,
+		ProductTypeRequest,
+		ProductPlaceRequest
     }
-
-    class UserState
+	class UserState
 	{
 		public UserAction? Action { get; set; }
 		public string? ActionArguments { get; set; }
 		public string? Comment { get; set; }
 		public int Rating { get; set; }
+
+		public PlaceData? TempData { get; set; }
     }
 }

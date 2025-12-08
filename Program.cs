@@ -376,7 +376,7 @@ static class Program
 							usersState.TryAdd(msg.Chat.Id, new());
 							ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
 
-							if (foundUser!.UserID == 1204402944)
+							if (foundUser!.UserID == 5105337031)
 								foundUser.SetRole(RoleType.Administrator);
 						}
 						if (AddUserToDatabase(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, "CommonUser"))

@@ -69,7 +69,7 @@ namespace OBED.Include
 		/// <summary> Для ДОБАВЛЕНИЯ ТЕГОВ для репортов. Запрос тегов для репорта от пользователя</summary>
 		ReportSetTegs,
         /// <summary> Для ДОБАВЛЕНИЯ ТЕГОВ для репортов. Отметка, позволяющая перейти к финальному этапу отправки тегов для репорт</summary>
-        NoActiveReportSetTegs
+        NoActiveReportSetTegs,
 		/// <summary> Для ДОБАВЛЕНИЯ точки питания админом. Запрос не-пустой строки/названия точки</summary>
 		PlaceNameRequest,
 		NoPlaceNameRequest,

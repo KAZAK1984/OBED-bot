@@ -147,17 +147,16 @@ namespace OBED.Include
 				command.CommandText = @"UPDATE TG_Users SET OnBan = @banb WHERE TG_id = @userid";
 				command.Parameters.Add(new SqliteParameter("@banb", ban));
 				command.Parameters.Add(new SqliteParameter("@userid", userID));
-				long? listid = (long?)command.ExecuteScalar();
+				command.ExecuteNonQuery();
 				if(ban == 0)
 				{
-					command.CommandText = @"DELETE FROM BlockedUsers WHERE List_id = @listid";
-					command.Parameters.Add(new SqliteParameter("@listid", listid));
+					command.CommandText = @"DELETE FROM BlockedUsers WHERE User_id = @userid";
 					command.ExecuteNonQuery();
 				}
 				else
 				{
-					command.CommandText = @"INSERT INTO BlockedUsers(List_id,Reason) VALUES (@listid,@reason)";
-					command.Parameters.Add(new SqliteParameter("@listid", listid));
+					command.CommandText = @"INSERT INTO BlockedUsers(List_id,User_id,Reason) VALUES ((SELECT List_id FROM TG_Users WHERE TG_id = @userid),@userid,@reason)";
+					if(reason == null || reason == "") { command.CommandText = @"INSERT INTO BlockedUsers(List_id,User_id) VALUES ((SELECT List_id FROM TG_Users WHERE TG_id = @userid),@userid)"; }
 					command.Parameters.Add(new SqliteParameter("@reason", reason));
 					command.ExecuteNonQuery();
 				}
@@ -171,12 +170,12 @@ namespace OBED.Include
 				connection.Open();
 				var command = new SqliteCommand();
 				command.Connection = connection;
-				command.CommandText = @"SELECT * FROM BlockedUsers JOIN TG_Users WHERE BlockedUsers.List_id = TG_Users.List_id";
+				command.CommandText = @"SELECT * FROM BlockedUsers";
 				using(SqliteDataReader reader = command.ExecuteReader())
 				{
 					while (reader.Read())
 					{
-						long userID = reader.GetInt64(reader.GetOrdinal("TG_id"));
+						long userID = reader.GetInt64(reader.GetOrdinal("User_id"));
 						string reason = reader.GetString(reader.GetOrdinal("Reason"));
 
 						SecurityManager.BlockedUsers.TryAdd(userID, reason);
@@ -190,7 +189,9 @@ namespace OBED.Include
 			command.CommandText = @"CREATE TABLE IF NOT EXISTS ""BlockedUsers"" (
 										""List_id""	INTEGER,
 										""Reason""	TEXT,
-										FOREIGN KEY(""List_id"") REFERENCES ""TG_Users""(""List_id"") ON UPDATE CASCADE
+										""User_id""	INTEGER,
+										FOREIGN KEY(""List_id"") REFERENCES ""TG_Users""(""List_id"") ON UPDATE CASCADE,
+										FOREIGN KEY(""User_id"") REFERENCES ""TG_Users""(""TG_id"") ON UPDATE CASCADE
 									);";
 			command.ExecuteNonQuery();
 		}

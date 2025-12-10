@@ -207,7 +207,7 @@ namespace OBED.Include
 				using (var command = new SqliteCommand())
 				{
 					command.Connection = connection;
-					command.CommandText = $@"SELECT * FROM Places WHERE Type = @type AND Corpus != NULL AND Description != NULL AND Floor != NULL";
+					command.CommandText = $@"SELECT * FROM Places WHERE Type = @type AND Corpus IS NOT NULL AND Description IS NOT NULL AND Floor IS NOT NULL";
 					command.Parameters.Add(new SqliteParameter("@type", type));
 					using (SqliteDataReader reader = command.ExecuteReader())
 					{

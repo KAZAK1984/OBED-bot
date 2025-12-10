@@ -189,7 +189,7 @@ namespace OBED.Include
 		{
 			command.CommandText = @"CREATE TABLE ""BlockedUsers"" (
 										""List_id""	INTEGER,
-										""Reason""	TEXT NOT NULL,
+										""Reason""	TEXT,
 										FOREIGN KEY(""List_id"") REFERENCES ""TG_Users""(""List_id"") ON UPDATE CASCADE
 									);";
 			command.ExecuteNonQuery();

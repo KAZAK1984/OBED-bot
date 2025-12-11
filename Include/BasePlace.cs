@@ -88,7 +88,7 @@ namespace OBED.Include
 						command.CommandText = @"UPDATE Reviews SET Comment = @com,Rating = @rating,Date = @date,OnMod = @mod WHERE Review_id = @reviewid";
 						if (review.Comment == null)
 						{
-							command.CommandText = @"UPDATE Reviews SET Rating = @rating,Date = @date WHERE Review_id = @reviewid";
+							command.CommandText = @"UPDATE Reviews SET Rating = @rating,Date = @date,OnMod = 0 WHERE Review_id = @reviewid";
 						}
 						command.Parameters.Add(new SqliteParameter("@mod", mod));
 						command.Parameters.Add(new SqliteParameter("@com", review.Comment));
@@ -100,11 +100,11 @@ namespace OBED.Include
 						return idk != 0;
 					}
 					command.CommandText =
-							@"INSERT INTO Reviews(Users_id,Place_id,Comment,Rating,Date) VALUES (@UserID,@Place,@comment,@Rating,@date)";
+							@"INSERT INTO Reviews(Users_id,Place_id,Comment,Rating,Date,OnMod) VALUES (@UserID,@Place,@comment,@Rating,@date,1)";
 					if (review.Comment == null)
 					{
 						command.CommandText =
-							@"INSERT INTO Reviews(Users_id,Place_id,Rating,Date) VALUES (@UserID,@Place,@Rating,@date)";
+							@"INSERT INTO Reviews(Users_id,Place_id,Rating,Date,OnMod) VALUES (@UserID,@Place,@Rating,@date,0)";
 					}
 					command.Parameters.Add(new SqliteParameter("@comment", review.Comment));
 					command.Parameters.Add(new SqliteParameter("@UserID", review.UserID));
@@ -207,7 +207,7 @@ namespace OBED.Include
 				using (var command = new SqliteCommand())
 				{
 					command.Connection = connection;
-					command.CommandText = $@"SELECT * FROM Places WHERE Type = @type";
+					command.CommandText = $@"SELECT * FROM Places WHERE Type = @type AND Corpus IS NOT NULL AND Description IS NOT NULL AND Floor IS NOT NULL";
 					command.Parameters.Add(new SqliteParameter("@type", type));
 					using (SqliteDataReader reader = command.ExecuteReader())
 					{

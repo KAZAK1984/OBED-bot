@@ -37,6 +37,10 @@ static class Program
 		BasePlace.LoadAllPlaces(3);
 
 		ConcurrentDictionary<long, UserState> usersState = [];
+		foreach(var x in ObjectLists.Persons)
+		{
+			usersState.TryAdd(x.Key, new());
+		}
 
 		bot.OnError += OnError;
 		bot.OnMessage += OnStandarMessage;

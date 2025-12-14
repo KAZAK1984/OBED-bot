@@ -1524,7 +1524,7 @@ static class Program
                                     {
                                         if (ObjectLists.FeedbackReports.Count() > 0)
                                         {
-                                            ObjectLists.Persons.TryGetValue(ObjectLists.FeedbackReports[0].UserID, out Person? writer);
+                                            Person.TryGetPerson(ObjectLists.FeedbackReports[0].UserID, out Person? writer);
 											ArgumentNullException.ThrowIfNull(writer);
 
                                             await EditOrSendMessage(msg, $"""

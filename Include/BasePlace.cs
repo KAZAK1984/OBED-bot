@@ -1,5 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
+using System.Collections.Generic;
 using System.Data.Common;
+using System.Drawing;
 using System.Xml.Linq;
 using Telegram.Bot.Types;
 
@@ -199,7 +201,7 @@ namespace OBED.Include
             return placeid;
         }
 
-		public static void LoadAllPlaces(int type)
+		public static List<T> LoadAllPlaces<T>(int type)
 		{
 			using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
 			{
@@ -215,7 +217,7 @@ namespace OBED.Include
 						{
 							case 1:
 								{
-									List<Buffet> list = [];
+									List<T> list = new List<T>();
 									while (reader.Read())
 									{
 										long placeid = reader.GetInt64(0);
@@ -223,14 +225,13 @@ namespace OBED.Include
 										int corpus = reader.GetInt32(3);
 										string description = reader.GetString(4);
 										int floor = reader.GetInt32(5);
-										list.Add(new Buffet(placeid, name, corpus, floor, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid)));
+										list.Add((T)(object) new Buffet(placeid, name, corpus, floor, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid)));
 									}
-									ObjectLists.AddRangeList(list);
-									break;
+									return list;
 								}
 							case 2:
 								{
-									List<Canteen> list = [];
+									List<T> list = new List<T>();
 									while (reader.Read())
 									{
 										long placeid = reader.GetInt64(0);
@@ -238,29 +239,94 @@ namespace OBED.Include
 										int corpus = reader.GetInt32(3);
 										string description = reader.GetString(4);
 										int floor = reader.GetInt32(5);
-										list.Add(new Canteen(placeid, name, corpus, floor, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid)));
+										list.Add((T)(object) new Canteen(placeid, name, corpus, floor, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid)));
 									}
-									ObjectLists.AddRangeList(list);
-									break;
+									return list;
 								}
 							case 3:
 								{
-									List<Grocery> list = [];
+									List<T> list = new List<T>();
 									while (reader.Read())
 									{
 										long placeid = reader.GetInt64(0);
 										string name = reader.GetString(1);
 										string description = reader.GetString(4);
-										list.Add(new Grocery(placeid, name, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid)));
+										list.Add((T)(object) new Grocery(placeid, name, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid)));
 									}
-									ObjectLists.AddRangeList(list);
-									break;
+									return list;
+								}
+							default:
+								{
+									List<T> list = [];
+									return list;
 								}
 						}
+
 					}
 				}
 			}
         }
+
+		public static T LoadPlace<T>(int type, int index)
+		{
+			using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
+			{
+				connection.Open();
+				var command = new SqliteCommand();
+				command.Connection = connection;
+				command.CommandText = @"SELECT * FROM Places WHERE Type = @type AND Corpus IS NOT NULL AND Description IS NOT NULL AND Floor IS NOT NULL LIMIT 1 OFFSET @offset";
+				command.Parameters.Add(new SqliteParameter("@type", type));
+				command.Parameters.Add(new SqliteParameter("@offset", index));
+				using (SqliteDataReader reader = command.ExecuteReader())
+				{
+					switch (type)
+					{
+						case 1:
+							{
+								while (reader.Read())
+								{
+									long placeid = reader.GetInt64(0);
+									string name = reader.GetString(1);
+									int corpus = reader.GetInt32(3);
+									string description = reader.GetString(4);
+									int floor = reader.GetInt32(5);
+									return (T)(object)new Buffet(placeid, name, corpus, floor, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid));
+								}
+								break;
+							}
+						case 2:
+							{
+								while (reader.Read())
+								{
+									long placeid = reader.GetInt64(0);
+									string name = reader.GetString(1);
+									int corpus = reader.GetInt32(3);
+									string description = reader.GetString(4);
+									int floor = reader.GetInt32(5);
+									return (T)(object)new Canteen(placeid, name, corpus, floor, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid));
+								}
+								break;
+							}
+						case 3:
+							{
+								while (reader.Read())
+								{
+									long placeid = reader.GetInt64(0);
+									string name = reader.GetString(1);
+									string description = reader.GetString(4);
+									return (T)(object)new Grocery(placeid, name, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid));
+								}
+								break;
+							}
+						default:
+							{
+								throw new ArgumentException($"Не нашёл Place с таким index({index})");
+							}
+					}
+					throw new ArgumentException($"Не правильный type, ваш type = {type}, а надо от 1 до 3");
+				}
+			} 
+		}
 
 		public static List<Review> LoadAllReviews(long pd)
 		{

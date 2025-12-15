@@ -64,6 +64,8 @@ namespace OBED.Include
 				_ => false
 			};
 
+			if(requestsPerSecond > 6) { UpdateOnBanBD(userID, 1,"Попытка совершить спам атаку"); }
+
 			return SlowDownUserAsync(userID, type);
 		}
 		public static bool UpdateSuspiciousUser(long userID, SuspiciousClass newLevel)

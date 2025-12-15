@@ -328,6 +328,64 @@ namespace OBED.Include
 			} 
 		}
 
+		public static T LoadPlaceById<T>(int type, long placeid)
+		{
+			using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
+			{
+				connection.Open();
+				var command = new SqliteCommand();
+				command.Connection = connection;
+				command.CommandText = @"SELECT * FROM Places WHERE Type = @type AND Place_id = @id AND Corpus IS NOT NULL AND Description IS NOT NULL AND Floor IS NOT NULL";
+				command.Parameters.Add(new SqliteParameter("@type", type));
+				command.Parameters.Add(new SqliteParameter("@id", placeid));
+				using (SqliteDataReader reader = command.ExecuteReader())
+				{
+					switch (type)
+					{
+						case 1:
+							{
+								while (reader.Read())
+								{
+									string name = reader.GetString(1);
+									int corpus = reader.GetInt32(3);
+									string description = reader.GetString(4);
+									int floor = reader.GetInt32(5);
+									return (T)(object)new Buffet(placeid, name, corpus, floor, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid));
+								}
+								break;
+							}
+						case 2:
+							{
+								while (reader.Read())
+								{
+									string name = reader.GetString(1);
+									int corpus = reader.GetInt32(3);
+									string description = reader.GetString(4);
+									int floor = reader.GetInt32(5);
+									return (T)(object)new Canteen(placeid, name, corpus, floor, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid));
+								}
+								break;
+							}
+						case 3:
+							{
+								while (reader.Read())
+								{
+									string name = reader.GetString(1);
+									string description = reader.GetString(4);
+									return (T)(object)new Grocery(placeid, name, description, LoadAllReviews(placeid), Product.LoadAllProducts(placeid));
+								}
+								break;
+							}
+						default:
+							{
+								throw new ArgumentException($"Не нашёл Place с таким placeid({placeid})");
+							}
+					}
+					throw new ArgumentException($"Не правильный type, ваш type = {type}, а надо от 1 до 3");
+				}
+			}
+		}
+
 		public static List<Review> LoadAllReviews(long pd)
 		{
 			List<Review> list = [];

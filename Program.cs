@@ -554,7 +554,7 @@ static class Program
                     }
                 case ("/pickReport"):
                     {
-                        List<FeedbackReport> reports = [.. ObjectLists.FeedbackReports.Where(x => x.UserID == foundUser.UserID)];
+                        List<FeedbackReport> reports = [.. FeedbackReport.LoadAllReportsFromPerson(foundUser.UserID)];
 
                         if (!reports.Any())
                         {
@@ -1170,7 +1170,7 @@ static class Program
 								}
 						}
 
-						if (place.Reviews.Any(x => x.UserID == foundUser!.UserID) || AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
+						if (place.Reviews.Any(x => x.UserID == foundUser!.UserID) || AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID))
 						{
 							if (place.Reviews.Any(x => x.UserID == foundUser!.UserID))
 								await EditOrSendMessage(msg, $"""
@@ -1189,8 +1189,8 @@ static class Program
 								await EditOrSendMessage(msg, $"""
 									😅 Ты уже оставил отзыв на {place.Name}
 
-									💠 Оценка: {AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Rating}
-									💠 Комментарий: {AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Comment}
+									💠 Оценка: {AdminControl.ReviewCollector.First(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID).review.Rating}
+									💠 Комментарий: {AdminControl.ReviewCollector.First(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID).review.Comment}
 
 									❕ Ты можешь оставить только один отзыв на точку питания, но можешь изменить прошлый!
 									""", new InlineKeyboardButton[][]
@@ -1281,7 +1281,7 @@ static class Program
 								}
 						}
 
-						if (!place.Reviews.Any(x => x.UserID == foundUser!.UserID) && !AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
+						if (!place.Reviews.Any(x => x.UserID == foundUser!.UserID) && !AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID))
 						{
 							await EditOrSendMessage(msg, $"""
 								💀 Упс, ты не можешь изменить отзыв на {place.Name}
@@ -1329,12 +1329,12 @@ static class Program
 								}
 							case (UserAction.NoActiveChange):
 								{
-									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
+									if (AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID))
 									{
 										if (usersState[foundUser!.UserID].Rating == 0)
-											usersState[foundUser!.UserID].Rating = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Rating;
+											usersState[foundUser!.UserID].Rating = AdminControl.ReviewCollector.First(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID).review.Rating;
 										if (usersState[foundUser!.UserID].Comment == "saved_mark")
-											usersState[foundUser!.UserID].Comment = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Comment;
+											usersState[foundUser!.UserID].Comment = AdminControl.ReviewCollector.First(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID).review.Comment;
 									}
 									else
 									{
@@ -1385,7 +1385,7 @@ static class Program
 							""", new InlineKeyboardButton[][]
 							{
                                 [(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
-                                [(ObjectLists.FeedbackReports.Count() > 0 ? "Начать проверку репортов" : "", $"/admin res")],
+                                [(FeedbackReport.CountFeedbackReports() > 0 ? "Начать проверку репортов" : "", $"/admin res")],
                                 [("Меню блокировок", "/admin ban")],
                                 [("Обновить админ-меню", "/admin ref")],
                                 [("Добавить точку питания", "/admin add")],
@@ -1522,24 +1522,27 @@ static class Program
 								{
                                     if (args.Length < 4)
                                     {
-                                        if (ObjectLists.FeedbackReports.Count() > 0)
+                                        if (FeedbackReport.CountFeedbackReports() > 0)
                                         {
-                                            Person.TryGetPerson(ObjectLists.FeedbackReports[0].UserID, out Person? writer);
+                                            FeedbackReport.GetFirstPersonInFeedbackReports(out Person? writer);
 											ArgumentNullException.ThrowIfNull(writer);
 
-                                            await EditOrSendMessage(msg, $"""
+											FeedbackReport report = FeedbackReport.GetFirstReportFromPerson(writer.UserID) ?? new FeedbackReport(writer.UserID,"Произошёл баг", [ReportTeg.Bug]);
+
+
+											await EditOrSendMessage(msg, $"""
 											Пользователь: @{writer.Username}, {writer.Role}.
 
 											Репорт: 
-												"{ObjectLists.FeedbackReports[0].Comment}".
+												"{report.Comment}".
 
-											Дата отправки на рассмотрение: {ObjectLists.FeedbackReports[0].Date}.
+											Дата отправки на рассмотрение: {report.Date}.
 
 											Ответ:
-												{ObjectLists.FeedbackReports[0].Answer ?? "Отсутствует"}.
+												{report.Answer ?? "Отсутствует"}.
 
 											Теги:
-												{string.Join(", ", ObjectLists.FeedbackReports[0].Tegs)}.
+												{string.Join(", ", report.Tegs)}.
 											""", new InlineKeyboardButton[][]
                                                 {
                                                 [("Ответить", $"/admin resA")],
@@ -1569,7 +1572,7 @@ static class Program
                                                             usersState[foundUser!.UserID].Action = UserAction.ReportResponse;
                                                             await EditOrSendMessage(msg, $"""
 																Сообщение пользователя:
-																	"{ObjectLists.FeedbackReports[0].Comment}"
+																	"{FeedbackReport.GetFirstReport().Comment}"
 																
 																Введите ответ на данный репорт
 																""", null, ParseMode.None, true);
@@ -1581,7 +1584,7 @@ static class Program
                                                             usersState[foundUser!.UserID].Action = null;
                                                             await EditOrSendMessage(msg, $"""
 															Сообщение пользователя:
-																"{ObjectLists.FeedbackReports[0].Comment}"
+																"{FeedbackReport.GetFirstReport().Comment}"
 
 															Ваш ответ:
 																{usersState[foundUser!.UserID].Comment ?? "Удалён"}
@@ -1613,7 +1616,7 @@ static class Program
                                                             usersState[foundUser!.UserID].Action = UserAction.ReportSetTegs;
                                                             await EditOrSendMessage(msg, $"""
 																Сообщение пользователя:
-																	"{ObjectLists.FeedbackReports[0].Comment}"
+																	"{FeedbackReport.GetFirstReport().Comment}"
 																
 																Введите список тегов для этого репорта через пробел с маленькой буквы
 																""", null, ParseMode.None, true);
@@ -1625,7 +1628,7 @@ static class Program
                                                             usersState[foundUser!.UserID].Action = null;
                                                             await EditOrSendMessage(msg, $"""
 															Сообщение пользователя:
-																"{ObjectLists.FeedbackReports[0].Comment}"
+																"{FeedbackReport.GetFirstReport().Comment}"
 
 															Теги:
 																{usersState[foundUser!.UserID].Comment}
@@ -2384,13 +2387,13 @@ static class Program
 							{
 								case ("B"):
 									{
-										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Bug]));
+										FeedbackReport.SaveFeedbackReport(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Bug]));
 										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет о баге успешно добавлен!");
 										break;
 									}
 								case ("R"):
 									{
-										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Suggestion])); // TODO
+										FeedbackReport.SaveFeedbackReport(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Suggestion])); // TODO
 										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв о боте успешно добавлен!");
 										break;
 									}
@@ -2421,7 +2424,7 @@ static class Program
                                 throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
                             }
 
-                            var existingReport = ObjectLists.FeedbackReports.Where(x => x.UserID == foundUser.UserID).ElementAtOrDefault(reportIndex);
+                            var existingReport = FeedbackReport.GetFirstReportFromPerson(foundUser.UserID,reportIndex);
 
                             if (existingReport == null)
                             {
@@ -2436,9 +2439,9 @@ static class Program
                                 if (usersState[foundUser.UserID].Comment != null)
                                 {
                                     if (usersState[foundUser.UserID].Comment == "-")
-                                        ObjectLists.FeedbackReports.Remove(existingReport);
+                                        FeedbackReport.DeleteReportFromDB(existingReport.IdInDB);
                                     else
-                                        existingReport.ChangeComment(usersState[foundUser.UserID].Comment!);
+                                        existingReport.ChangeComment(usersState[foundUser.UserID].Comment!,existingReport.IdInDB);
                                 }
                                 else
                                 {
@@ -2545,7 +2548,7 @@ static class Program
 									{
 										if (usersState[foundUser.UserID].Comment != null)
 										{
-											ObjectLists.FeedbackReports[0].Answer = usersState[foundUser.UserID].Comment!;
+											FeedbackReport.UpdateReportAnswer(usersState[foundUser.UserID].Comment!, FeedbackReport.GetFirstReport().IdInDB);
                                         }
 										else
 										{
@@ -2580,7 +2583,8 @@ static class Program
                                         {
                                             var splitTegs = usersState[foundUser.UserID].Comment!.Split(' ');
 
-											ObjectLists.FeedbackReports[0].Tegs.Clear();
+											FeedbackReport.GetFirstReport().Tegs.Clear();
+											string tegs = "";
 
                                             foreach (var teg in splitTegs)
 											{
@@ -2588,23 +2592,23 @@ static class Program
 												{
 													case ("bug"):
 														{
-															ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.Bug);
+															tegs += "0";
 															break;
 														}
 													case ("outdatedinfo"):
 														{
-                                                            ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.OutdatedInfo);
-                                                            break;
+															tegs += "1";
+															break;
 														}
 													case ("wronginfo"):
 														{
-                                                            ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.WrongInfo);
-                                                            break;
+															tegs += "2";
+															break;
 														}
 													case ("suggestion"):
 														{
-                                                            ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.Suggestion);
-                                                            break;
+															tegs += "3";
+															break;
 														}
 													default:
 														{
@@ -2616,6 +2620,8 @@ static class Program
 														}
                                                 }
 											}
+											FeedbackReport.UpdateTegsInReport(tegs, FeedbackReport.GetFirstReport().IdInDB);
+
                                         }
                                         else
                                         {
@@ -2646,11 +2652,11 @@ static class Program
                                     }
                                 case ("resS"):
                                     {
-										if (ObjectLists.FeedbackReports.Count > 0)
+										if (FeedbackReport.CountFeedbackReports() > 0)
 										{
-											FeedbackReport report = ObjectLists.FeedbackReports[0];
-											ObjectLists.FeedbackReports.Add(report);
-											ObjectLists.FeedbackReports.RemoveAt(0);
+											FeedbackReport report = FeedbackReport.GetFirstReport();
+											FeedbackReport.SaveFeedbackReport(report);
+											FeedbackReport.DeleteReportFromDB(report.IdInDB);
 										}
 
                                         await OnCommand("/admin", "res", callbackQuery.Message);
@@ -2966,7 +2972,7 @@ static class Program
 								}
 							case ("deleteReview"):
 								{
-									if (!place.Reviews.Any(x => x.UserID == foundUser.UserID) && !AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
+									if (!place.Reviews.Any(x => x.UserID == foundUser.UserID) && !AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser.UserID))
 									{
 										await EditOrSendMessage(callbackQuery.Message, $"""
 										💀 Упс, ошибка! Не удалось уджалить отзыв на {place.Name}
@@ -2998,9 +3004,9 @@ static class Program
 										await OnCommand("/info", splitStr[1], callbackQuery.Message);
 										break;
 									}
-									else if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
+									else if (AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser.UserID))
 									{ 
-										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
+										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser.UserID));
 
 										try
 										{
@@ -3032,8 +3038,8 @@ static class Program
 										break;
 
 									place.DeleteReview(foundUser.UserID);
-									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
-										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
+									if (AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser.UserID))
+										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser.UserID));
 
 									AdminControl.AddReviewOnMod(place, foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment);
 
@@ -3094,9 +3100,9 @@ static class Program
 			}
 		}
 	}
-	private static int GetUsersCount()
+	private static long GetUsersCount()
 	{
-		int r = 0;
+		long r = 0;
 		using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
 		{
 			var users = new List<string>();
@@ -3105,7 +3111,7 @@ static class Program
 			command.Connection = connection;
 			command.CommandText = $"SELECT COUNT(*) FROM TG_Users";
 			object result = command.ExecuteScalar();
-			if(result != null && result != DBNull.Value) { r = (int)result; }
+			if(result != null && result != DBNull.Value) { r = (long)result; }
 			return r;
 
 		}

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using System.Collections.Concurrent;
 using System.Data;
 using Telegram.Bot.Types;
 
@@ -37,8 +38,104 @@ namespace OBED.Include
 			Role = role;
 		}
 
-		public static void LoadPersonsFromBD()
+
+		public static Person? TryGetPerson(long userID)
 		{
+			using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
+			{
+				connection.Open();
+				var command = new SqliteCommand();
+				command.Connection = connection;
+				command.CommandText = @"SELECT * FROM TG_Users WHERE TG_id = @userid";
+				command.Parameters.Add(new SqliteParameter("@userid", userID));
+				using(SqliteDataReader reader = command.ExecuteReader())
+				{
+					while (reader.Read())
+					{
+						string username = reader.GetString(reader.GetOrdinal("Name"));
+						string role = reader.GetString(reader.GetOrdinal("Role"));
+						RoleType role1;
+						switch (role)
+						{
+							case ("CommonUser"):
+								{
+									role1 = RoleType.CommonUser;
+									break;
+								}
+							case ("VipUser"):
+								{
+									role1 = RoleType.VipUser;
+									break;
+								}
+							case ("Administrator"):
+								{
+									role1 = RoleType.Administrator;
+									break;
+								}
+							default:
+								{
+									role1 = RoleType.CommonUser;
+									break;
+								}
+						}
+						return new Person(username, userID, role1);
+					}
+				}
+			}
+			return null;
+		}
+
+		public static Person? TryGetPerson(long userID, out Person? user)
+		{
+			using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
+			{
+				connection.Open();
+				var command = new SqliteCommand();
+				command.Connection = connection;
+				command.CommandText = @"SELECT * FROM TG_Users WHERE TG_id = @userid";
+				command.Parameters.Add(new SqliteParameter("@userid", userID));
+				using (SqliteDataReader reader = command.ExecuteReader())
+				{
+					while (reader.Read())
+					{
+						string username = reader.GetString(reader.GetOrdinal("Name"));
+						string role = reader.GetString(reader.GetOrdinal("Role"));
+						RoleType role1;
+						switch (role)
+						{
+							case ("CommonUser"):
+								{
+									role1 = RoleType.CommonUser;
+									break;
+								}
+							case ("VipUser"):
+								{
+									role1 = RoleType.VipUser;
+									break;
+								}
+							case ("Administrator"):
+								{
+									role1 = RoleType.Administrator;
+									break;
+								}
+							default:
+								{
+									role1 = RoleType.CommonUser;
+									break;
+								}
+						}
+						user = new Person(username, userID, role1);
+						return user;
+					}
+				}
+			}
+			user = null;
+			return null;
+		}
+
+		public static List<Person> LoadPersonsFromBD()
+		{
+			List<Person> list = [];
 			using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
 			{
 				connection.Open();
@@ -77,13 +174,120 @@ namespace OBED.Include
 								}
 						}
 						int onban = reader.GetInt32(reader.GetOrdinal("OnBan"));
-						ObjectLists.Persons.TryAdd(UserID, new Person(username, UserID, role1));
+						list.Add(new Person(username, UserID, role1));
 					}
 				}
 			}
+			return list;
 		}
-	// TODO: ChangeUsername()
-}
+
+		public static ConcurrentDictionary<long,Person> LoadPersonsFromBDAsConcurrent()
+		{
+			ConcurrentDictionary<long,Person> list = [];
+			using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
+			{
+				connection.Open();
+				var command = new SqliteCommand();
+				command.Connection = connection;
+				command.CommandText = @"SELECT * FROM TG_Users";
+				using (SqliteDataReader reader = command.ExecuteReader())
+				{
+					while (reader.Read())
+					{
+						string username = reader.GetString(reader.GetOrdinal("Name"));
+						long UserID = reader.GetInt64(reader.GetOrdinal("TG_id"));
+						string role = reader.GetString(reader.GetOrdinal("Role"));
+						RoleType role1;
+						switch (role)
+						{
+							case ("CommonUser"):
+								{
+									role1 = RoleType.CommonUser;
+									break;
+								}
+							case ("VipUser"):
+								{
+									role1 = RoleType.VipUser;
+									break;
+								}
+							case ("Administrator"):
+								{
+									role1 = RoleType.Administrator;
+									break;
+								}
+							default:
+								{
+									role1 = RoleType.CommonUser;
+									break;
+								}
+						}
+						int onban = reader.GetInt32(reader.GetOrdinal("OnBan"));
+						list.TryAdd(UserID,new Person(username, UserID, role1));
+					}
+				}
+			}
+			return list;
+		}
+
+		public static ConcurrentDictionary<long,string> GetBlockedUsers()
+		{
+			using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
+			{
+				connection.Open();
+				var command = new SqliteCommand();
+				command.Connection = connection;
+				command.CommandText = @"SELECT * FROM BlockedUsers";
+				using(SqliteDataReader reader = command.ExecuteReader())
+				{
+					ConcurrentDictionary<long, string> list = [];
+					while (reader.Read())
+					{
+						long userid = reader.GetInt64(reader.GetOrdinal("User_id"));
+						string reason = reader.GetString(reader.GetOrdinal("Reason"));
+						list.TryAdd(userid, reason);
+					}
+					return list;
+				}
+			}
+		}
+
+		public static bool BlockedUsersContainsID(long userid)
+		{
+			using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
+			{
+				connection.Open();
+				var command = new SqliteCommand();
+				command.Connection = connection;
+				command.CommandText = @"SELECT * FROM BlockedUsers WHERE User_id = @userid";
+				command.Parameters.Add(new SqliteParameter("@userid", userid));
+				return command.ExecuteScalar() != null;
+			}
+		}
+
+		public static bool BlockedUsersContainsID(long userid,out string? reason)
+		{
+			using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
+			{
+				connection.Open();
+				var command = new SqliteCommand();
+				command.Connection = connection;
+				command.CommandText = @"SELECT * FROM BlockedUsers WHERE User_id = @userid";
+				command.Parameters.Add(new SqliteParameter("@userid", userid));
+				using(SqliteDataReader reader = command.ExecuteReader())
+				{
+					while (reader.Read())
+					{
+						reason = reader.GetString(reader.GetOrdinal("Reason"));
+						return true;
+					}
+				}
+				reason = null;
+				return false;
+			}
+		}
+
+		// TODO: ChangeUsername()
+	}
 	/// <summary>
 	/// Текущий тип обработки сообщений в чате от юзера. Без данных тегов UserState у сообщения игнорируются
 	/// </summary>

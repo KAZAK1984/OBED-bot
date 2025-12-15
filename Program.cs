@@ -30,13 +30,13 @@ static class Program
 				SecurityManager.CreateBlockedUsersTable(command);
 			}
 		}
-		SecurityManager.LoadBlockedUsersBD();
-		Person.LoadPersonsFromBD();
-		BasePlace.LoadAllPlaces(2);
-		BasePlace.LoadAllPlaces(1);
-		BasePlace.LoadAllPlaces(3);
 
 		ConcurrentDictionary<long, UserState> usersState = [];
+		foreach(Person x in Person.LoadPersonsFromBD())
+		{
+			usersState.TryAdd(x.UserID, new());
+		}
+		
 
 		bot.OnError += OnError;
 		bot.OnMessage += OnStandarMessage;
@@ -98,11 +98,11 @@ static class Program
 
 		async Task OnStandarMessage(Message msg, UpdateType type)
 		{
-			ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
+			Person? foundUser = Person.TryGetPerson(msg.Chat.Id);
 
 			if (foundUser != null)
 			{
-				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+				if (Person.BlockedUsersContainsID(foundUser.UserID, out string? reason))
 				{
 					await bot.SendMessage(msg.Chat, $"🚫 Вы были заблокированы за: {reason ?? "Траблмейкинг"}.");
 					return;
@@ -131,7 +131,7 @@ static class Program
 							break;
 						}
 
-						ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
+						Person? foundUser = Person.TryGetPerson(msg.Chat.Id);
 
 						if (foundUser == null)
 						{
@@ -350,7 +350,7 @@ static class Program
 
 		async Task OnCommand(string command, string? args, Message msg)
 		{
-			ObjectLists.Persons.TryGetValue(msg.Chat.Id, out Person? foundUser);
+			Person? foundUser = Person.TryGetPerson(msg.Chat.Id);
 
 			if (foundUser == null && command != "/start")
 			{
@@ -376,9 +376,8 @@ static class Program
 								Console.WriteLine("Добавлен новый пользователь");
 							}
 							Console.WriteLine($"REG: {msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName)}");
-							ObjectLists.Persons.TryAdd(msg.Chat.Id, new Person(msg.Chat.Username ?? (msg.Chat.FirstName + msg.Chat.LastName), msg.Chat.Id, RoleType.CommonUser));
 							usersState.TryAdd(msg.Chat.Id, new());
-							ObjectLists.Persons.TryGetValue(msg.Chat.Id, out foundUser);
+							foundUser = Person.TryGetPerson(msg.Chat.Id);
 						}
 
                         await EditOrSendMessage(msg, """
@@ -555,7 +554,7 @@ static class Program
                     }
                 case ("/pickReport"):
                     {
-                        List<FeedbackReport> reports = [.. ObjectLists.FeedbackReports.Where(x => x.UserID == foundUser.UserID)];
+                        List<FeedbackReport> reports = [.. FeedbackReport.LoadAllReportsFromPerson(foundUser.UserID)];
 
                         if (!reports.Any())
                         {
@@ -692,17 +691,17 @@ static class Program
 						{
 							case ('C'):
 								{
-									places = [.. ObjectLists.Canteens.Cast<BasePlace>()];
+									places = [.. BasePlace.LoadAllPlaces<Canteen>(2).Cast<BasePlace>()];
 									break;
 								}
 							case ('B'):
 								{
-									places = [.. ObjectLists.Buffets.Cast<BasePlace>()];
+									places = [.. BasePlace.LoadAllPlaces<Buffet>(1).Cast<BasePlace>()];
 									break;
 								}
 							case ('G'):
 								{
-									places = [.. ObjectLists.Groceries.Cast<BasePlace>()];
+									places = [.. BasePlace.LoadAllPlaces<Grocery>(3).Cast<BasePlace>()];
 									break;
 								}
 							default:
@@ -816,17 +815,17 @@ static class Program
 						{
 							case ('C'):
 								{
-									place = ObjectLists.Canteens[index];
+									place = BasePlace.LoadPlace<Canteen>(2, index);
 									break;
 								}
 							case ('B'):
 								{
-									place = ObjectLists.Buffets[index];
+									place = BasePlace.LoadPlace<Buffet>(1, index);
 									break;
 								}
 							case ('G'):
 								{
-									place = ObjectLists.Groceries[index];
+									place = BasePlace.LoadPlace<Grocery>(3, index);
 									break;
 								}
 							default:
@@ -897,20 +896,23 @@ static class Program
 						{
 							case ('C'):
 								{
-									placeName = ObjectLists.Canteens[index].Name;
-									menu = ObjectLists.Canteens[index].Menu;
+									Canteen place = BasePlace.LoadPlace<Canteen>(2, index);
+									placeName = place.Name;
+									menu = place.Menu;
 									break;
 								}
 							case ('B'):
 								{
-									placeName = ObjectLists.Buffets[index].Name;
-									menu = ObjectLists.Buffets[index].Menu;
+									Buffet place = BasePlace.LoadPlace<Buffet>(1, index);
+									placeName = place.Name;
+									menu = place.Menu;
 									break;
 								}
 							case ('G'):
 								{
-									placeName = ObjectLists.Groceries[index].Name;
-									menu = ObjectLists.Groceries[index].Menu;
+									Grocery place = BasePlace.LoadPlace<Grocery>(3, index);
+									placeName = place.Name;
+									menu = place.Menu;
 									break;
 								}
 							default:
@@ -1024,20 +1026,23 @@ static class Program
 						{
 							case ('C'):
 								{
-									placeName = ObjectLists.Canteens[index].Name;
-									reviews = ObjectLists.Canteens[index].Reviews;
+									Canteen place = BasePlace.LoadPlace<Canteen>(2, index);
+									placeName = place.Name;
+									reviews = place.Reviews;
 									break;
 								}
 							case ('B'):
 								{
-									placeName = ObjectLists.Buffets[index].Name;
-									reviews = ObjectLists.Buffets[index].Reviews;
+									Buffet place = BasePlace.LoadPlace<Buffet>(1, index);
+									placeName = place.Name;
+									reviews = place.Reviews;
 									break;
 								}
 							case ('G'):
 								{
-									placeName = ObjectLists.Groceries[index].Name;
-									reviews = ObjectLists.Groceries[index].Reviews;
+									Grocery place = BasePlace.LoadPlace<Grocery>(3,index);
+									placeName = place.Name;
+									reviews = place.Reviews;
 									break;
 								}
 							default:
@@ -1142,17 +1147,17 @@ static class Program
 						{
 							case ('C'):
 								{
-									place = ObjectLists.Canteens[index];
+									place = BasePlace.LoadPlace<Canteen>(2, index);
 									break;
 								}
 							case ('B'):
 								{
-									place = ObjectLists.Buffets[index];
+									place = BasePlace.LoadPlace<Canteen>(1, index);
 									break;
 								}
 							case ('G'):
 								{
-									place = ObjectLists.Groceries[index];
+									place = BasePlace.LoadPlace<Grocery>(3, index);
 									break;
 								}
 							default:
@@ -1165,7 +1170,7 @@ static class Program
 								}
 						}
 
-						if (place.Reviews.Any(x => x.UserID == foundUser!.UserID) || AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
+						if (place.Reviews.Any(x => x.UserID == foundUser!.UserID) || AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID))
 						{
 							if (place.Reviews.Any(x => x.UserID == foundUser!.UserID))
 								await EditOrSendMessage(msg, $"""
@@ -1184,8 +1189,8 @@ static class Program
 								await EditOrSendMessage(msg, $"""
 									😅 Ты уже оставил отзыв на {place.Name}
 
-									💠 Оценка: {AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Rating}
-									💠 Комментарий: {AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Comment}
+									💠 Оценка: {AdminControl.ReviewCollector.First(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID).review.Rating}
+									💠 Комментарий: {AdminControl.ReviewCollector.First(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID).review.Comment}
 
 									❕ Ты можешь оставить только один отзыв на точку питания, но можешь изменить прошлый!
 									""", new InlineKeyboardButton[][]
@@ -1253,17 +1258,17 @@ static class Program
 						{
 							case ('C'):
 								{
-									place = ObjectLists.Canteens[index];
+									place = BasePlace.LoadPlace<Canteen>(2, index);
 									break;
 								}
 							case ('B'):
 								{
-									place = ObjectLists.Buffets[index];
+									place = BasePlace.LoadPlace<Canteen>(1, index);
 									break;
 								}
 							case ('G'):
 								{
-									place = ObjectLists.Groceries[index];
+									place = BasePlace.LoadPlace<Grocery>(3, index);
 									break;
 								}
 							default:
@@ -1276,7 +1281,7 @@ static class Program
 								}
 						}
 
-						if (!place.Reviews.Any(x => x.UserID == foundUser!.UserID) && !AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
+						if (!place.Reviews.Any(x => x.UserID == foundUser!.UserID) && !AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID))
 						{
 							await EditOrSendMessage(msg, $"""
 								💀 Упс, ты не можешь изменить отзыв на {place.Name}
@@ -1324,12 +1329,12 @@ static class Program
 								}
 							case (UserAction.NoActiveChange):
 								{
-									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser!.UserID))
+									if (AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID))
 									{
 										if (usersState[foundUser!.UserID].Rating == 0)
-											usersState[foundUser!.UserID].Rating = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Rating;
+											usersState[foundUser!.UserID].Rating = AdminControl.ReviewCollector.First(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID).review.Rating;
 										if (usersState[foundUser!.UserID].Comment == "saved_mark")
-											usersState[foundUser!.UserID].Comment = AdminControl.ReviewCollector.First(x => x.place == place && x.review.UserID == foundUser!.UserID).review.Comment;
+											usersState[foundUser!.UserID].Comment = AdminControl.ReviewCollector.First(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser!.UserID).review.Comment;
 									}
 									else
 									{
@@ -1380,7 +1385,7 @@ static class Program
 							""", new InlineKeyboardButton[][]
 							{
                                 [(AdminControl.ReviewCollector.Count > 0 ? "Начать проверку" : "", $"/admin chk")],
-                                [(ObjectLists.FeedbackReports.Count() > 0 ? "Начать проверку репортов" : "", $"/admin res")],
+                                [(FeedbackReport.CountFeedbackReports() > 0 ? "Начать проверку репортов" : "", $"/admin res")],
                                 [("Меню блокировок", "/admin ban")],
                                 [("Обновить админ-меню", "/admin ref")],
                                 [("Добавить точку питания", "/admin add")],
@@ -1433,7 +1438,7 @@ static class Program
 									{
 										if (AdminControl.ReviewCollector.Count > 0)
 										{
-											ObjectLists.Persons.TryGetValue(AdminControl.ReviewCollector[0].review.UserID, out Person? writer);
+											Person? writer = Person.TryGetPerson(AdminControl.ReviewCollector[0].review.UserID);
 											ArgumentNullException.ThrowIfNull(writer);
 
 											await EditOrSendMessage(msg, $"""
@@ -1517,24 +1522,27 @@ static class Program
 								{
                                     if (args.Length < 4)
                                     {
-                                        if (ObjectLists.FeedbackReports.Count() > 0)
+                                        if (FeedbackReport.CountFeedbackReports() > 0)
                                         {
-                                            ObjectLists.Persons.TryGetValue(ObjectLists.FeedbackReports[0].UserID, out Person? writer);
+                                            FeedbackReport.GetFirstPersonInFeedbackReports(out Person? writer);
 											ArgumentNullException.ThrowIfNull(writer);
 
-                                            await EditOrSendMessage(msg, $"""
+											FeedbackReport report = FeedbackReport.GetFirstReportFromPerson(writer.UserID) ?? new FeedbackReport(writer.UserID,"Произошёл баг", [ReportTeg.Bug]);
+
+
+											await EditOrSendMessage(msg, $"""
 											Пользователь: @{writer.Username}, {writer.Role}.
 
 											Репорт: 
-												"{ObjectLists.FeedbackReports[0].Comment}".
+												"{report.Comment}".
 
-											Дата отправки на рассмотрение: {ObjectLists.FeedbackReports[0].Date}.
+											Дата отправки на рассмотрение: {report.Date}.
 
 											Ответ:
-												{ObjectLists.FeedbackReports[0].Answer ?? "Отсутствует"}.
+												{report.Answer ?? "Отсутствует"}.
 
 											Теги:
-												{string.Join(", ", ObjectLists.FeedbackReports[0].Tegs)}.
+												{string.Join(", ", report.Tegs)}.
 											""", new InlineKeyboardButton[][]
                                                 {
                                                 [("Ответить", $"/admin resA")],
@@ -1564,7 +1572,7 @@ static class Program
                                                             usersState[foundUser!.UserID].Action = UserAction.ReportResponse;
                                                             await EditOrSendMessage(msg, $"""
 																Сообщение пользователя:
-																	"{ObjectLists.FeedbackReports[0].Comment}"
+																	"{FeedbackReport.GetFirstReport().Comment}"
 																
 																Введите ответ на данный репорт
 																""", null, ParseMode.None, true);
@@ -1576,7 +1584,7 @@ static class Program
                                                             usersState[foundUser!.UserID].Action = null;
                                                             await EditOrSendMessage(msg, $"""
 															Сообщение пользователя:
-																"{ObjectLists.FeedbackReports[0].Comment}"
+																"{FeedbackReport.GetFirstReport().Comment}"
 
 															Ваш ответ:
 																{usersState[foundUser!.UserID].Comment ?? "Удалён"}
@@ -1608,7 +1616,7 @@ static class Program
                                                             usersState[foundUser!.UserID].Action = UserAction.ReportSetTegs;
                                                             await EditOrSendMessage(msg, $"""
 																Сообщение пользователя:
-																	"{ObjectLists.FeedbackReports[0].Comment}"
+																	"{FeedbackReport.GetFirstReport().Comment}"
 																
 																Введите список тегов для этого репорта через пробел с маленькой буквы
 																""", null, ParseMode.None, true);
@@ -1620,7 +1628,7 @@ static class Program
                                                             usersState[foundUser!.UserID].Action = null;
                                                             await EditOrSendMessage(msg, $"""
 															Сообщение пользователя:
-																"{ObjectLists.FeedbackReports[0].Comment}"
+																"{FeedbackReport.GetFirstReport().Comment}"
 
 															Теги:
 																{usersState[foundUser!.UserID].Comment}
@@ -1746,28 +1754,6 @@ static class Program
 												var placeData = usersState[foundUser.UserID].TempData;
 												Console.WriteLine($"{placeData.Name},{placeData.Corpus},{placeData.Floor},{placeData.Description},{type}");
 												var lastid = AddNewPlace(placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description, type);
-												if (lastid.HasValue)
-												{
-													switch (type)
-													{
-														case 1:
-															{
-																ObjectLists.AddRangeList<Buffet>([new(lastid.Value, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
-																break;
-															}
-														case 2:
-															{
-																ObjectLists.AddRangeList<Canteen>([new(lastid.Value, placeData.Name, placeData.Corpus, placeData.Floor, placeData.Description)]);
-																break;
-															}
-														case 3:
-															{
-																ObjectLists.AddRangeList<Grocery>([new(lastid.Value, placeData.Name, placeData.Description)]);
-																break;
-															}
-													}
-													Console.WriteLine("Таблица создана");
-												}
 												usersState[foundUser!.UserID].Action = null;
 												await EditOrSendMessage(msg, "Ну вроде сохранил", new InlineKeyboardButton[][]
 												{
@@ -1822,20 +1808,23 @@ static class Program
 									{
 										case ('C'):
 											{
-												placeName = ObjectLists.Canteens[index].Name;
-												reviews = ObjectLists.Canteens[index].Reviews;
+												Canteen place = BasePlace.LoadPlace<Canteen>(2,index);
+												placeName = place.Name;
+												reviews = place.Reviews;
 												break;
 											}
 										case ('B'):
 											{
-												placeName = ObjectLists.Buffets[index].Name;
-												reviews = ObjectLists.Buffets[index].Reviews;
+												Buffet place = BasePlace.LoadPlace<Buffet>(1,index);
+												placeName = place.Name;
+												reviews = place.Reviews;
 												break;
 											}
 										case ('G'):
 											{
-												placeName = ObjectLists.Groceries[index].Name;
-												reviews = ObjectLists.Groceries[index].Reviews;
+												Grocery place = BasePlace.LoadPlace<Grocery>(3,index);
+												placeName = place.Name;
+												reviews = place.Reviews;
 												break;
 											}
 										default:
@@ -1880,16 +1869,18 @@ static class Program
 											}
 									}
 
+									ConcurrentDictionary<long, Person> persons = Person.LoadPersonsFromBDAsConcurrent();
+
 									await EditOrSendMessage(msg, $"""
 										🍽️ Название: {placeName}
 										✨ Всего отзывов: {reviewCounter}
 										📗 Всего отзывов с комментариями: {reviews.Count(x => x.Comment != null)}
 
-										{(reviews.Count > nowCounter ? $"💠 №{nowCounter} | От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user1) ? user1.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
-										{(reviews.Count > ++nowCounter ? $"💠 №{nowCounter} | От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user2) ? user2.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
-										{(reviews.Count > ++nowCounter ? $"💠 №{nowCounter} | От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user3) ? user3.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
-										{(reviews.Count > ++nowCounter ? $"💠 №{nowCounter} | От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user4) ? user4.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
-										{(reviews.Count > ++nowCounter ? $"💠 №{nowCounter} | От @{(ObjectLists.Persons.TryGetValue(reviews[nowCounter].UserID, out Person? user5) ? user5.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+										{(reviews.Count > nowCounter ? $"💠 №{nowCounter} | От @{(persons.TryGetValue(reviews[nowCounter].UserID, out Person? user1) ? user1.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+										{(reviews.Count > ++nowCounter ? $"💠 №{nowCounter} | От @{(persons.TryGetValue(reviews[nowCounter].UserID, out Person? user2) ? user2.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+										{(reviews.Count > ++nowCounter ? $"💠 №{nowCounter} | От @{(persons.TryGetValue(reviews[nowCounter].UserID, out Person? user3) ? user3.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+										{(reviews.Count > ++nowCounter ? $"💠 №{nowCounter} | От @{(persons.TryGetValue(reviews[nowCounter].UserID, out Person? user4) ? user4.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
+										{(reviews.Count > ++nowCounter ? $"💠 №{nowCounter} | От @{(persons.TryGetValue(reviews[nowCounter].UserID, out Person? user5) ? user5.Username : "???")} | {reviews[nowCounter].Date} | {reviews[nowCounter].Rating}⭐ | {reviews[nowCounter].Comment ?? ""}" : "")}
 
 										📝 Выбери номер удаляемого отзыва:
 										""", new InlineKeyboardButton[][]
@@ -1929,17 +1920,17 @@ static class Program
 									{
 										case ('C'):
 											{
-												basePlace = ObjectLists.Canteens[index];
+												basePlace = BasePlace.LoadPlace<Canteen>(2,index);
 												break;
 											}
 										case ('B'):
 											{
-												basePlace = ObjectLists.Buffets[index];
+												basePlace = BasePlace.LoadPlace<Canteen>(1, index);
 												break;
 											}
 										case ('G'):
 											{
-												basePlace = ObjectLists.Groceries[index];
+												basePlace = BasePlace.LoadPlace<Grocery>(3, index);
 												break;
 											}
 										default:
@@ -1979,7 +1970,7 @@ static class Program
 
 									int realReviewIndex = basePlace.Reviews.IndexOf(reviews[reviewIndex]);
 									await EditOrSendMessage(msg, $"""
-										❓ Вы уверены, что хотите удалить отзыв на {basePlace.Name} от @{(ObjectLists.Persons.TryGetValue(reviews[reviewIndex].UserID, out Person? user) ? user.Username : "???")}?
+										❓ Вы уверены, что хотите удалить отзыв на {basePlace.Name} от @{((Person.TryGetPerson(reviews[reviewIndex].UserID,out Person? user) != null) ? user.Username : "???")}?
 										⌚ Дата написания: {reviews[reviewIndex].Date}
 										✨ Оценка: {reviews[reviewIndex].Rating}⭐
 										🪶 Комментарий: {reviews[reviewIndex].Comment ?? "Отсутствует"}
@@ -2001,12 +1992,14 @@ static class Program
 										throw new ArgumentException("No command args", nameof(args));
 									}
 
+									ConcurrentDictionary<long, string> BlockedUsers = Person.GetBlockedUsers();
+
 									if (args.Length == 3)
 									{
 										await EditOrSendMessage(msg, $"""
-											📗 Количесвто <b>активных</b> пользователей: {ObjectLists.Persons.Count - SecurityManager.BlockedUsers.Count}
+											📗 Количесвто <b>активных</b> пользователей: {GetUsersCount() - BlockedUsers.Count}
 
-											📕 Количество заблокированных пользователей: {SecurityManager.BlockedUsers.Count}
+											📕 Количество заблокированных пользователей: {BlockedUsers.Count}
 
 											⌚ Пользователей с замедлением:
 											💠 Лёгким: {SecurityManager.SuspiciousUsers.Count(x => x.Value.suspiciousClass == SuspiciousClass.Light)}
@@ -2047,65 +2040,69 @@ static class Program
 									{
 										case 'S' when args[4] == 'R':
 											{
-												var activePersons = SecurityManager.SuspiciousUsers.Where(x => !SecurityManager.BlockedUsers.ContainsKey(x.Key)).Select(x => new
+												var activePersons = SecurityManager.SuspiciousUsers.Where(x => !BlockedUsers.ContainsKey(x.Key)).Select(x => new
 												{
 													userID = x.Key,
 													x.Value.suspiciousClass,
 													x.Value.time
 												}).ToList();
 
+												ConcurrentDictionary<long, Person> persons = Person.LoadPersonsFromBDAsConcurrent();
+
 												await EditOrSendMessage(msg, $"""
 													❓ С кого снять замедление?
 
-													{(activePersons.Count > nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user0) ? user0.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user1) ? user1.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user2) ? user2.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user3) ? user3.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user4) ? user4.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user5) ? user5.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user6) ? user6.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user7) ? user7.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user8) ? user8.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user9) ? user9.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+													{(activePersons.Count > nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user0) ? user0.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user1) ? user1.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user2) ? user2.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user3) ? user3.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user4) ? user4.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user5) ? user5.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user6) ? user6.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user7) ? user7.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user8) ? user8.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user9) ? user9.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].suspiciousClass}" : "")}
 													""", new InlineKeyboardButton[][]
 													{
-														[(activePersons.Count > (nowCounter - 9) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 9].userID, out Person? _user9) ? _user9.Username : "")}" : "", activePersons.Count > (nowCounter - 9) ? $"#admin susR{activePersons[nowCounter - 9].userID}" : "-"), (activePersons.Count > (nowCounter - 8) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 8].userID, out Person? _user8) ? _user8.Username : "")}" : "", activePersons.Count > (nowCounter - 8) ? $"#admin susR{activePersons[nowCounter - 8].userID}" : "-")],
-														[(activePersons.Count > (nowCounter - 7) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 7].userID, out Person? _user7) ? _user7.Username : "")}" : "", activePersons.Count > (nowCounter - 7) ? $"#admin susR{activePersons[nowCounter - 7].userID}" : "-"), (activePersons.Count > (nowCounter - 6) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 6].userID, out Person? _user6) ? _user6.Username : "")}" : "", activePersons.Count > (nowCounter - 6) ? $"#admin susR{activePersons[nowCounter - 6].userID}" : "-")],
-														[(activePersons.Count > (nowCounter - 5) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 5].userID, out Person? _user5) ? _user5.Username : "")}" : "", activePersons.Count > (nowCounter - 5) ? $"#admin susR{activePersons[nowCounter - 5].userID}" : "-"), (activePersons.Count > (nowCounter - 4) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 4].userID, out Person? _user4) ? _user4.Username : "")}" : "", activePersons.Count > (nowCounter - 4) ? $"#admin susR{activePersons[nowCounter - 4].userID}" : "-")],
-														[(activePersons.Count > (nowCounter - 3) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 3].userID, out Person? _user3) ? _user3.Username : "")}" : "", activePersons.Count > (nowCounter - 3) ? $"#admin susR{activePersons[nowCounter - 3].userID}" : "-"), (activePersons.Count > (nowCounter - 2) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 2].userID, out Person? _user2) ? _user2.Username : "")}" : "", activePersons.Count > (nowCounter - 2) ? $"#admin susR{activePersons[nowCounter - 2].userID}" : "-")],
-														[(activePersons.Count > (nowCounter - 1) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 1].userID, out Person? _user1) ? _user1.Username : "")}" : "", activePersons.Count > (nowCounter - 1) ? $"#admin susR{activePersons[nowCounter - 1].userID}" : "-"), (activePersons.Count > nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? _user0) ? _user0.Username : "")}" : "", activePersons.Count > nowCounter ? $"#admin susR{activePersons[nowCounter].userID}" : "-")],
+														[(activePersons.Count > (nowCounter - 9) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 9].userID, out Person? _user9) ? _user9.Username : "")}" : "", activePersons.Count > (nowCounter - 9) ? $"#admin susR{activePersons[nowCounter - 9].userID}" : "-"), (activePersons.Count > (nowCounter - 8) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 8].userID, out Person? _user8) ? _user8.Username : "")}" : "", activePersons.Count > (nowCounter - 8) ? $"#admin susR{activePersons[nowCounter - 8].userID}" : "-")],
+														[(activePersons.Count > (nowCounter - 7) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 7].userID, out Person? _user7) ? _user7.Username : "")}" : "", activePersons.Count > (nowCounter - 7) ? $"#admin susR{activePersons[nowCounter - 7].userID}" : "-"), (activePersons.Count > (nowCounter - 6) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 6].userID, out Person? _user6) ? _user6.Username : "")}" : "", activePersons.Count > (nowCounter - 6) ? $"#admin susR{activePersons[nowCounter - 6].userID}" : "-")],
+														[(activePersons.Count > (nowCounter - 5) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 5].userID, out Person? _user5) ? _user5.Username : "")}" : "", activePersons.Count > (nowCounter - 5) ? $"#admin susR{activePersons[nowCounter - 5].userID}" : "-"), (activePersons.Count > (nowCounter - 4) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 4].userID, out Person? _user4) ? _user4.Username : "")}" : "", activePersons.Count > (nowCounter - 4) ? $"#admin susR{activePersons[nowCounter - 4].userID}" : "-")],
+														[(activePersons.Count > (nowCounter - 3) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 3].userID, out Person? _user3) ? _user3.Username : "")}" : "", activePersons.Count > (nowCounter - 3) ? $"#admin susR{activePersons[nowCounter - 3].userID}" : "-"), (activePersons.Count > (nowCounter - 2) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 2].userID, out Person? _user2) ? _user2.Username : "")}" : "", activePersons.Count > (nowCounter - 2) ? $"#admin susR{activePersons[nowCounter - 2].userID}" : "-")],
+														[(activePersons.Count > (nowCounter - 1) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 1].userID, out Person? _user1) ? _user1.Username : "")}" : "", activePersons.Count > (nowCounter - 1) ? $"#admin susR{activePersons[nowCounter - 1].userID}" : "-"), (activePersons.Count > nowCounter ? $"@{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? _user0) ? _user0.Username : "")}" : "", activePersons.Count > nowCounter ? $"#admin susR{activePersons[nowCounter].userID}" : "-")],
 														[("Назад", "/admin ban")]
 													});
 												break;
 											}
 										case 'B' when args[4] == 'R':
 											{
-												var activePersons = SecurityManager.BlockedUsers.Select(x => new
+												var activePersons = BlockedUsers.Select(x => new
 												{
 													userID = x.Key,
 													reason = x.Value
 												}).ToList();
 
+												ConcurrentDictionary<long, Person> persons = Person.LoadPersonsFromBDAsConcurrent();
+
 												await EditOrSendMessage(msg, $"""
 													❓ С кого снять блокировку?
 
-													{(activePersons.Count > nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user0) ? user0.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user1) ? user1.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user2) ? user2.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user3) ? user3.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user4) ? user4.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user5) ? user5.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user6) ? user6.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user7) ? user7.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user8) ? user8.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
-													{(activePersons.Count > ++nowCounter ? $"💠 @{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? user9) ? user9.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+													{(activePersons.Count > nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user0) ? user0.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user1) ? user1.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user2) ? user2.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user3) ? user3.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user4) ? user4.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user5) ? user5.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user6) ? user6.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user7) ? user7.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user8) ? user8.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
+													{(activePersons.Count > ++nowCounter ? $"💠 @{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? user9) ? user9.Username : "???")} ({activePersons[nowCounter].userID}) | {activePersons[nowCounter].reason}" : "")}
 													""", new InlineKeyboardButton[][]
 													{
-														[(activePersons.Count > (nowCounter - 9) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 9].userID, out Person? _user9) ? _user9.Username : "")}" : "", activePersons.Count > (nowCounter - 9) ? $"#admin banR{activePersons[nowCounter - 9].userID}" : "-"), (activePersons.Count > (nowCounter - 8) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 8].userID, out Person? _user8) ? _user8.Username : "")}" : "", activePersons.Count > (nowCounter - 8) ? $"#admin banR{activePersons[nowCounter - 8].userID}" : "-")],
-														[(activePersons.Count > (nowCounter - 7) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 7].userID, out Person? _user7) ? _user7.Username : "")}" : "", activePersons.Count > (nowCounter - 7) ? $"#admin banR{activePersons[nowCounter - 7].userID}" : "-"), (activePersons.Count > (nowCounter - 6) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 6].userID, out Person? _user6) ? _user6.Username : "")}" : "", activePersons.Count > (nowCounter - 6) ? $"#admin banR{activePersons[nowCounter - 6].userID}" : "-")],
-														[(activePersons.Count > (nowCounter - 5) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 5].userID, out Person? _user5) ? _user5.Username : "")}" : "", activePersons.Count > (nowCounter - 5) ? $"#admin banR{activePersons[nowCounter - 5].userID}" : "-"), (activePersons.Count > (nowCounter - 4) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 4].userID, out Person? _user4) ? _user4.Username : "")}" : "", activePersons.Count > (nowCounter - 4) ? $"#admin banR{activePersons[nowCounter - 4].userID}" : "-")],
-														[(activePersons.Count > (nowCounter - 3) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 3].userID, out Person? _user3) ? _user3.Username : "")}" : "", activePersons.Count > (nowCounter - 3) ? $"#admin banR{activePersons[nowCounter - 3].userID}" : "-"), (activePersons.Count > (nowCounter - 2) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 2].userID, out Person? _user2) ? _user2.Username : "")}" : "", activePersons.Count > (nowCounter - 2) ? $"#admin banR{activePersons[nowCounter - 2].userID}" : "-")],
-														[(activePersons.Count > (nowCounter - 1) ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter - 1].userID, out Person? _user1) ? _user1.Username : "")}" : "", activePersons.Count > (nowCounter - 1) ? $"#admin banR{activePersons[nowCounter - 1].userID}" : "-"), (activePersons.Count > nowCounter ? $"@{(ObjectLists.Persons.TryGetValue(activePersons[nowCounter].userID, out Person? _user0) ? _user0.Username : "")}" : "", activePersons.Count > nowCounter ? $"#admin banR{activePersons[nowCounter].userID}" : "-")],
+														[(activePersons.Count > (nowCounter - 9) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 9].userID, out Person? _user9) ? _user9.Username : "")}" : "", activePersons.Count > (nowCounter - 9) ? $"#admin banR{activePersons[nowCounter - 9].userID}" : "-"), (activePersons.Count > (nowCounter - 8) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 8].userID, out Person? _user8) ? _user8.Username : "")}" : "", activePersons.Count > (nowCounter - 8) ? $"#admin banR{activePersons[nowCounter - 8].userID}" : "-")],
+														[(activePersons.Count > (nowCounter - 7) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 7].userID, out Person? _user7) ? _user7.Username : "")}" : "", activePersons.Count > (nowCounter - 7) ? $"#admin banR{activePersons[nowCounter - 7].userID}" : "-"), (activePersons.Count > (nowCounter - 6) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 6].userID, out Person? _user6) ? _user6.Username : "")}" : "", activePersons.Count > (nowCounter - 6) ? $"#admin banR{activePersons[nowCounter - 6].userID}" : "-")],
+														[(activePersons.Count > (nowCounter - 5) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 5].userID, out Person? _user5) ? _user5.Username : "")}" : "", activePersons.Count > (nowCounter - 5) ? $"#admin banR{activePersons[nowCounter - 5].userID}" : "-"), (activePersons.Count > (nowCounter - 4) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 4].userID, out Person? _user4) ? _user4.Username : "")}" : "", activePersons.Count > (nowCounter - 4) ? $"#admin banR{activePersons[nowCounter - 4].userID}" : "-")],
+														[(activePersons.Count > (nowCounter - 3) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 3].userID, out Person? _user3) ? _user3.Username : "")}" : "", activePersons.Count > (nowCounter - 3) ? $"#admin banR{activePersons[nowCounter - 3].userID}" : "-"), (activePersons.Count > (nowCounter - 2) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 2].userID, out Person? _user2) ? _user2.Username : "")}" : "", activePersons.Count > (nowCounter - 2) ? $"#admin banR{activePersons[nowCounter - 2].userID}" : "-")],
+														[(activePersons.Count > (nowCounter - 1) ? $"@{(persons.TryGetValue(activePersons[nowCounter - 1].userID, out Person? _user1) ? _user1.Username : "")}" : "", activePersons.Count > (nowCounter - 1) ? $"#admin banR{activePersons[nowCounter - 1].userID}" : "-"), (activePersons.Count > nowCounter ? $"@{(persons.TryGetValue(activePersons[nowCounter].userID, out Person? _user0) ? _user0.Username : "")}" : "", activePersons.Count > nowCounter ? $"#admin banR{activePersons[nowCounter].userID}" : "-")],
 														[("Назад", "/admin ban")]
 													});
 												break;
@@ -2146,8 +2143,7 @@ static class Program
 													throw new ArgumentException("Invalid command args", nameof(args));
 												}
 
-
-												List<Person> activePersons = [.. ObjectLists.Persons.Where(x => !SecurityManager.BlockedUsers.ContainsKey(x.Key)).Select(x => x.Value)];
+												List<Person> activePersons = [.. Person.LoadPersonsFromBDAsConcurrent().Where(x => !BlockedUsers.ContainsKey(x.Key)).Select(x => x.Value)];
 												await EditOrSendMessage(msg, $"""
 													❓ Кому выдать замедление {selectedType} типа?
 
@@ -2212,8 +2208,7 @@ static class Program
 													throw new ArgumentException("Invalid command args", nameof(args));
 												}
 
-
-												List<Person> activePersons = [.. ObjectLists.Persons.Where(x => !SecurityManager.BlockedUsers.ContainsKey(x.Key)).Select(x => x.Value)];
+												List<Person> activePersons = [.. Person.LoadPersonsFromBDAsConcurrent().Where(x => !BlockedUsers.ContainsKey(x.Key)).Select(x => x.Value)];
 												await EditOrSendMessage(msg, $"""
 													❓ Кому выдать блокировку по причине: {selectedType}
 
@@ -2294,10 +2289,10 @@ static class Program
 			ArgumentNullException.ThrowIfNull(callbackQuery.Data);
 			ArgumentNullException.ThrowIfNull(callbackQuery.Message);
 
-			ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
+			Person? foundUser = Person.TryGetPerson(callbackQuery.Message.Chat.Id);
 			if (foundUser != null)
 			{
-				if (SecurityManager.BlockedUsers.TryGetValue(foundUser.UserID, out string? reason))
+				if (Person.BlockedUsersContainsID(foundUser.UserID, out string? reason))
 				{
 					await bot.SendMessage(callbackQuery.Message.Chat, $"🚫 Вы были заблокированы за: {reason ?? "Траблмейкинг"}.");
 					return;
@@ -2315,7 +2310,7 @@ static class Program
 			ArgumentNullException.ThrowIfNull(callbackQuery.Data);
 			ArgumentNullException.ThrowIfNull(callbackQuery.Message);
 
-			ObjectLists.Persons.TryGetValue(callbackQuery.Message.Chat.Id, out Person? foundUser);
+			Person? foundUser = Person.TryGetPerson(callbackQuery.Message.Chat.Id);
 			if (foundUser == null && callbackQuery.Data != "/start")
 				return;
 
@@ -2392,13 +2387,13 @@ static class Program
 							{
 								case ("B"):
 									{
-										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Bug]));
+										FeedbackReport.SaveFeedbackReport(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Bug]));
 										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отчет о баге успешно добавлен!");
 										break;
 									}
 								case ("R"):
 									{
-										ObjectLists.FeedbackReports.Add(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Suggestion])); // TODO
+										FeedbackReport.SaveFeedbackReport(new FeedbackReport(foundUser.UserID, usersState[foundUser.UserID].Comment ?? "", [ReportTeg.Suggestion])); // TODO
 										await bot.AnswerCallbackQuery(callbackQuery.Id, "Отзыв о боте успешно добавлен!");
 										break;
 									}
@@ -2429,7 +2424,7 @@ static class Program
                                 throw new Exception($"Invalid command agrs: {callbackQuery.Message.Text}");
                             }
 
-                            var existingReport = ObjectLists.FeedbackReports.Where(x => x.UserID == foundUser.UserID).ElementAtOrDefault(reportIndex);
+                            var existingReport = FeedbackReport.GetFirstReportFromPerson(foundUser.UserID,reportIndex);
 
                             if (existingReport == null)
                             {
@@ -2444,9 +2439,9 @@ static class Program
                                 if (usersState[foundUser.UserID].Comment != null)
                                 {
                                     if (usersState[foundUser.UserID].Comment == "-")
-                                        ObjectLists.FeedbackReports.Remove(existingReport);
+                                        FeedbackReport.DeleteReportFromDB(existingReport.IdInDB);
                                     else
-                                        existingReport.ChangeComment(usersState[foundUser.UserID].Comment!);
+                                        existingReport.ChangeComment(usersState[foundUser.UserID].Comment!,existingReport.IdInDB);
                                 }
                                 else
                                 {
@@ -2553,7 +2548,7 @@ static class Program
 									{
 										if (usersState[foundUser.UserID].Comment != null)
 										{
-											ObjectLists.FeedbackReports[0].Answer = usersState[foundUser.UserID].Comment!;
+											FeedbackReport.UpdateReportAnswer(usersState[foundUser.UserID].Comment!, FeedbackReport.GetFirstReport().IdInDB);
                                         }
 										else
 										{
@@ -2588,7 +2583,8 @@ static class Program
                                         {
                                             var splitTegs = usersState[foundUser.UserID].Comment!.Split(' ');
 
-											ObjectLists.FeedbackReports[0].Tegs.Clear();
+											FeedbackReport.GetFirstReport().Tegs.Clear();
+											string tegs = "";
 
                                             foreach (var teg in splitTegs)
 											{
@@ -2596,23 +2592,23 @@ static class Program
 												{
 													case ("bug"):
 														{
-															ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.Bug);
+															tegs += "0";
 															break;
 														}
 													case ("outdatedinfo"):
 														{
-                                                            ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.OutdatedInfo);
-                                                            break;
+															tegs += "1";
+															break;
 														}
 													case ("wronginfo"):
 														{
-                                                            ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.WrongInfo);
-                                                            break;
+															tegs += "2";
+															break;
 														}
 													case ("suggestion"):
 														{
-                                                            ObjectLists.FeedbackReports[0].Tegs.Add(ReportTeg.Suggestion);
-                                                            break;
+															tegs += "3";
+															break;
 														}
 													default:
 														{
@@ -2624,6 +2620,8 @@ static class Program
 														}
                                                 }
 											}
+											FeedbackReport.UpdateTegsInReport(tegs, FeedbackReport.GetFirstReport().IdInDB);
+
                                         }
                                         else
                                         {
@@ -2654,11 +2652,11 @@ static class Program
                                     }
                                 case ("resS"):
                                     {
-										if (ObjectLists.FeedbackReports.Count > 0)
+										if (FeedbackReport.CountFeedbackReports() > 0)
 										{
-											FeedbackReport report = ObjectLists.FeedbackReports[0];
-											ObjectLists.FeedbackReports.Add(report);
-											ObjectLists.FeedbackReports.RemoveAt(0);
+											FeedbackReport report = FeedbackReport.GetFirstReport();
+											FeedbackReport.SaveFeedbackReport(report);
+											FeedbackReport.DeleteReportFromDB(report.IdInDB);
 										}
 
                                         await OnCommand("/admin", "res", callbackQuery.Message);
@@ -2680,17 +2678,17 @@ static class Program
 										{
 											case ('C'):
 												{
-													placeOfReview = ObjectLists.Canteens[locationReview];
+													placeOfReview = BasePlace.LoadPlace<Canteen>(2, locationReview);
 													break;
 												}
 											case ('B'):
 												{
-													placeOfReview = ObjectLists.Buffets[locationReview];
+													placeOfReview = BasePlace.LoadPlace<Buffet>(1, locationReview);
 													break;
 												}
 											case ('G'):
 												{
-													placeOfReview = ObjectLists.Groceries[locationReview];
+													placeOfReview = BasePlace.LoadPlace<Grocery>(3, locationReview);
 													break;
 												}
 											default:
@@ -2827,7 +2825,7 @@ static class Program
 											throw new ArgumentException($"Error while user {foundUser.UserID} trying to slow user");
 										}
 
-										if (SecurityManager.BlockedUsers.TryAdd(userID, selectedReason))
+										if (!Person.BlockedUsersContainsID(userID))
 										{
 											try
 											{
@@ -2865,7 +2863,7 @@ static class Program
 											throw new ArgumentException($"Error while user {foundUser.UserID} trying remove ban from user");
 										}
 
-										if (SecurityManager.BlockedUsers.TryRemove(userID, out _))
+										if (Person.BlockedUsersContainsID(userID))
 										{
 											try
 											{
@@ -2914,17 +2912,17 @@ static class Program
 						{
 							case ('C'):
 								{
-									place = ObjectLists.Canteens[index];
+									place = BasePlace.LoadPlace<Canteen>(2,index);
 									break;
 								}
 							case ('B'):
 								{
-									place = ObjectLists.Buffets[index];
+									place = BasePlace.LoadPlace<Buffet>(1, index);
 									break;
 								}
 							case ('G'):
 								{
-									place = ObjectLists.Groceries[index];
+									place = BasePlace.LoadPlace<Grocery>(3, index);
 									break;
 								}
 							default:
@@ -2974,7 +2972,7 @@ static class Program
 								}
 							case ("deleteReview"):
 								{
-									if (!place.Reviews.Any(x => x.UserID == foundUser.UserID) && !AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
+									if (!place.Reviews.Any(x => x.UserID == foundUser.UserID) && !AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser.UserID))
 									{
 										await EditOrSendMessage(callbackQuery.Message, $"""
 										💀 Упс, ошибка! Не удалось уджалить отзыв на {place.Name}
@@ -3006,9 +3004,9 @@ static class Program
 										await OnCommand("/info", splitStr[1], callbackQuery.Message);
 										break;
 									}
-									else if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
+									else if (AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser.UserID))
 									{ 
-										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
+										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser.UserID));
 
 										try
 										{
@@ -3040,8 +3038,8 @@ static class Program
 										break;
 
 									place.DeleteReview(foundUser.UserID);
-									if (AdminControl.ReviewCollector.Any(x => x.place == place && x.review.UserID == foundUser.UserID))
-										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place == place && x.review.UserID == foundUser.UserID));
+									if (AdminControl.ReviewCollector.Any(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser.UserID))
+										AdminControl.SetReviewStatus(false, AdminControl.ReviewCollector.FindIndex(x => x.place.Place_id == place.Place_id && x.review.UserID == foundUser.UserID));
 
 									AdminControl.AddReviewOnMod(place, foundUser.UserID, usersState[foundUser.UserID].Rating, usersState[foundUser.UserID].Comment);
 
@@ -3102,24 +3100,20 @@ static class Program
 			}
 		}
 	}
-	private static void GetUsers()
+	private static long GetUsersCount()
 	{
+		long r = 0;
 		using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
 		{
 			var users = new List<string>();
 			connection.Open();
 			SqliteCommand command = new SqliteCommand();
 			command.Connection = connection;
-			command.CommandText = $"SELECT * FROM TG_Users";
-			var reader = command.ExecuteReader();
-			while (reader.Read())
-			{
-				users.Add(reader.GetString(0));
-			}
-			foreach (var user in users)
-			{
-				Console.WriteLine($"{user}");
-			}
+			command.CommandText = $"SELECT COUNT(*) FROM TG_Users";
+			object result = command.ExecuteScalar();
+			if(result != null && result != DBNull.Value) { r = (long)result; }
+			return r;
+
 		}
 	}
 	private static bool AddUserToDatabase(string username, long TG_id, string role)

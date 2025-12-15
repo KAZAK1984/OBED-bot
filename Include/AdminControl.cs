@@ -13,22 +13,21 @@ namespace OBED.Include
 		{
 			string dbConnectionString = "Data Source=OBED_DB.db";
 			List<(Review review, BasePlace place)> list = [];
-			using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
+			using (SqliteConnection connection = new SqliteConnection(dbConnectionString))
 			{
 				connection.Open();
-				using(SqliteCommand command = new SqliteCommand())
+				using (SqliteCommand command = new SqliteCommand())
 				{
 					command.Connection = connection;
 					command.CommandText = @"SELECT * FROM Reviews JOIN Places ON Reviews.Place_id = Places.Place_id WHERE OnMod = 1";
-					using(SqliteDataReader reader =  command.ExecuteReader())
+					using (SqliteDataReader reader = command.ExecuteReader())
 					{
 						while (reader.Read())
 						{
 							long userid = reader.GetInt64(reader.GetOrdinal("Users_id"));
 							long placeid = reader.GetInt64(reader.GetOrdinal("Place_id"));
 							int rating = reader.GetInt32(reader.GetOrdinal("Rating"));
-							int commentOrdinal = reader.GetOrdinal("Comment");
-							string ? comment = reader.IsDBNull(commentOrdinal) ? null : reader.GetString(commentOrdinal);
+							string? comment = reader.IsDBNull(reader.GetOrdinal("Comment")) ? null : reader.GetString(reader.GetOrdinal("Comment"));
 							DateTime time = reader.GetDateTime(reader.GetOrdinal("Date"));
 							int type = reader.GetInt32(reader.GetOrdinal("Type"));
 							Review review = new Review(placeid, userid, rating, comment, time);
@@ -36,21 +35,21 @@ namespace OBED.Include
 							{
 								case 1:
 									{
-										var place = ObjectLists.Buffets.FirstOrDefault(x => x.Place_id == placeid);
+										var place = BasePlace.LoadPlaceById<Buffet>(type,placeid);
 										if (place != null)
 											list.Add((review, place));
 										break;
 									}
 								case 2:
 									{
-										var place = ObjectLists.Canteens.FirstOrDefault(x => x.Place_id == placeid);
+										var place = BasePlace.LoadPlaceById<Canteen>(type, placeid);
 										if (place != null)
 											list.Add((review, place));
 										break;
 									}
 								case 3:
 									{
-										var place = ObjectLists.Groceries.FirstOrDefault(x => x.Place_id == placeid);
+										var place = BasePlace.LoadPlaceById<Grocery>(type, placeid);
 										if (place != null)
 											list.Add((review, place));
 										break;

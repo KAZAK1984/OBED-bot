@@ -19,7 +19,6 @@ namespace OBED.Include
 	static class SecurityManager
 	{
 		private static readonly string dbConnectionString = "Data Source=OBED_DB.db";
-		public static ConcurrentDictionary<long, string> BlockedUsers { get; private set; } = [];
 		public static ConcurrentDictionary<long, (SuspiciousClass suspiciousClass, DateTime time)> SuspiciousUsers { get; private set; } = [];
 		public static ConcurrentQueue<(object obj, DateTime deferredTime)> RequestQueue { get; private set; } = [];
 		static ConcurrentDictionary<long, List<(DateTime date, string message)>> LastUsersRequests { get; set; } = [];
@@ -41,7 +40,7 @@ namespace OBED.Include
 			else
 				throw new Exception($"{type} - uncorrect type");
 
-			if (BlockedUsers.ContainsKey(userID))
+			if (Person.BlockedUsersContainsID(userID))
 				return false;
 
 			var userRequests = LastUsersRequests.GetOrAdd(userID, _ => []);
@@ -58,7 +57,7 @@ namespace OBED.Include
 
 			_ = requestsPerSecond switch
 			{
-				> 6 => BlockedUsers.TryAdd(userID, "Попытка совершить спам атаку"),
+				> 6 => UpdateOnBanBD(userID,1,"Попытка совершить спам атаку"),
 				> 5 => UpdateSuspiciousUser(userID, SuspiciousClass.High),
 				> 4 => UpdateSuspiciousUser(userID, SuspiciousClass.Medium),
 				> 3 => UpdateSuspiciousUser(userID, SuspiciousClass.Light),
@@ -85,7 +84,7 @@ namespace OBED.Include
 		private static bool SlowDownUserAsync<T>(long userID, T type)
 		{
 			TimeSpan delay;
-			if (BlockedUsers.ContainsKey(userID))
+			if (Person.BlockedUsersContainsID(userID))
 			{
 				delay = TimeSpan.FromSeconds(12);
 			}
@@ -137,7 +136,7 @@ namespace OBED.Include
 			}
 		}
 
-		public static void UpdateOnBanBD(long userID, int ban,string? reason = null)
+		public static bool UpdateOnBanBD(long userID, int ban,string? reason = null)
 		{
 			using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
 			{
@@ -147,50 +146,53 @@ namespace OBED.Include
 				command.CommandText = @"UPDATE TG_Users SET OnBan = @banb WHERE TG_id = @userid";
 				command.Parameters.Add(new SqliteParameter("@banb", ban));
 				command.Parameters.Add(new SqliteParameter("@userid", userID));
-				long? listid = (long?)command.ExecuteScalar();
+				command.ExecuteNonQuery();
 				if(ban == 0)
 				{
-					command.CommandText = @"DELETE FROM BlockedUsers WHERE List_id = @listid";
-					command.Parameters.Add(new SqliteParameter("@listid", listid));
+					command.CommandText = @"DELETE FROM BlockedUsers WHERE User_id = @userid";
 					command.ExecuteNonQuery();
+					return false;
 				}
 				else
 				{
-					command.CommandText = @"INSERT INTO BlockedUsers(List_id,Reason) VALUES (@listid,@reason)";
-					command.Parameters.Add(new SqliteParameter("@listid", listid));
+					command.CommandText = @"INSERT INTO BlockedUsers(List_id,User_id,Reason) VALUES ((SELECT List_id FROM TG_Users WHERE TG_id = @userid),@userid,@reason)";
+					if(reason == null || reason == "") { command.CommandText = @"INSERT INTO BlockedUsers(List_id,User_id) VALUES ((SELECT List_id FROM TG_Users WHERE TG_id = @userid),@userid)"; }
 					command.Parameters.Add(new SqliteParameter("@reason", reason));
 					command.ExecuteNonQuery();
+					return true;
 				}
 			}
 		}
 
-		public static void LoadBlockedUsersBD()
-		{
-			using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
-			{
-				connection.Open();
-				var command = new SqliteCommand();
-				command.Connection = connection;
-				command.CommandText = @"SELECT * FROM BlockedUsers JOIN TG_Users WHERE BlockedUsers.List_id = TG_Users.List_id";
-				using(SqliteDataReader reader = command.ExecuteReader())
-				{
-					while (reader.Read())
-					{
-						long userID = reader.GetInt64(reader.GetOrdinal("TG_id"));
-						string reason = reader.GetString(reader.GetOrdinal("Reason"));
+		//public static void LoadBlockedUsersBD()
+		//{
+		//	using(SqliteConnection connection = new SqliteConnection(dbConnectionString))
+		//	{
+		//		connection.Open();
+		//		var command = new SqliteCommand();
+		//		command.Connection = connection;
+		//		command.CommandText = @"SELECT * FROM BlockedUsers";
+		//		using(SqliteDataReader reader = command.ExecuteReader())
+		//		{
+		//			while (reader.Read())
+		//			{
+		//				long userID = reader.GetInt64(reader.GetOrdinal("User_id"));
+		//				string reason = reader.GetString(reader.GetOrdinal("Reason"));
 
-						SecurityManager.BlockedUsers.TryAdd(userID, reason);
-					}
-				}
-			}
-		}
+		//				SecurityManager.BlockedUsers.TryAdd(userID, reason);
+		//			}
+		//		}
+		//	}
+		//}
 
 		public static void CreateBlockedUsersTable(SqliteCommand command)
 		{
 			command.CommandText = @"CREATE TABLE IF NOT EXISTS ""BlockedUsers"" (
 										""List_id""	INTEGER,
-										""Reason""	TEXT NOT NULL,
-										FOREIGN KEY(""List_id"") REFERENCES ""TG_Users""(""List_id"") ON UPDATE CASCADE
+										""Reason""	TEXT,
+										""User_id""	INTEGER,
+										FOREIGN KEY(""List_id"") REFERENCES ""TG_Users""(""List_id"") ON UPDATE CASCADE,
+										FOREIGN KEY(""User_id"") REFERENCES ""TG_Users""(""TG_id"") ON UPDATE CASCADE
 									);";
 			command.ExecuteNonQuery();
 		}

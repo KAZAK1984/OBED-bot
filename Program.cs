@@ -1152,7 +1152,7 @@ static class Program
 								}
 							case ('B'):
 								{
-									place = BasePlace.LoadPlace<Canteen>(1, index);
+									place = BasePlace.LoadPlace<Buffet>(1, index);
 									break;
 								}
 							case ('G'):
@@ -1263,7 +1263,7 @@ static class Program
 								}
 							case ('B'):
 								{
-									place = BasePlace.LoadPlace<Canteen>(1, index);
+									place = BasePlace.LoadPlace<Buffet>(1, index);
 									break;
 								}
 							case ('G'):
@@ -1925,7 +1925,7 @@ static class Program
 											}
 										case ('B'):
 											{
-												basePlace = BasePlace.LoadPlace<Canteen>(1, index);
+												basePlace = BasePlace.LoadPlace<Buffet>(1, index);
 												break;
 											}
 										case ('G'):

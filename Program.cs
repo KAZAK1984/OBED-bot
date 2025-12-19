@@ -1302,7 +1302,7 @@ static class Program
 									usersState[foundUser.UserID].ActionArguments = args[1..];
 
 									await EditOrSendMessage(msg, $"✨ Введи НОВУЮ оценку на точку от 1⭐️ до 10⭐️", null, ParseMode.None, true);
-									break;
+									return;
 								}
 							case ('C'):
 								{
@@ -1310,7 +1310,7 @@ static class Program
 									usersState[foundUser.UserID].ActionArguments = args[1..];
 
 									await EditOrSendMessage(msg, $"🪶 Введи НОВЫЙ текст отзыва на точку или удали его, отправив -", null, ParseMode.None, true);
-									break;
+									return;
 								}
 						}
 
@@ -1341,7 +1341,7 @@ static class Program
 										if (usersState[foundUser!.UserID].Rating == 0)
 											usersState[foundUser!.UserID].Rating = place.Reviews.First(x => x.UserID == foundUser!.UserID).Rating;
 										if (usersState[foundUser!.UserID].Comment == "saved_mark")
-											usersState[foundUser!.UserID].Comment = null;    // Если есть сохранённый коммент - его бы нашли в админ контроле
+											usersState[foundUser!.UserID].Comment = place.Reviews.First(x => x.UserID == foundUser!.UserID).Comment;
 									}
 
 									if (usersState[foundUser!.UserID].Comment == "-")
@@ -1360,6 +1360,13 @@ static class Program
 										[("Да", $"#changeReview {usersState[foundUser!.UserID].ActionArguments}"), ("Нет", $"/changeReview -{usersState[foundUser!.UserID].ActionArguments}")],
 										[("Назад", $"/info {args[1..]}")]
 									});
+									break;
+								}
+							default:
+								{
+									await EditOrSendMessage(msg, $"❕Зафиксирована попытка приступить к редактированию другого репорта или отзыва на точку. Сброс ранее введённой информации...");
+									usersState[foundUser.UserID].Action = null;
+									await OnCommand("/changeReview", args, msg);
 									break;
 								}
 						}

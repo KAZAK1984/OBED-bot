@@ -71,7 +71,7 @@ namespace OBED.Include
 
 			lock (adminControlLock)
 			{
-				if (!place.Reviews.Any(x => x.UserID == review.UserID) && !ReviewCollector.Any(x => x.review.UserID == review.UserID))
+				if (!place.Reviews.Any(x => x.UserID == review.UserID) && !ReviewCollector.Any(x => x.review.UserID == review.UserID && x.place.Place_id == place.Place_id))
 				{
 					place.Save(review,1);
 					ReviewCollector.Add((review, place));
@@ -88,7 +88,7 @@ namespace OBED.Include
 
 			lock (adminControlLock)
 			{
-				if (!place.Reviews.Any(x => x.UserID == userID) && !ReviewCollector.Any(x => x.review.UserID == userID))
+				if (!place.Reviews.Any(x => x.UserID == userID) && !ReviewCollector.Any(x => x.review.UserID == userID && x.place.Place_id == place.Place_id))
 				{
 					place.Save(new Review(place.Place_id,userID,rating,comment), 1);
 					ReviewCollector.Add((new Review(place.Place_id,userID, rating, comment), place));
